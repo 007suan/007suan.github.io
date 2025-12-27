@@ -1124,3 +1124,52 @@ body::after {
 .chat-footer {
     padding-bottom: calc(20px + env(safe-area-inset-bottom, 34px)) !important;
 }
+
+/* ===========================================
+   iOS透明白条覆盖
+   =========================================== */
+
+/* 1. 在body最底部创建一个绝对定位的覆盖层 */
+body::after {
+    content: '' !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    
+    /* ★★★ 关键：高度设为安全区域的高度 ★★★ */
+    height: env(safe-area-inset-bottom, 34px) !important;
+    
+    /* ★★★ 关键：用你的背景色！必须完全一致 ★★★ */
+    background-color: #f2f2f7 !important;
+    
+    /* ★★★ 关键：层级要足够高 ★★★ */
+    z-index: 9999999 !important;
+    
+    /* ★★★ 关键：不接受任何点击 ★★★ */
+    pointer-events: none !important;
+    
+    /* 调试时可以加上边框看看 */
+    /* border-top: 2px solid red !important; */
+}
+
+/* 2. 确保所有容器都延伸到安全区域 */
+.phone-container,
+.phone-screen {
+    padding-bottom: env(safe-area-inset-bottom, 34px) !important;
+    box-sizing: border-box !important;
+}
+
+/* 3. 调整所有底部固定元素的位置 */
+.dock,
+.wx-tab-bar,
+.home-bar {
+    margin-bottom: env(safe-area-inset-bottom, 34px) !important;
+}
+
+/* 4. 为独立应用模式添加特殊处理 */
+@media (display-mode: standalone) {
+    body::after {
+        height: env(safe-area-inset-bottom, 34px) !important;
+    }
+}
