@@ -1070,3 +1070,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     box-sizing: border-box !important; /* 边框算在宽度内 */
 }
 
+/* iOS安全区域修复 - 三行搞定 */
+.phone-screen { padding-bottom: env(safe-area-inset-bottom); min-height: -webkit-fill-available; }
+.dock, .home-bar, .wx-tab-bar { bottom: env(safe-area-inset-bottom, 15px) !important; }
+@supports (-webkit-touch-callout: none) { body { background: #f2f2f7; } }
