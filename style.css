@@ -17,23 +17,43 @@
     /* 汽水音乐主题色 */
     --soda-yellow: #fce76d;
     --soda-dark: #121212;
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
 html, body {
-    /* 她的代码核心：全是 100% */
-    width: 100%;
-    height: 100%; 
     margin: 0;
     padding: 0;
+    width: 100%;
+    height: 100%;
+    /* 关键：把背景色改成 APP 的灰色，这样就算漏了缝隙也是灰色的！ */
+    background-color: #f2f2f7; 
     
-    /* 锁死页面，防止回弹 */
-    position: fixed; 
+    position: fixed; /* 保持锁定，防止乱跳 */
     top: 0; left: 0;
     overflow: hidden;
-    
-    /* 兜底背景色，为了保险还是设成灰色 */
-    background-color: #f2f2f7; 
     z-index: 0;
+}
+
+.phone-container {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100vw;
+    
+    /* ★ 核心魔法：使用 dvh (动态视口高度) */
+    /* 这比 JS 算出来的更准，它会自动适应 Safari 的工具栏伸缩 */
+    height: 100dvh; 
+    
+    overflow: hidden;
+    background-color: #f2f2f7;
+    
+    /* ★ 重点：删掉 padding-bottom！ */
+    /* 让内容直接铺满到底部黑条区域，不要留空隙！ */
+    padding-bottom: 0; 
 }
 
 /* iOS风输入框样式 */
@@ -60,20 +80,12 @@ html, body {
     height: 100vh; 
     position: relative;
     overflow: hidden;
-    
-    /* 保持你的背景设置不变 */
     background-color: #f0f2f5; 
     background-image: 
         radial-gradient(var(--dot-color) 20%, transparent 20%), 
         radial-gradient(var(--dot-color) 20%, transparent 20%);
     background-position: 0 0, 15px 15px;
     background-size: 30px 30px;
-}
-
-/* 允许带有 scrollable 类的元素滚动 */
-.scrollable {
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch; /* 保持丝滑 */
 }
 
 /* ==========================================================================
@@ -139,16 +151,16 @@ html, body {
     align-items: center; margin-top: 10px;
 }
 .side-pills { display: flex; flex-direction: column; gap: 15px; align-items: center; }
-.pill { background: rgba(255,255,255,0.25); border-radius: 20px; padding: 8px 12px; font-size: 12px; color: #777; display: flex; align-items: center; justify-content: center; min-width: 80px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); backdrop-filter: blur(5px); cursor: pointer; }
+.pill { background: rgba(255,255,255,0.8); border-radius: 20px; padding: 8px 12px; font-size: 12px; color: #777; display: flex; align-items: center; justify-content: center; min-width: 80px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); backdrop-filter: blur(5px); cursor: pointer; }
 .center-avatar-area { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: -10px; min-width: 120px; }
-.avatar-circle { width: 80px; height: 80px; border-radius: 50%; background-color: var(--placeholder-bg); border: 3px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.15); position: relative; background-size: cover; background-position: center; cursor: pointer; }
+.avatar-circle { width: 80px; height: 80px; border-radius: 50%; background-color: var(--placeholder-bg); border: 3px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.35); position: relative; background-size: cover; background-position: center; cursor: pointer; }
 .avatar-circle::after { content: '★'; position: absolute; bottom: 0; right: 0; color: #999; font-size: 12px; background: #fff; border-radius: 50%; width: 16px; height: 16px; display: flex; justify-content: center; align-items: center; pointer-events: none; }
 .widget-text-sm { font-size: 10px; color: #999; text-align: center; cursor: pointer; }
 .widget-title { font-size: 12px; color: #555; margin-top: 5px; cursor: pointer; }
 
 /* 照片墙组件 */
 .photo-widget-area { height: 150px; position: relative; margin-top: 35px; display: flex; justify-content: center; }
-.polaroid { background: #fff; padding: 6px 6px 20px 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.15); position: absolute; width: 100px; height: 120px; display: flex; flex-direction: column; align-items: center; }
+.polaroid { background: #fff; padding: 6px 6px 20px 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.4); position: absolute; width: 100px; height: 120px; display: flex; flex-direction: column; align-items: center; }
 .polaroid-img { width: 100%; height: 100%; background-color: var(--placeholder-bg); border: 1px solid #f0f0f0; background-size: cover; background-position: center; cursor: pointer; }
 .p-left { transform: rotate(-6deg) translate(-90px, 10px); z-index: 1; }
 .p-center { transform: rotate(2deg) translate(0px, 0px); z-index: 2; }
@@ -167,21 +179,19 @@ html, body {
 .search-pill { margin: 10px auto 0; background: rgba(255,255,255,0.5); padding: 4px 12px; border-radius: 20px; display: flex; align-items: center; gap: 5px; font-size: 11px; color: #555; backdrop-filter: blur(10px); cursor: pointer; width: fit-content; }
 
 /* Dock 栏 */
-/* 顺便检查 Dock，确保它自己避让黑条 */
-.dock {
-    position: absolute;
-    /* 依然保留这个避让逻辑，否则会被黑条挡住 */
-    bottom: calc(15px + env(safe-area-inset-bottom));
+.dock { 
+    position: absolute; 
+    bottom: calc(4px + env(safe-area-inset-bottom)); 
     left: 15px; right: 15px;
-    height: 96px;
-    
-    /* 你的其他样式 */
-    background: rgba(208, 208, 208, 0.8);
+    height: 100px;
+    background: var(--dock-bg);
     backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-    border-radius: 32px;
+    border-radius: 38px;
     display: flex; justify-content: space-around; align-items: center;
-    z-index: 50;
+    padding: 0 10px;
+    z-index: 50; 
 }
+
 /* ==========================================================================
    5. APP WINDOWS & SUBPAGES (通用APP窗口与子页面)
    ========================================================================== */
@@ -1070,7 +1080,43 @@ input:checked + .slider:before { transform: translateX(20px); }
     box-sizing: border-box !important; /* 边框算在宽度内 */
 }
 
-/* iOS安全区域修复 - 三行搞定 */
-.phone-screen { padding-bottom: env(safe-area-inset-bottom); min-height: -webkit-fill-available; }
-.dock, .home-bar, .wx-tab-bar { bottom: env(safe-area-inset-bottom, 15px) !important; }
-@supports (-webkit-touch-callout: none) { body { background: #f2f2f7; } }
+/* ===========================================
+   13.iOS全屏修复补丁
+   =========================================== */
+
+/* 关键：使用dvh，并为iOS Safari提供fallback */
+.phone-container {
+    height: 100dvh;
+}
+
+@supports (-webkit-touch-callout: none) {
+    .phone-container {
+        height: -webkit-fill-available;
+        min-height: 100dvh;
+    }
+    
+    /* 确保背景色延伸到安全区域 */
+    body::before {
+        content: '';
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: env(safe-area-inset-bottom, 0px);
+        background: #f2f2f7;
+        z-index: -1;
+    }
+}
+
+/* 调整所有固定底部元素的位置 */
+.dock,
+.wx-tab-bar,
+.home-bar,
+.chat-footer {
+    bottom: calc(var(--base-bottom, 15px) + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+/* 设置不同的基础值 */
+.dock { --base-bottom: 4px; }
+.wx-tab-bar { --base-bottom: 30px; }
+.chat-footer { --base-bottom: 0px; }
