@@ -1,26 +1,48 @@
-// 1禁止全局的默认拖动 (这是解决白边/回弹的终极方案)
-document.addEventListener('touchmove', function(e) {
-    // 检查当前触摸的目标是否在“允许滚动”的区域内
+// ==========================================================
+// [禁止橡皮筋效果] 终极方案
+// ==========================================================
+document.body.addEventListener('touchmove', function(e) {
+    // 检查是否在允许滚动的区域内
     let target = e.target;
     let isScrollable = false;
-    
-    // 向上查找，看点击的地方是不是在一个 .scrollable 容器里
+
+    // 向上遍历，寻找是否有 .scrollable 类
     while (target && target !== document.body) {
+        // 如果找到了 scrollable 类
         if (target.classList && target.classList.contains('scrollable')) {
-            // 如果是可滚动区域，且内容确实够长，允许滚动
-            if (target.scrollHeight > target.clientHeight) {
-                isScrollable = true;
+            const isAtTop = target.scrollTop <= 0;
+            const isAtBottom = target.scrollTop + target.clientHeight >= target.scrollHeight;
+            
+            // 如果在顶部还要往下拉，或者在底部还要往上拉 -> 禁止（防止扯动整个页面）
+            // 只有在中间滑动时，才允许
+            if ((isAtTop && e.deltaY > 0) || (isAtBottom && e.deltaY < 0)) {
+               // 这里其实可以稍微放宽一点，为了绝对防白边，我们严格一点：
+               // 只有内容确实比容器高，才标记为可滚动
+               if (target.scrollHeight > target.clientHeight) {
+                   isScrollable = true;
+               }
+            } else {
+               // 在中间滑动，允许
+               isScrollable = true;
             }
             break;
         }
         target = target.parentNode;
     }
 
-    // 如果不是可滚动区域，直接禁止！(这样就不会拉出白边了)
+    // 如果不在可滚动区域，或者触达边缘，直接杀掉事件
     if (!isScrollable) {
-        e.preventDefault(); 
+        e.preventDefault();
     }
 }, { passive: false });
+
+// 修复 iOS 15+ 底部地址栏导致的高度计算问题
+function fixHeight() {
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+}
+window.addEventListener('resize', fixHeight);
+fixHeight();
 
 // ==========================================================
 // [(≧∇≦)] 核心系统与记忆 (System Core)
