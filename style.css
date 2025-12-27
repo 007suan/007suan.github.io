@@ -1120,3 +1120,57 @@ input:checked + .slider:before { transform: translateX(20px); }
 .dock { --base-bottom: 4px; }
 .wx-tab-bar { --base-bottom: 30px; }
 .chat-footer { --base-bottom: 0px; }
+
+/* ===========================================
+   iOS底部白条修复
+   =========================================== */
+
+/* 1. 强制HTML和body填满 */
+html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    height: -webkit-fill-available !important;
+    overflow: hidden !important;
+    background-color: #f2f2f7 !important; /* 你的背景色 */
+}
+
+/* 2. 手机容器100%覆盖 */
+.phone-container {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    height: -webkit-fill-available !important;
+    background-color: #f2f2f7 !important;
+    z-index: 1;
+}
+
+/* 3. 关键：在安全区域上方创建一个纯色覆盖层 */
+.phone-container::after {
+    content: '';
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: env(safe-area-inset-bottom, 34px) !important; /* iPhone通常34px */
+    background-color: #f2f2f7 !important; /* 必须和你的背景色一样 */
+    z-index: 999999 !important;
+    pointer-events: none !important;
+}
+
+/* 4. 调整所有靠近底部的元素 */
+.dock {
+    bottom: calc(4px + env(safe-area-inset-bottom, 34px)) !important;
+    z-index: 99999 !important;
+}
+
+/* 5. 隐藏浏览器的工具栏 */
+@media (display-mode: standalone) {
+    body {
+        overscroll-behavior: none;
+    }
+}
