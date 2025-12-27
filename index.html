@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>ovo</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+
+    <meta name="apple-mobile-web-app-title" content="kiyoPhone">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="phone-screen" id="phoneScreen">
+
+        <!-- 状态栏 (全局通用) -->
+    <div class="status-bar" id="global_status_bar">
+        <div class="status-left">
+            <div class="time" id="clock">17:49</div>
+            <div class="status-star edit-text">★</div>
+        </div>
+
+        <div class="right-icons">
+            <img src="https://i.postimg.cc/T2CcDqps/wu-biao-ti110-20251213091108.png" class="status-icon icon-signal">
+            <img src="https://i.postimg.cc/2j2xZF1N/wu-biao-ti110-20251213091126.png" class="status-icon icon-wifi">
+            <img src="https://i.postimg.cc/RhsQx9kt/wu-biao-ti110-20251213091141.png" class="status-icon icon-battery">
+        </div>
+    </div>
+
+        <div class="desktop-content">
+            <div class="top-widget-area">
+                <div class="side-pills">
+                    <div class="pill edit-text" id="widget_top_l1">*｡☆梦游症🎧｡*</div>
+                    <div class="pill edit-text" id="widget_top_l2">|||||||||| 17:49</div>
+                </div>
+                
+                <div class="center-avatar-area">
+                    <div class="avatar-circle upload-img" id="widget_center_avatar"></div>
+                    <div class="widget-text-sm edit-text" id="widget_center_t1">☆*: .｡. .｡.:*☆</div>
+                    <div class="widget-text-sm edit-text" id="widget_center_t2" style="margin-top:2px">♥ Memories </div>
+                    <div class="widget-title edit-text" id="widget_center_title">Top Widgets⁺</div>
+                </div>
+
+                <div class="side-pills">
+                    <div class="pill edit-text" id="widget_top_r1">⋈ 158GB</div>
+                    <div class="pill edit-text" id="widget_top_r2">♡milkㄐ kitty 9*</div>
+                </div>
+            </div>
+
+            <div class="photo-widget-area">
+                <div class="star-decoration">★</div>
+                <div class="polaroid p-left">
+                    <div class="clip"></div>
+                    <div class="polaroid-img upload-img" id="photo_polaroid_left"></div>
+                </div>
+                <div class="polaroid p-center">
+                    <div class="clip" style="left: 40px;"></div>
+                    <div class="polaroid-img upload-img" id="photo_polaroid_center"></div>
+                </div>
+                <div class="polaroid p-right">
+                    <div style="position:absolute; top:-5px; right:30px; width:40px; height:12px; background:rgba(255,255,255,0.7); transform:rotate(5deg); box-shadow:0 1px 2px rgba(0,0,0,0.1);"></div>
+                    <div class="polaroid-img upload-img" id="photo_polaroid_right"></div>
+                </div>
+                <div class="widget-label-centered edit-text" id="photo_widget_label">Top Widgets⁺</div>
+            </div>
+
+            <div class="app-grid" id="desktopGrid">
+                <div class="app-item" id="app-wechat" onclick="openApp('wechat')">
+                    <div class="app-icon" id="icon_app_wechat" style="background-color: #07c160;"></div> 
+                    <div class="app-name edit-text" id="name_app_wechat">微信</div>
+                </div>
+                <div class="app-item">
+                    <div class="app-icon" id="icon_app_world"></div>
+                    <div class="app-name edit-text" id="name_app_world">世界书</div>
+                </div>
+                <div class="app-item" id="app-settings" onclick="openApp('settings')">
+                    <div class="app-icon" id="icon_app_settings" style="background-color: #8e8e93;"></div> 
+                    <div class="app-name edit-text" id="name_app_settings">设置</div>
+                </div>
+                <div class="app-item" id="app-music" onclick="openApp('music')">
+                    <div class="app-icon" id="icon_app_music" style="background-color: #fa233b;"></div> 
+                    <div class="app-name edit-text" id="name_app_music">音乐</div>
+                </div>
+
+                <div class="app-item">
+                    <div class="app-icon upload-img" id="icon_app_idle_1" style="background-color: #ffcc00;"></div> 
+                    <div class="app-name edit-text" id="name_app_idle_1">相册</div>
+                </div>
+                <div class="app-item">
+                    <div class="app-icon upload-img" id="icon_app_idle_2" style="background-color: #5ac8fa;"></div>
+                    <div class="app-name edit-text" id="name_app_idle_2">天气</div>
+                </div>
+                <div class="app-item">
+                    <div class="app-icon upload-img" id="icon_app_idle_3" style="background-color: #ff9500;"></div> 
+                    <div class="app-name edit-text" id="name_app_idle_3">备忘录</div>
+                </div>
+                <div class="app-item">
+                    <div class="app-icon upload-img" id="icon_app_idle_4" style="background-color: #af52de;"></div> 
+                    <div class="app-name edit-text" id="name_app_idle_4">播客</div>
+                </div>
+            </div>
+
+            <div class="search-pill edit-text" id="desktop_search_text">
+                <span style="font-size: 12px;">🔍搜索</span>
+            </div>
+        </div>
+
+        <div class="dock" id="dockGrid">
+            <div class="app-item" style="margin-bottom: 0;"><div class="app-icon" id="dock_icon_1"></div></div>
+            <div class="app-item" style="margin-bottom: 0;"><div class="app-icon" id="dock_icon_2"></div></div>
+            <div class="app-item" style="margin-bottom: 0;"><div class="app-icon" id="dock_icon_3"></div></div>
+            <div class="app-item" style="margin-bottom: 0;"><div class="app-icon" id="dock_icon_4"></div></div>
+        </div>
+
+<div id="app-window-wechat" class="app-window">
+    <div id="wx-main-view" style="position: relative; height: 100%;">
+        
+        <div class="wx-header" style="background: #f7f7f9;">
+            <div class="wx-header-top">
+                <div class="wx-h-left" onclick="openWxProfile()">
+                    <div class="wx-small-avatar profile-avatar sync-avatar" id="wx_small_avatar_top"></div>
+                </div>
+
+                <div class="wx-blink-tabs">
+                    <div class="blink-tab active" onclick="switchChatSubTab('chat', this)">Chat</div>
+                    <div class="blink-tab" onclick="switchChatSubTab('group', this)">Group</div>
+                    <div class="blink-tab" onclick="switchChatSubTab('me', this)">Me</div>
+                </div>
+
+                <div class="wx-h-action-box" style="position: relative; margin-left: 10px;">
+                    <div onclick="toggleHeaderMenu()">
+                        <svg viewBox="0 0 24 24" width="26" height="26" fill="#333" stroke="none">
+                           <path d="M12,2 C12.8,2 13.5,2.5 13.8,3.2 L15.6,7.5 L20.2,7.9 C21,8 21.6,8.6 21.6,9.4 C21.6,9.8 21.4,10.2 21.1,10.5 L17.6,13.6 L18.6,18.1 C18.8,18.9 18.2,19.7 17.4,19.9 C17,20 16.6,19.9 16.3,19.7 L12,17.2 L7.7,19.7 C7,20.1 6.1,19.9 5.7,19.2 C5.5,18.8 5.4,18.4 5.5,18 L6.4,13.6 L2.9,10.5 C2.3,10 2.2,9.1 2.7,8.5 C2.9,8.2 3.3,8 3.7,7.9 L8.4,7.5 L10.2,3.2 C10.5,2.5 11.2,2 12,2 Z" style="stroke-linejoin: round; stroke-width: 2;"/>
+                        </svg>
+                    </div>
+                    <div id="wx-header-menu" class="wx-dropdown-menu">
+                        <div class="wx-dd-item" onclick="alert('即将推出：发起群聊')">
+                            <svg viewBox="0 0 24 24"><path d="M21 6h-2v9H6v2c0 .55.45 1 1 1h11l4 4V7c0-.55-.45-1-1-1zm-4 6V3c0-.55-.45-1-1-1H3c-.55 0-1 .45-1 1v14l4-4h10c.55 0 1-.45 1-1z"/></svg>
+                            <span>发起群聊</span>
+                        </div>
+                        <div class="wx-dd-divider"></div>
+                        <div class="wx-dd-item" onclick="startAddChatFlow()">
+                            <svg viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                            <span>添加聊天</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="wx-search-wrapper" style="margin-top: 10px;">
+                <div class="wx-search-bar" style="background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.03);">
+                    <svg class="wx-search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    <span>Search...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="wx-content-area" style="background: #f7f7f9;">
+            <div id="wx-page-chat" class="wx-scroll-view" style="display:block; padding: 0px 16px;">
+                <div id="chat-sub-view-chat" style="display:block;"></div>
+                <div id="chat-sub-view-group" style="display:none; text-align:center; margin-top: 20px; color:#ccc; font-size: 14px;">
+                    <p>暂无群聊 (Group)</p>
+                </div>
+                <div id="chat-sub-view-me" style="display:none; text-align:center; margin-top: 20px; color:#ccc; font-size: 14px;">
+                    <p>我的面具 (Persona)</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="wx-page-contacts" class="wx-scroll-view" style="display:none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 5; flex-direction: column;">
+            
+            <div class="im-header">
+                <div class="im-header-top">
+                    <div style="width: 30px;"></div> 
+                    <span class="im-header-title">Contacts</span>
+                    <div class="im-add-btn" onclick="openCreatorModeChoice()">
+                        <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    </div>
+                </div>
+                
+                <div class="im-search-box">
+                    <div class="im-search-inner">
+                        <svg class="im-search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        <input type="text" placeholder="search for" class="im-search-input">
+                    </div>
+                </div>
+
+                <div class="im-filter-row">
+                    <div class="im-filter-item active" id="tab-contacts-all" onclick="switchContactTab('all')">char</div>
+                    <div class="im-filter-item" id="tab-contacts-me" onclick="switchContactTab('me')">★ ME</div>
+                    <div class="im-filter-item">^^</div>
+                    <div class="im-filter-item">Service</div>
+                    <div class="im-filter-item">♥</div>
+                </div>
+                
+                <div class="im-login-tip">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="#999"><path d="M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7v2H8v2h8v-2h-2v-2h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H3V4h18v12z"/></svg>
+                    Logged in to Weixin for Windows...
+                </div>
+            </div>
+
+            <div id="contact-list-container" class="im-list-container scrollable"></div>
+        </div>
+
+        <div id="wx-page-moments" style="display:none; padding-top: 80px; text-align: center;">
+            <div style="font-size: 80px; color: #ddd; margin-bottom: 20px;">(T_T)</div>
+            <div style="color: #999; font-size: 14px;">
+                Paper Plane<br>
+                <span style="font-size: 12px; color: #ccc;">No new moments...</span>
+            </div>
+        </div>
+
+        <div class="wx-tab-bar" style="z-index: 999;">
+            <div class="wx-tab-item active" onclick="switchWxTab('chat', this)">
+                <div class="wx-tab-icon"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div>
+            </div>
+            <div class="wx-tab-item" onclick="switchWxTab('contacts', this)">
+                <div class="wx-tab-icon"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
+            </div>
+            <div class="wx-tab-item" onclick="switchWxTab('moments', this)">
+                <div class="wx-tab-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M4 8l11.5 4L4 16v3.93L23 12 4 2.07V8zm0 2.83L15.17 12 4 13.17v-2.34z"/>
+                    </svg>
+                </div>
+            </div>
+
+    </div>
+
+    </div> <div id="wx-profile-view">
+        <div class="wx-profile-cover upload-img" id="wx_profile_cover_bg"></div>
+
+        <div class="wx-p3-nav">
+            <div class="wx-p2-back" onclick="closeWxProfile()" style="top: 0; left: 0; position: relative; margin: 0; color: #fff; mix-blend-mode: difference;">
+                <svg viewBox="0 0 24 24" style="fill: currentColor;"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+            </div>
+        </div>
+
+        <div class="wx-p3-container">
+            <div class="wx-p3-header-area">
+                <div class="wx-p3-bubble"><span class="edit-text">你的存在 即之我所爱 = > u < =</span></div>
+                <div class="wx-p3-bubble-right"><span class="edit-text">杏树杏树 今天幸不幸福。</span></div>
+                <div class="wx-small-avatar-right upload-img" id="wx_p3_right_avatar"></div>
+                <div class="wx-big-avatar-new upload-img sync-avatar" id="wx_p2_big_avatar"></div>
+            </div>
+
+            <div class="wx-p3-info-block">
+                <div class="wx-p3-name edit-text sync-name" id="wx_p2_name">昵称</div>
+                <div class="wx-p3-id edit-text">成分复杂、</div>
+                <div class="wx-p3-desc edit-text">你好像过的很好，<br>迫不及待地抹去我的存在。</div>
+            </div>
+
+            <div class="wx-p3-tags">
+                <div class="wx-p3-tag edit-text">让过去过去，让将来将来</div>
+                <div class="wx-p3-tag edit-text">淡淡的就会顺顺的。</div>
+                <div class="wx-p3-tag grey edit-text">誓言是一场有时差的雨</div>
+            </div>
+            
+            <div class="wx-p3-footer edit-text">有你不是很坏。</div>
+        </div>
+    </div>
+    
+    <div id="wx-sub-add-contact" class="sub-page">
+        <div class="sub-header" style="background:#fff;">
+            <div class="back-btn" onclick="closeSubPage('wx-sub-add-contact')">‹ Cancel</div>
+            New Friend
+            <div style="margin-left:auto; padding-right:16px; color:#007aff; font-weight:600; font-size:16px;" onclick="saveNewContact()">Done</div>
+        </div>
+        <div class="sub-content" style="background:#f2f2f7;">
+            <div style="display:flex; justify-content:center; margin:20px 0;">
+                <div id="new-contact-avatar" class="upload-img" style="width:80px; height:80px; border-radius:50%; background:#ddd; display:flex; justify-content:center; align-items:center; color:#999; font-size:12px; text-align:center;">Upload<br>Avatar</div>
+            </div>
+            <div class="ios-form-group">
+                <div class="ios-input-row">
+                    <input type="text" id="new-contact-name" placeholder="Name">
+                </div>
+                <div class="ios-input-row">
+                    <input type="text" id="new-contact-desc" placeholder="Bio / Status">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="home-bar" onclick="closeAllApps()"></div>
+
+</div>
+    
+    <div class="home-bar" onclick="closeAllApps()"></div>
+</div>
+
+<div id="app-window-music" class="app-window">
+            <div class="music-ui">
+                <div class="soda-bg-blur"></div>
+                
+                <div class="soda-top-bar">
+                    <div class="soda-tab" onclick="closeAllApps()">关注</div>
+                    <div class="soda-tab active">推荐</div>
+                </div>
+
+                <div class="soda-main-content">
+                    <div class="soda-album-cover"></div>
+                    
+                    <div class="soda-side-actions">
+                        <div class="s-action-item">
+                            <svg class="s-action-icon" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                            <span class="s-action-text">1.2w</span>
+                        </div>
+                        <div class="s-action-item">
+                            <svg class="s-action-icon" viewBox="0 0 24 24"><path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18z"/></svg>
+                            <span class="s-action-text">302</span>
+                        </div>
+                        <div class="s-action-item">
+                            <svg class="s-action-icon" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+                            <span class="s-action-text">分享</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="soda-bottom-area">
+                    <div class="soda-info">
+                        <div class="soda-title edit-text" id="music_title">Intro - Soda Style</div>
+                        <div class="soda-artist edit-text" id="music_artist">
+                            <span class="soda-tag">原声</span>
+                            Unknown Artist
+                        </div>
+                    </div>
+
+                    <div class="soda-progress-container">
+                        <div class="soda-progress-bg">
+                            <div class="soda-progress-fill">
+                                <div class="soda-progress-thumb"></div>
+                            </div>
+                        </div>
+                        <span>03:45</span>
+                    </div>
+
+                    <div class="soda-controls">
+                        <svg class="sc-btn" viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+                        
+                        <svg class="sc-btn" viewBox="0 0 24 24" style="width:32px; height:32px;"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+                        
+                        <div class="sc-play-btn" id="soda-play-btn" onclick="toggleMusic()">
+                            <svg class="sc-play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            <svg class="sc-pause-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                        </div>
+                        
+                        <svg class="sc-btn" viewBox="0 0 24 24" style="width:32px; height:32px;"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                        
+                        <svg class="sc-btn" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+<div id="app-window-settings" class="app-window">
+            <div class="settings-ui">
+                <div class="settings-header-area">
+                    <div class="settings-big-title">设置</div>
+                    <div class="settings-search-bar">
+                        <svg class="s-search-icon" viewBox="0 0 24 24">
+                           <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                        </svg>
+                        <span class="s-search-placeholder">搜索</span>
+                        <svg class="s-mic-icon" viewBox="0 0 24 24">
+                            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                        </svg>
+                    </div>
+                </div>
+                
+                <div class="settings-list scrollable">
+                    <div class="s-group" style="margin-top: 0;">
+                        <div class="s-item profile-item">
+                            <div class="s-left">
+                                
+<div class="profile-avatar sync-avatar" id="setting_profile_icon"></div> 
+                                <div class="profile-info">
+
+<div class="profile-name edit-text sync-name" id="setting_profile_name">(T_T)</div>
+                                                                        <div class="profile-desc">Apple ID、iCloud、媒体与购买项目</div>
+                                </div>
+                            </div>
+                            <span class="s-arrow">›</span>
+                        </div>
+                    </div>
+
+                    <div class="s-group">
+                        <div class="s-item">
+                            <div class="s-left">
+                                <img src="https://i.postimg.cc/hPCjh3Vt/IMG-5837.jpg" class="ios-icon-img">
+                                <span>飞行模式</span>
+                            </div>
+                            <label class="ios-switch">
+                                <input type="checkbox" id="switch_airplane">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="s-item">
+                            <div class="s-left">
+                                <img src="https://i.postimg.cc/4N8dnFpN/IMG-5838.jpg" class="ios-icon-img">
+                                <span>无线局域网</span>
+                            </div>
+                            <div class="s-right">
+                                <span class="s-status edit-text" id="setting_status_wifi">未连接</span>
+                                <span class="s-arrow">›</span>
+                            </div>
+                        </div>
+
+                        <div class="s-item">
+                            <div class="s-left">
+                                <img src="https://i.postimg.cc/L6yXh0j9/IMG-5839.jpg" class="ios-icon-img">
+                                <span>蓝牙</span>
+                            </div>
+                            <div class="s-right">
+                                <span class="s-status edit-text" id="setting_status_bt">打开</span>
+                                <span class="s-arrow">›</span>
+                            </div>
+                        </div>
+
+                        <div class="s-item">
+                            <div class="s-left">
+                                <img src="https://i.postimg.cc/bN6JdF1q/IMG-5840.jpg" class="ios-icon-img">
+                                <span>蜂窝网络</span>
+                            </div>
+                            <div class="s-right">
+                                <span class="s-arrow">›</span>
+                            </div>
+                        </div>
+
+                        <div class="s-item">
+                            <div class="s-left">
+                                <img src="https://i.postimg.cc/8Py5snLN/IMG-5841.jpg" class="ios-icon-img">
+                                <span>个人热点</span>
+                            </div>
+                            <div class="s-right">
+                                <span class="s-status edit-text" id="setting_status_hotspot">关闭</span>
+                                <span class="s-arrow">›</span>
+                            </div>
+                        </div>
+                        
+                        <div class="s-item">
+                            <div class="s-left">
+                                <img src="https://i.postimg.cc/sDnX105z/IMG-5842.jpg" class="ios-icon-img">
+                                <span>电池</span>
+                            </div>
+                            <div class="s-right">
+                                <span class="s-arrow">›</span>
+                            </div>
+                        </div>
+
+                        <div class="s-item">
+                            <div class="s-left">
+                                <img src="https://i.postimg.cc/HsSxjPbg/IMG-5843.jpg" class="ios-icon-img">
+                                <span>VPN</span>
+                            </div>
+                             <label class="ios-switch">
+                                <input type="checkbox" checked id="switch_vpn">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="s-group">
+<div class="s-item" onclick="openSubPage('sub-general')"> <div class="s-left">
+        <div class="ios-icon-bg bg-blue">
+            <svg class="ios-icon-svg" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
+        </div>
+        <span>通用</span> 
+    </div>
+    <span class="s-arrow">›</span>
+</div>
+                        <div class="s-item" onclick="openSubPage('sub-wallpaper')">
+                            <div class="s-left">
+                                <div class="ios-icon-bg bg-teal">
+                                    <svg class="ios-icon-svg" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                                </div>
+                                <span>墙纸</span>
+                            </div>
+                            <span class="s-arrow">›</span>
+                        </div>
+                        <div class="s-item" onclick="openSubPage('sub-font')">
+                            <div class="s-left">
+                                <div class="ios-icon-bg bg-gray">
+                                    <svg class="ios-icon-svg" viewBox="0 0 24 24"><path d="M9 4v3h5v12h3V7h5V4H9zm-6 8h3v7h3v-7h3V9H3v3z"/></svg>
+                                </div>
+                                <span>显示与亮度</span> 
+                            </div>
+                            <span class="s-arrow">›</span>
+                        </div>
+                        <div class="s-item" onclick="openSubPage('sub-icon')">
+                            <div class="s-left">
+                                <div class="ios-icon-bg bg-orange">
+                                    <svg class="ios-icon-svg" viewBox="0 0 24 24"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/></svg>
+                                </div>
+                                <span>桌面美化</span> 
+                            </div>
+                            <span class="s-arrow">›</span>
+                        </div>
+                    </div> <div  class="s-group">
+                        <div class="s-item">
+                            <div class="s-left">
+                                <div class="ios-icon-bg" style="background-color: #32ade6;">
+                                    <svg class="ios-icon-svg" viewBox="0 0 24 24"><path d="M21 4H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H3V6h18v12zM5 7h14v2H5V7z"/></svg>
+                                </div>
+                                <span>状态栏</span>
+                            </div>
+                            <label class="ios-switch">
+                                <input type="checkbox" id="switch_statusbar" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="s-item">
+                            <div class="s-left">
+                                <div class="ios-icon-bg" style="background-color: #333;">
+                                    <svg class="ios-icon-svg" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>
+                                </div>
+                                <span>底部触控条</span>
+                            </div>
+                            <label class="ios-switch">
+                                <input type="checkbox" id="switch_homebar" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>                                
+
+<div id="sub-icon" class="sub-page">
+                <div class="sub-header">
+                    <div class="back-btn" onclick="closeSubPage('sub-icon')">‹</div>
+                    桌面美化
+                </div>
+                <div class="sub-content">
+                   <div style="font-size: 13px; color: #666; margin-bottom: 15px;">点击下方图标即可修改对应的 App 图标：</div>
+                   <div id="icon-setting-grid" style="display: flex; flex-wrap: wrap; justify-content: space-between;"></div>
+                </div>
+            </div>
+
+            <div id="sub-general" class="sub-page">
+                <div class="sub-header">
+                    <div class="back-btn" onclick="closeSubPage('sub-general')">‹</div>
+                    通用
+                </div>
+                <div class="sub-content">
+                    <div class="s-group" style="margin-top: 10px;">
+                        <div class="s-item" onclick="openSubPage('sub-api-config')">
+                            <div class="s-left"><span>API Settings</span></div>
+                            <div class="s-right">
+                                <span class="s-status edit-text" id="api_status_text" style="font-size:14px;">未配置</span>
+                                <span class="s-arrow">›</span>
+                            </div>
+                        </div>
+                        <div class="s-item" onclick="alert('世界书功能正在构建中...📖')">
+                            <div class="s-left"><span>世界书 (Worldbook)</span></div>
+                            <span class="s-arrow">›</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+<div id="sub-api-config" class="sub-page">
+    <div class="sub-header">
+        <div class="back-btn scrollable" onclick="closeSubPage('sub-api-config')">‹ 设置</div>
+        API配置
+        <div style="font-size: 12px; color: #ccc; margin-top: 4px;">  ♪( ´▽｀)</div>
+    </div>
+    
+    <div class="sub-content" style="padding-top: 10px; background: #fff;">
+        
+        <div style="font-size: 10px; color: #999; margin: 0 16px 5px;">连接模式</div>
+        <div style="display: flex; align-items: center; margin: 0 16px 20px;">
+            <div class="api-mode-group" style="flex: 1; margin: 0;">
+                <div class="api-mode-btn active" id="btn-mode-direct" onclick="switchApiMode('direct', false)">官方直连</div>
+                <div class="api-mode-btn" id="btn-mode-proxy" onclick="switchApiMode('proxy', false)">反向代理</div>
+            </div>
+            <div onclick="saveApiConfig(false)" style="width: 40px; height: 36px; background: #333; border-radius: 8px; margin-left: 10px; display: flex; justify-content: center; align-items: center; cursor: pointer;">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="#fff"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+            </div>
+        </div>
+
+        <div class="ios-form-group" style="margin-bottom: 25px; background: #f9f9f9; padding: 10px; border: 1px dashed #ddd;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="font-weight: 600; color: #333; width: 40px;">预设</label>
+                <select id="api-preset-select" onchange="loadSelectedPreset()" style="flex: 1; height: 30px; border-radius: 6px; border: 1px solid #ddd; background: #fff; padding: 0 5px; outline: none;">
+                    <option value="">-- 选择预设 --</option>
+                </select>
+                <div onclick="showSavePresetAlert()" style="width: 30px; height: 30px; background: #666; border-radius: 6px; display: flex; justify-content: center; align-items: center; cursor: pointer;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="#fff"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                </div>
+                <div onclick="showDeletePresetAlert()" style="width: 30px; height: 30px; background: #666; border-radius: 6px; display: flex; justify-content: center; align-items: center; cursor: pointer;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="#fff"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="api-decorative-header">主API设置 <span>*✩‧₊♬•*¨*•.¸¸♪✧♫•*¨*•.¸¸♪</span></div>
+        <div class="ios-form-group" style="background: #f2f2f7;">
+            <div class="ios-input-row">
+                <label>API地址</label>
+                <input type="text" id="api-main-host" placeholder="https://..." style="text-align: right;">
+            </div>
+            <div class="ios-input-row">
+                <label>Key</label>
+                <input type="password" id="api-main-key" placeholder="sk-..." style="text-align: right;">
+            </div>
+            <div class="ios-input-row">
+                <label>模型</label>
+                <select id="api-main-model" style="flex: 1; text-align: right; background: transparent; border: none; outline: none; appearance: none; color: #007aff; direction: rtl;">
+                    <option value="gpt-4o-mini">请选择你的模型...</option>
+                </select>
+            </div>
+        </div>
+        <div class="api-btn-row">
+            <div class="api-small-btn dark" onclick="fetchModels('main')">拉取模型</div>
+            <div class="api-small-btn red" onclick="clearApiSection('main')">全部清空</div>
+        </div>
+
+        <div class="api-decorative-header" style="margin-top: 25px;">副API设置 <span>*✩‧₊♬•*¨*•.¸¸♪✧♫•*¨*•.¸¸♪</span></div>
+        <div class="ios-form-group" style="background: #f2f2f7;">
+            <div class="ios-input-row">
+                <label>API地址</label>
+                <input type="text" id="api-sub-host" placeholder="备用地址..." style="text-align: right;">
+            </div>
+            <div class="ios-input-row">
+                <label>Key</label>
+                <input type="password" id="api-sub-key" placeholder="sk-..." style="text-align: right;">
+            </div>
+            <div class="ios-input-row">
+                <label>模型</label>
+                <select id="api-sub-model" style="flex: 1; text-align: right; background: transparent; border: none; outline: none; appearance: none; color: #007aff; direction: rtl;">
+                    <option value="gpt-3.5-turbo">请选择你的模型...</option>
+                </select>
+            </div>
+        </div>
+        <div class="api-btn-row">
+            <div class="api-small-btn dark" onclick="fetchModels('sub')">拉取模型</div>
+            <div class="api-small-btn red" onclick="clearApiSection('sub')">全部清空</div>
+        </div>
+
+        <div class="api-decorative-header" style="margin-top: 25px;">其他参数 <span>*✩‧₊♬•*¨*•.¸¸♪✧♫•*¨*•.¸¸♪</span></div>
+        <div class="ios-form-group" style="padding: 15px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <label style="font-weight: 600; color: #333;">温度 (Temperature)</label>
+                <span id="temp-display" style="color: #007aff; font-weight: bold;">1.0</span>
+            </div>
+            <input type="range" id="api-temp" min="0" max="2" step="0.1" value="1.0" class="api-range-slider" oninput="document.getElementById('temp-display').innerText = this.value">
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #999; margin-top: 4px;">
+                <span>0 (严谨)</span>
+                <span>2 (发疯)</span>
+            </div>
+        </div>
+
+        <div style="text-align: center; color: #ccc; font-size: 12px; margin: 30px 0 50px;">
+            —— END ——
+        </div>
+
+    </div>
+
+    <div id="preset-name-overlay" class="custom-alert-overlay" style="display: none;">
+        <div class="custom-alert-box">
+            <div class="alert-title">New Preset</div>
+            <div class="alert-msg">为你的预设取个名字吧！</div>
+            <input type="text" id="preset-name-input" placeholder="例如: 官方Key / 转发Key" style="width: 100%; border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 20px; text-align: center;">
+            <div class="alert-btn-group">
+                <div class="alert-btn cancel" onclick="document.getElementById('preset-name-overlay').style.display='none'">Cancel</div>
+                <div class="alert-btn confirm" onclick="confirmSavePreset()">Save</div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="preset-del-overlay" class="custom-alert-overlay" style="display: none;">
+        <div class="custom-alert-box">
+            <div class="alert-title" style="color: #ff3b30;">Delete?</div>
+            <div class="alert-msg">你确定要删除此预设吗！</div>
+            <div class="alert-btn-group">
+                <div class="alert-btn cancel" onclick="document.getElementById('preset-del-overlay').style.display='none'">No</div>
+                <div class="alert-btn confirm" style="background: #ff3b30;" onclick="confirmDeletePreset()">Yes</div>
+            </div>
+        </div>
+    </div>
+
+    </div> </div> </div> </div> <div id="sub-page-creator" class="exp-theme-root" style="display: none;">
+    
+<div class="exp-browser-top">
+    <div class="exp-tab-bar">
+        <div class="exp-tab active">
+            <span class="exp-icon">📄</span>
+            <span class="exp-tab-text">Expansion Notice</span>
+            <span class="exp-close" onclick="showExitAlert()">×</span>
+        </div>
+        <div class="exp-win-ctrls">
+            <span>─</span><span>□</span><span onclick="showExitAlert()">×</span>
+        </div>
+    </div>
+
+    <div class="exp-tool-bar">
+        <div class="exp-tool-left">
+            <span class="exp-grid-icon">⣿</span>
+            <span class="exp-label">LABEL</span>
+        </div>
+        
+<div class="exp-url-box">
+    <span class="exp-search-icon">🔍</span>
+    <input type="text" class="exp-search-input" value="- 你的泪流淌 像决堤湖泊。" placeholder="Type your mood...">
+</div>
+
+        <div class="exp-tool-right">
+            <span class="exp-btn save-btn" onclick="saveCharacter()">🔝</span> 
+            <span class="exp-btn delete-btn" onclick="showDeleteAlert()" style="font-size: 18px;">🔙</span>
+        </div>
+    </div>
+</div>
+
+    <div class="exp-content-scroll scrollable">
+        
+        <div class="exp-header-layout">
+            <div class="exp-avatar-area">
+                <div class="exp-avatar-circle upload-img" id="creator-avatar">
+                    <div class="exp-avatar-tip">Click<br>Upload</div>
+                </div>
+            </div>
+            
+            <div class="exp-info-area">
+                <div class="exp-info-title">INFORMATION ⌄</div>
+                <div class="exp-info-subtitle">The following is<br>About my basic information</div>
+                
+                <div class="exp-input-line">
+                    <span class="exp-prefix">: </span>
+                    <input type="text" id="creator-name" class="exp-input" placeholder="Name (昵称)">
+                    <span class="exp-suffix">♪</span>
+                </div>
+                
+                <div class="exp-input-line">
+                    <span class="exp-prefix"># </span>
+                    <input type="text" id="creator-tags" class="exp-input" placeholder="INFP | 属性 | 标签">
+                    <span class="exp-suffix">♪</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="exp-body-section">
+            <div class="exp-sec-header">
+                <span class="exp-sec-icon">≡</span>
+                <span class="exp-sec-title">ABOUT Me</span>
+                <div class="exp-pill-btn">★ 𝗪𝗶𝗻𝘁𝗲𝗿.</div>
+            </div>
+
+            <div class="exp-text-block">
+                <div class="exp-text-row">
+                    <span class="exp-bold">基础:</span>
+                    <input type="text" id="creator-realname" class="exp-inline-input" placeholder="名称 /  Name">
+                    <span class="exp-slash">/</span>
+                    <input type="text" id="creator-alias" class="exp-inline-input" placeholder="Alias / CN /昵称">
+                </div>
+
+                <div class="exp-text-row">
+                    <span class="exp-bold">其他:</span>
+                    <span class="exp-label-small">Height:</span>
+                    <input type="text" id="creator-height" class="exp-inline-input small" placeholder="178">
+                    <span class="exp-divider">|</span>
+                    <span class="exp-label-small">Age:</span>
+                    <input type="text" id="creator-age" class="exp-inline-input small" placeholder="18">
+                    <span class="exp-divider">|</span>
+                    <span class="exp-label-small">MBTI:</span>
+                    <input type="text" id="creator-mbti" class="exp-inline-input small" placeholder="INTJ">
+                </div>
+
+                <div class="exp-text-area-wrapper">
+                    <div class="exp-row-label">@设定 「背景故事」</div>
+                    <textarea id="creator-desc" class="exp-textarea" rows="3" oninput="autoResize(this)" placeholder="在这里输入背景故事、详细设定..."></textarea>
+                </div>
+                
+                <div class="exp-text-area-wrapper">
+                    <div class="exp-row-label">性格 | 爱好 | 细节</div>
+                    <textarea id="creator-persona" class="exp-textarea" rows="3" oninput="autoResize(this)" placeholder="在这里输入性格细节、说话语气、爱好..."></textarea>
+                </div>
+                 <div class="exp-text-row" style="margin-top: 5px;">
+                     <span class="exp-bold">其他:</span>
+                     <input type="text" id="creator-hobbies" class="exp-inline-input" placeholder="Hobbies / 爱好..." style="flex:1;">
+                </div>
+                
+                <input type="hidden" id="creator-bday">
+                <input type="hidden" id="creator-gender">
+                <input type="hidden" id="creator-note">
+
+                <div class="exp-footer-deco">
+                    漫画 | 听歌🎧 | 画画 | 发呆 |
+                </div>
+            </div>
+            
+             <div class="exp-sec-header" style="margin-top: 20px;">
+                <span class="exp-sec-icon">≡</span>
+                <span class="exp-sec-title">INTRODUCTION</span>
+            </div>
+            
+            <div class="exp-qr-area">
+                <div class="exp-qr-text">
+                    冷脸萌！！！我就这样喜欢一辈子！<br>
+                    <span style="font-size:10px; color:#999;">I want to talk...💬</span>
+                </div>
+
+        </div>
+          </div>
+
+        <div style="height: 100px;"></div>
+    </div>
+    
+    <div id="delete-alert-overlay" class="custom-alert-overlay" style="display: none;">
+        <div class="custom-alert-box">
+            <div class="alert-title" style="color: #ff3b30;">Warning!</div>
+            <div class="alert-msg">确定要删除此角色嘛？<br><span style="font-size: 12px; color: #999;">此操作不可恢复！</span></div>
+            <div class="alert-btn-group">
+                <div class="alert-btn cancel" onclick="closeDeleteAlert()">no</div>
+                <div class="alert-btn confirm" onclick="confirmDeleteAction()" style="background: #ff3b30;">yes</div>
+            </div>
+        </div>
+    </div>
+    <div id="custom-alert-overlay" class="custom-alert-overlay" style="display: none;">
+        <div class="custom-alert-box">
+            <div class="alert-title">Wait!</div>
+            <div class="alert-msg">还没保存呢(T_T)！<br>确定要退出嘛？</div>
+            <div class="alert-btn-group">
+                <div class="alert-btn cancel" onclick="closeExitAlert()">No</div>
+                <div class="alert-btn confirm" onclick="confirmExitAction()">Yes</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+  </div>
+
+<div id="sub-page-chat-detail" class="sub-page" style="z-index: 200; background: #f2f2f7;">
+    <div class="chat-header">
+        <div class="chat-back" onclick="closeChatDetail()">
+            <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+            <span id="chat-header-count" style="font-size:12px;">99</span>
+        </div>
+        <div class="chat-title-box">
+            <span id="chat-header-name">Chat Name</span>
+        </div>
+        <div class="chat-menu">
+            <svg viewBox="0 0 24 24" width="24" height="24"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+        </div>
+    </div>
+
+    <div id="chat-message-area" class="chat-body">
+        <div style="text-align:center; color:#ccc; margin-top:20px; font-size:12px;">- 聊天开始 -</div>
+    </div>
+
+    <div class="chat-footer">
+        <div class="chat-btn-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+        </div>
+        <div class="chat-input-box">
+            <input type="text" placeholder="iMessage" disabled style="background:transparent;">
+            <div style="margin-left:auto;">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="#999"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+            </div>
+        </div>
+    </div>
+</div>
+
+  </div>
+
+<div id="creator-mode-overlay" class="custom-alert-overlay" style="display: none;">
+    <div class="custom-alert-box">
+        <div class="alert-title">Start Where?</div>
+        <div class="alert-msg">你想先从哪里开始？</div>
+        <div class="alert-btn-group" style="flex-direction: column; gap: 10px;">
+            <div class="alert-btn confirm" onclick="startCreator('character')" style="width:100%; background:#007aff;">Character (角色)</div>
+            <div class="alert-btn confirm" onclick="startCreator('persona')" style="width:100%; background:#34c759;">Me (我/面具)</div>
+            <div class="alert-btn cancel" onclick="document.getElementById('creator-mode-overlay').style.display='none'" style="width:100%;">Cancel</div>
+        </div>
+    </div>
+</div>
+
+<div id="chat-flow-overlay" class="custom-alert-overlay" style="display: none; align-items: flex-end;">
+    <div class="selector-sheet">
+        <div class="sheet-header">
+            <span id="sheet-title">选择联系人</span>
+            <span onclick="closeChatFlow()" style="color:#007aff; font-weight:600; cursor:pointer;">取消</span>
+        </div>
+        <div id="sheet-list" class="sheet-content">
+            </div>
+    </div>
+</div>
+
+  </div>
+
+    <div id="system-alert-overlay" class="custom-alert-overlay" style="display: none;">
+        <div class="custom-alert-box">
+            <div class="alert-title">System Notice</div>
+            <div class="alert-msg" id="system-alert-msg" style="text-align: center;">Message...</div>
+            <div class="alert-btn-group">
+                <div class="alert-btn confirm" onclick="closeSystemAlert()" style="background: #333; color: #fff; width: 100%;">OK</div>
+            </div>
+        </div>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
