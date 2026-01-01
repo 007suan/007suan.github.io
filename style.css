@@ -34,11 +34,17 @@ input, textarea, [contenteditable="true"] {
     user-select: text;
 }
 
-html, body {
-    margin: 0; padding: 0;
+html {
+    -webkit-text-size-adjust: 100%;
     height: 100%; 
-    overflow: hidden; /* 禁止回弹 */
+}
+
+body {
+    margin: 0;
+    padding: 0;
     background-color: #f0f2f5; 
+    height: 100%; 
+    overflow: hidden; 
 }
 
 /* iOS风输入框样式 */
