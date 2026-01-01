@@ -90,34 +90,16 @@ body {
 /* ==========================================================================
    3. STATUS BAR & HOME BAR (状态栏与底部条)
    ========================================================================== */
-.status-bar {
-    height: 47px;
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 12px 26px 0 26px;
-    font-size: 15px; font-weight: 600; color: #000;
-    z-index: 1000;
-    position: absolute; top: 0; width: 100%;
-    pointer-events: none; /* 防止遮挡下方点击 */
-}
+.status-bar { height: 47px; display: flex; justify-content: space-between; align-items: center; padding: 12px 26px 0 26px; font-size: 15px; font-weight: 600; color: #000; z-index: 1000; position: absolute; top: 0; width: 100%; pointer-events: none; }
 .status-left { display: flex; align-items: center; gap: 4px; }
 .status-star { font-size: 12px; margin-top: 1px; pointer-events: auto; cursor: text; }
-.right-icons { display: flex; align-items: center; gap: 6px; pointer-events: none; }
+.right-icons { display: flex; align-items: center; gap: 6px; }
 .status-icon { height: 18px; width: auto; display: block; }
 .icon-battery { height: 26px; }
-
-.home-bar { 
-    position: absolute; bottom: 8px; left: 50%; 
-    transform: translateX(-50%); 
-    width: 130px; height: 5px; 
-    background-color: #000; border-radius: 3px; 
-    z-index: 1000; cursor: pointer; 
-}
-.home-bar.hidden-mode {
-    bottom: 10px; width: 200px; height: 30px; 
-    background-color: transparent !important; padding: 10px;
-}
+.home-bar { position: absolute;     bottom: 8px; left: 50%; transform: translateX(-50%); width: 130px; height: 5px; background-color: #000; border-radius: 3px; z-index: 1000; cursor: pointer; }
+/* 隐形大按钮模式 */
+.home-bar.hidden-mode { bottom: 10px; width: 200px; height: 30px; background-color: transparent !important; padding: 10px; }
 .home-bar:active { background-color: #555; }
-
 /* ==========================================================================
    4. DESKTOP WIDGETS (桌面组件)
    ========================================================================== */
