@@ -25,6 +25,707 @@ let apiConfig = {
     temperature: 1.0
 };
 
+
+// === 神秘头像框数据仓库 ===
+const AVATAR_FRAMES_DB = [
+  {
+    "id": "frame_1757929174727",
+    "url": "https://i.postimg.cc/jjTJY1qT/kuku1.gif",
+    "name": "头像框-1757929174727",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929175742",
+    "url": "https://i.postimg.cc/dVrTXFYn/kuku10.gif",
+    "name": "头像框-1757929175742",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929176161",
+    "url": "https://i.postimg.cc/431Hf1n9/kuku100.gif",
+    "name": "头像框-1757929176161",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929176437",
+    "url": "https://i.postimg.cc/tCLx2TLY/kuku101.gif",
+    "name": "头像框-1757929176437",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929177420",
+    "url": "https://i.postimg.cc/MTKMvjjr/kuku102.gif",
+    "name": "头像框-1757929177420",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929177831",
+    "url": "https://i.postimg.cc/SsTX8N6Q/kuku103.gif",
+    "name": "头像框-1757929177831",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929178357",
+    "url": "https://i.postimg.cc/Wzdd7L8G/kuku104.gif",
+    "name": "头像框-1757929178357",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929179270",
+    "url": "https://i.postimg.cc/C59zPPrW/kuku105.gif",
+    "name": "头像框-1757929179270",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929179671",
+    "url": "https://i.postimg.cc/SQP2xRQD/kuku106.gif",
+    "name": "头像框-1757929179671",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929180073",
+    "url": "https://i.postimg.cc/jdJWwTLK/kuku107.gif",
+    "name": "头像框-1757929180073",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929181008",
+    "url": "https://i.postimg.cc/mgfP7nH9/kuku108.gif",
+    "name": "头像框-1757929181008",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929181531",
+    "url": "https://i.postimg.cc/VNz5Vb4L/kuku109.gif",
+    "name": "头像框-1757929181531",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929181949",
+    "url": "https://i.postimg.cc/XvxXS7DK/kuku11.gif",
+    "name": "头像框-1757929181949",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929182945",
+    "url": "https://i.postimg.cc/8zRj4bR0/kuku110.gif",
+    "name": "头像框-1757929182945",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929183373",
+    "url": "https://i.postimg.cc/qRRqkV9P/kuku111.gif",
+    "name": "头像框-1757929183373",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929183837",
+    "url": "https://i.postimg.cc/0QBQjXvb/kuku112.gif",
+    "name": "头像框-1757929183837",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929184906",
+    "url": "https://i.postimg.cc/sxG2hPfK/kuku113.gif",
+    "name": "头像框-1757929184906",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929185620",
+    "url": "https://i.postimg.cc/6TspL7yK/kuku114.gif",
+    "name": "头像框-1757929185620",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929186046",
+    "url": "https://i.postimg.cc/ZYWPc1Cs/kuku115.gif",
+    "name": "头像框-1757929186046",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929187416",
+    "url": "https://i.postimg.cc/44j6FBcf/kuku116.gif",
+    "name": "头像框-1757929187416",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929188459",
+    "url": "https://i.postimg.cc/3JpXMmjg/kuku117.gif",
+    "name": "头像框-1757929188459",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929189118",
+    "url": "https://i.postimg.cc/dVY8J3ng/kuku118.gif",
+    "name": "头像框-1757929189118",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929190084",
+    "url": "https://i.postimg.cc/g2H3jpTj/kuku119.gif",
+    "name": "头像框-1757929190084",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929190558",
+    "url": "https://i.postimg.cc/Jh7ZBFfq/kuku12.gif",
+    "name": "头像框-1757929190558",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929191174",
+    "url": "https://i.postimg.cc/wBWJ5VHd/kuku120.gif",
+    "name": "头像框-1757929191174",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929192074",
+    "url": "https://i.postimg.cc/26VW0Z8L/kuku121.gif",
+    "name": "头像框-1757929192074",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929192537",
+    "url": "https://i.postimg.cc/HxRyRkVZ/kuku122.gif",
+    "name": "头像框-1757929192537",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929192966",
+    "url": "https://i.postimg.cc/C58qgp8F/kuku123.gif",
+    "name": "头像框-1757929192966",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929194176",
+    "url": "https://i.postimg.cc/2jLvvhKP/kuku124.gif",
+    "name": "头像框-1757929194176",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929194747",
+    "url": "https://i.postimg.cc/ZKkNL0k0/kuku125.gif",
+    "name": "头像框-1757929194747",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929195170",
+    "url": "https://i.postimg.cc/QxpTYssm/kuku126.gif",
+    "name": "头像框-1757929195170",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929196078",
+    "url": "https://i.postimg.cc/2SrBPJSD/kuku127.gif",
+    "name": "头像框-1757929196078",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929196677",
+    "url": "https://i.postimg.cc/Z5HyZcWy/kuku128.gif",
+    "name": "头像框-1757929196677",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929197125",
+    "url": "https://i.postimg.cc/cJJtJn3k/kuku129.gif",
+    "name": "头像框-1757929197125",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929198072",
+    "url": "https://i.postimg.cc/B6rjN7VR/kuku13.gif",
+    "name": "头像框-1757929198072",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929198487",
+    "url": "https://i.postimg.cc/sXQBYCwp/kuku130.gif",
+    "name": "头像框-1757929198487",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929198982",
+    "url": "https://i.postimg.cc/HLPc8k4Y/kuku131.gif",
+    "name": "头像框-1757929198982",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929199931",
+    "url": "https://i.postimg.cc/wMD7rcKM/kuku132.gif",
+    "name": "头像框-1757929199931",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929200369",
+    "url": "https://i.postimg.cc/BZFLts83/kuku133.gif",
+    "name": "头像框-1757929200369",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929200764",
+    "url": "https://i.postimg.cc/28fqZJvZ/kuku134.gif",
+    "name": "头像框-1757929200764",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929202182",
+    "url": "https://i.postimg.cc/pXYmYZY1/kuku135.gif",
+    "name": "头像框-1757929202182",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929202620",
+    "url": "https://i.postimg.cc/kgJBjbTM/kuku136.gif",
+    "name": "头像框-1757929202620",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929203063",
+    "url": "https://i.postimg.cc/wjw3njrX/kuku137.gif",
+    "name": "头像框-1757929203063",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929204068",
+    "url": "https://i.postimg.cc/FK11vQt2/kuku138.gif",
+    "name": "头像框-1757929204068",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929204563",
+    "url": "https://i.postimg.cc/zfMvXP83/kuku139.gif",
+    "name": "头像框-1757929204563",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929204959",
+    "url": "https://i.postimg.cc/SsMsX7xd/kuku14.gif",
+    "name": "头像框-1757929204959",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929205889",
+    "url": "https://i.postimg.cc/prMdKh9H/kuku140.gif",
+    "name": "头像框-1757929205889",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929206335",
+    "url": "https://i.postimg.cc/fTZLLdn7/kuku141.gif",
+    "name": "头像框-1757929206335",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929206736",
+    "url": "https://i.postimg.cc/J03zxrJB/kuku142.gif",
+    "name": "头像框-1757929206736",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929207702",
+    "url": "https://i.postimg.cc/y60xsP5Y/kuku143.gif",
+    "name": "头像框-1757929207702",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929208189",
+    "url": "https://i.postimg.cc/g222yP0n/kuku144.gif",
+    "name": "头像框-1757929208189",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929208596",
+    "url": "https://i.postimg.cc/bwVN3FGL/kuku145.gif",
+    "name": "头像框-1757929208596",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929209575",
+    "url": "https://i.postimg.cc/QxbMWMh2/kuku146.gif",
+    "name": "头像框-1757929209575",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929209972",
+    "url": "https://i.postimg.cc/rpdybCxT/kuku147.gif",
+    "name": "头像框-1757929209972",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929210443",
+    "url": "https://i.postimg.cc/25Pjfb7Z/kuku148.gif",
+    "name": "头像框-1757929210443",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929211371",
+    "url": "https://i.postimg.cc/4dVf4fWF/kuku149.gif",
+    "name": "头像框-1757929211371",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929211794",
+    "url": "https://i.postimg.cc/rs9qWhX1/kuku15.gif",
+    "name": "头像框-1757929211794",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929212199",
+    "url": "https://i.postimg.cc/3NhKds6r/kuku150.gif",
+    "name": "头像框-1757929212199",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929213250",
+    "url": "https://i.postimg.cc/HspYHCXB/kuku151.gif",
+    "name": "头像框-1757929213250",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929214020",
+    "url": "https://i.postimg.cc/YqbpCyxk/kuku152.gif",
+    "name": "头像框-1757929214020",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929214536",
+    "url": "https://i.postimg.cc/L85mYByP/kuku153.gif",
+    "name": "头像框-1757929214536",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929215468",
+    "url": "https://i.postimg.cc/kgHqx6Zp/kuku154.gif",
+    "name": "头像框-1757929215468",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929215874",
+    "url": "https://i.postimg.cc/nLQZTVfc/kuku155.gif",
+    "name": "头像框-1757929215874",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929216335",
+    "url": "https://i.postimg.cc/C1T02ywC/kuku156.gif",
+    "name": "头像框-1757929216335",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929217336",
+    "url": "https://i.postimg.cc/Kjm2ZnkR/kuku157.gif",
+    "name": "头像框-1757929217336",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929217733",
+    "url": "https://i.postimg.cc/xCvQDsdw/kuku158.gif",
+    "name": "头像框-1757929217733",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929218206",
+    "url": "https://i.postimg.cc/fy5hkJm5/kuku159.gif",
+    "name": "头像框-1757929218206",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929219163",
+    "url": "https://i.postimg.cc/TYY6FJvs/kuku16.gif",
+    "name": "头像框-1757929219163",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929219663",
+    "url": "https://i.postimg.cc/RCTmgbyf/kuku160.gif",
+    "name": "头像框-1757929219663",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929220118",
+    "url": "https://i.postimg.cc/TY7665R3/kuku161.gif",
+    "name": "头像框-1757929220118",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929221269",
+    "url": "https://i.postimg.cc/138Z5Rtc/kuku162.gif",
+    "name": "头像框-1757929221269",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929221885",
+    "url": "https://i.postimg.cc/Z5Xz9kvk/kuku163.gif",
+    "name": "头像框-1757929221885",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929222348",
+    "url": "https://i.postimg.cc/43tkV8pY/kuku164.gif",
+    "name": "头像框-1757929222348",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929223528",
+    "url": "https://i.postimg.cc/Y9f5yhnk/kuku165.gif",
+    "name": "头像框-1757929223528",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929223968",
+    "url": "https://i.postimg.cc/prWwNR4j/kuku166.gif",
+    "name": "头像框-1757929223968",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929224442",
+    "url": "https://i.postimg.cc/V68yRjFD/kuku167.gif",
+    "name": "头像框-1757929224442",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929225447",
+    "url": "https://i.postimg.cc/mkm0BKW5/kuku168.gif",
+    "name": "头像框-1757929225447",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929225865",
+    "url": "https://i.postimg.cc/v8XRrxxt/kuku169.gif",
+    "name": "头像框-1757929225865",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929226278",
+    "url": "https://i.postimg.cc/zXP9MmjL/kuku17.gif",
+    "name": "头像框-1757929226278",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929227620",
+    "url": "https://i.postimg.cc/cLgVGD9F/kuku170.gif",
+    "name": "头像框-1757929227620",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929228039",
+    "url": "https://i.postimg.cc/YqS5b21K/kuku171.gif",
+    "name": "头像框-1757929228039",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929228459",
+    "url": "https://i.postimg.cc/fRG1zx1D/kuku172.gif",
+    "name": "头像框-1757929228459",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929229391",
+    "url": "https://i.postimg.cc/HLbRVrC5/kuku173.gif",
+    "name": "头像框-1757929229391",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929229945",
+    "url": "https://i.postimg.cc/G2rNYbcf/kuku174.gif",
+    "name": "头像框-1757929229945",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929230376",
+    "url": "https://i.postimg.cc/B6gzBRbn/kuku175.gif",
+    "name": "头像框-1757929230376",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929231804",
+    "url": "https://i.postimg.cc/D0wMj54d/kuku176.gif",
+    "name": "头像框-1757929231804",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  {
+    "id": "frame_1757929232559",
+    "url": "https://i.postimg.cc/sxH0tSpF/kuku177.gif",
+    "name": "头像框-1757929232559",
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  }
+];
+
 // ==========================================================
 // [1] 系统初始化 (System Init)
 // ==========================================================
@@ -108,7 +809,7 @@ function saveMemory() {
     });
 
     // 存图片
-    const imgSelectors = '.upload-img, .app-icon, .profile-avatar, .polaroid-img, .wx-big-avatar, .wx-small-avatar, .wx-p2-header-bg, .wx-big-avatar-new, .sync-avatar';
+const imgSelectors = '.upload-img, .app-icon, .profile-avatar, .polaroid-img, .wx-big-avatar, .wx-small-avatar, .wx-p2-header-bg, .wx-big-avatar-new, .sync-avatar, .chl-frame';
     document.querySelectorAll(imgSelectors).forEach((el, index) => {
         const bg = el.style.backgroundImage;
         if (bg && bg !== 'initial' && bg !== '' && bg !== 'none') {
@@ -126,6 +827,9 @@ function saveMemory() {
 
 // 恢复界面状态
 function loadMemory() {
+    // ★★★ 修复重点：把这行定义加回来！之前就是缺了它导致报错的！ ★★★
+    const imgSelectors = '.upload-img, .app-icon, .profile-avatar, .polaroid-img, .wx-big-avatar, .wx-small-avatar, .wx-p2-header-bg, .wx-big-avatar-new, .sync-avatar, .chl-frame';
+
     localforage.getItem(MEMORY_KEY).then(data => {
         if (!data) return;
 
@@ -138,26 +842,32 @@ function loadMemory() {
         }
 
         // 恢复图片
-        if (data.images) {
-            const imgSelectors = '.upload-img, .app-icon, .profile-avatar, .polaroid-img, .wx-big-avatar, .wx-small-avatar, .wx-p2-header-bg, .wx-big-avatar-new, .sync-avatar';
-            document.querySelectorAll(imgSelectors).forEach((el, index) => {
-                const key = getUniqueKey(el, index, 'img');
-                if (data.images[key]) {
-                    el.style.backgroundImage = data.images[key];
-                    el.style.backgroundColor = 'transparent'; 
+        document.querySelectorAll(imgSelectors).forEach((el, index) => {
+            const key = getUniqueKey(el, index, 'img');
+            if (data.images[key]) {
+                el.style.backgroundImage = data.images[key];
+                el.style.backgroundColor = 'transparent'; 
+                
+                // ★★★ 重点：区分对待头像框！ ★★★
+                if (el.classList.contains('chl-frame')) {
+                    el.style.backgroundSize = 'contain';
+                    el.style.backgroundRepeat = 'no-repeat';
+                } else {
                     el.style.backgroundSize = 'cover';
-                    el.style.backgroundPosition = 'center';
                 }
-            });
-            // 同步头像逻辑
-            const masterAvatar = document.getElementById('wx_p2_big_avatar');
-            if (masterAvatar && masterAvatar.style.backgroundImage) {
-                const masterBg = masterAvatar.style.backgroundImage;
-                if (masterBg && masterBg !== 'none' && masterBg !== 'initial') {
-                    document.querySelectorAll('.sync-avatar').forEach(avatar => {
-                        avatar.style.backgroundImage = masterBg;
-                    });
-                }
+                
+                el.style.backgroundPosition = 'center';
+            }
+        });
+
+        // 同步头像逻辑
+        const masterAvatar = document.getElementById('wx_p2_big_avatar');
+        if (masterAvatar && masterAvatar.style.backgroundImage) {
+            const masterBg = masterAvatar.style.backgroundImage;
+            if (masterBg && masterBg !== 'none' && masterBg !== 'initial') {
+                document.querySelectorAll('.sync-avatar').forEach(avatar => {
+                    avatar.style.backgroundImage = masterBg;
+                });
             }
         }
 
@@ -997,7 +1707,19 @@ window.closeDeleteChatAlert = function() {
 window.enterChat = function(chat) {
     currentChatId = chat.id;
     const contact = contactsData.find(c => c.id === chat.contactId);
-    document.getElementById('chat-header-name').innerText = contact ? contact.name : 'Unknown';
+    
+    // === 更新新版顶栏的信息 ===
+    // 1. 名字
+    const nameEl = document.getElementById('chat_layer_name');
+    if(nameEl) nameEl.innerText = contact ? contact.name : 'Unknown';
+    
+    // 2. 头像 (新加的逻辑，自动把角色的头像同步到顶栏左边)
+    const avatarEl = document.getElementById('chat_layer_avatar');
+    if(avatarEl && contact) {
+        avatarEl.style.backgroundImage = contact.avatar;
+    }
+
+    // 显示页面
     document.getElementById('sub-page-chat-detail').style.display = 'flex';
     setTimeout(() => document.getElementById('sub-page-chat-detail').classList.add('active'), 10);
     renderMessages(chat.id);
@@ -1240,7 +1962,7 @@ window.triggerAI = async function() {
     - 核心背景故事：${char.desc}
     - 性格/语气/说话方式：${char.persona}
     
-    【对话者信息 (User/Me)】
+    【对话者信息 (User)】
     - 姓名：${me.name} (真名: ${me.realname || '未知'})
     - 别名/昵称：${me.alias || '无'}
     - 性别：${me.gender || '未知'}
@@ -1252,7 +1974,7 @@ window.triggerAI = async function() {
     【重要：模仿真实人类的聊天习惯】
     1. **拒绝翻译腔**：说话要口语化，不要像写作文。
     2. **标点符号**：
-       - 线上聊天**尽量减少**在句尾加句号“。”的次数（除非你想表达生气、冷漠或阴阳怪气，比如“哦。”）。
+       - 线上聊天**尽量减少**在句尾加句号“。”的次数（除非你想表达生气、冷漠、阴阳怪气或者难过，比如“哦。”“哄哄我。”）。
        - 情绪激动时可以使用“！！！”或“？？？”、“。。。。”“！？！！？”或等等多个符号的组合，但请以人设为准。
        - 此时此刻，你就是个拿着手机打字的活人。
     3. **气泡雨（分段发送）**：
@@ -1264,7 +1986,14 @@ window.triggerAI = async function() {
          “竟然是那个谁！”
        - 我会根据你的换行，把你回复的内容拆成多条消息发送。
     4. **回复长度**：短小精悍为主，偶尔可以长，但尽量多分段。
-    
+    5. ★★★【核心玩法：口是心非与撤回】★★★
+       - **使用前提**：基于给予的人设设定来，绝对不能脱离人设，绝对不能ooc。
+       - 当你心里有"阴暗/占有/直白"的想法，但觉得发出去不太合适时，你可以考虑使用【撤回格式】。
+       - **格式规则**：{{心里话(会被撤回)::表面话(最终保留)}}
+       - **例如**：
+         User: "我去跟学长吃饭了。"
+         You: "{{不许去！！我把你腿打断好不好？::噢，就你们两个人吗？}}"
+       
     历史记录：
     ${history}
     
@@ -1301,24 +2030,33 @@ window.triggerAI = async function() {
         if (loadingEl) loadingEl.remove();
 
         if (reply) {
-            // 7. 气泡雨处理
+            // 7. 气泡雨处理 (按换行符拆分)
             const segments = reply.split('\n').filter(s => s.trim() !== '');
             
-            // === 支持引用和撤回 ===
             for (let i = 0; i < segments.length; i++) {
-                // 间隔稍微长一点，显得在打字
+                let seg = segments[i];
+
+                // 间隔稍微长一点，显得在打字思考
                 await new Promise(r => setTimeout(r, 800)); 
                 
                 // 只有第一条消息带引用 (如果刚才决定了要引用的话)
                 const currentQuote = (i === 0) ? aiQuote : null;
                 
-                // 10% 概率 AI 会“撤回”重发
-                // 逻辑：先发个错的 -> 撤回 -> 发对的
-                if (Math.random() < 0.1) {
-                    await simulateAiRecall(segments[i], currentQuote);
+                // ★★★ 新逻辑：检测“口是心非”格式 {{心里话::表面话}} ★★★
+                // 正则表达式：匹配 {{...::...}}
+                const match = seg.match(/\{\{(.+?)::(.+?)\}\}/);
+
+                if (match) {
+                    // 捕获到了！AI想要表演撤回！
+                    const innerThought = match[1]; // 心里话 (比如：把腿打断)
+                    const outerText = match[2];    // 表面话 (比如：注意安全)
+                    
+                    // 执行撤回表演：先发“心里话” -> 撤回 -> 再发“表面话”
+                    await simulateAiRecall(innerThought, outerText, currentQuote);
+                    
                 } else {
-                    // 正常发送
-                    sendMsg('other', segments[i], 'text', currentQuote);
+                    // 没有触发撤回，正常发送
+                    sendMsg('other', seg, 'text', currentQuote);
                 }
             }
         }
@@ -1490,7 +2228,7 @@ window.toggleChatMenu = function() {
     document.body.classList.toggle('menu-open');
 };
 
-// 菜单点击动作 (修复版：含编辑AI、引用、撤回)
+// 菜单点击动作
 window.menuAction = function(action) {
     if (!currentLongPressElement) return;
     const row = currentLongPressElement.closest('.msg-row');
@@ -1502,11 +2240,13 @@ window.menuAction = function(action) {
 
     if (action === 'copy') {
         navigator.clipboard.writeText(msg.text || '');
-        showSystemAlert('已复制(^_−)−☆');
+        showSystemAlert('复制好啦～(^_−)−☆');
     } 
     else if (action === 'reply') {
         // === 引用功能 ===
-        const who = msg.role === 'me' ? 'Me' : (document.getElementById('chat-header-name').innerText || 'TA');
+        const nameEl = document.getElementById('chat_layer_name');
+        const who = msg.role === 'me' ? 'Me' : (nameEl ? nameEl.innerText : 'TA');
+        
         currentQuoteMsg = {
             text: msg.text,
             name: who,
@@ -1530,7 +2270,6 @@ window.menuAction = function(action) {
             hideAllMenus();
             return;
         }
-        // 使用原生 prompt 简单实现
         const newText = prompt("在这编辑TA的消息...:", msg.text);
         if (newText !== null && newText.trim() !== '' && newText !== msg.text) {
             msg.text = newText;
@@ -1776,14 +2515,12 @@ window.closeAlertWithAnim = function(overlayId) {
 };
 
 // === AI 口是心非撤回表演 ===
-// fakeText: 表面假话 (会被撤回)
-// realText: 内心真话 (最后保留)
 async function simulateAiRecall(fakeText, realText, quote) {
-    // 1. 先把那句“口是心非”的假话发出去
+    // 1. 先把那句“心里话”发出去 (带上引用，因为这通常是情绪最激动的时候)
     sendMsg('other', fakeText, 'text', quote);
     
-    // 2. 给用户一点时间看清楚 (1.5秒 - 2.5秒)
-    // 时间太短看不清，太长就显得假，这里给个2秒左右的阅读时间
+    // 2. 给用户一点时间看清楚 (1.5秒 - 3秒)
+    // 越短越像手滑，越长越像挑衅，这里设为 2秒 刚好让你心跳漏一拍
     await new Promise(r => setTimeout(r, 2000));
     
     // 3. 找到刚才发的那条消息，把它撤回
@@ -1791,20 +2528,19 @@ async function simulateAiRecall(fakeText, realText, quote) {
     if(chat && chat.messages.length > 0) {
         const lastMsg = chat.messages[chat.messages.length - 1];
         
-        // 确保是对方发的
         if(lastMsg.role === 'other') { 
-            lastMsg.type = 'recall'; // 变成撤回状态
-            lastMsg.originalText = fakeText; // 把假话存进去，供你点击“偷看”
-            delete lastMsg.text; // 隐藏气泡
+            lastMsg.type = 'recall'; 
+            lastMsg.originalText = fakeText; 
+            delete lastMsg.text; 
             
-            saveChatAndRefresh(chat); // 刷新界面，显示“对方撤回了一条消息”
+            saveChatAndRefresh(chat); 
         }
     }
     
-    // 4. 稍微停顿一下，表现出“由于慌张/犹豫”而产生的输入延迟
-    await new Promise(r => setTimeout(r, 1200));
+    // 4. 重点来了！这里要停顿久一点，表现出“慌乱打字找补”的感觉
+    await new Promise(r => setTimeout(r, 1500));
     
-    // 5. 发送那句真话 (不再带引用了)
+    // 5. 发送那句“虚伪”的表面话 (不再带引用了，显得若无其事)
     sendMsg('other', realText, 'text', null); 
 }
 
@@ -1840,6 +2576,85 @@ document.addEventListener('click', (e) => {
         }
     }
 });
+
+
+let currentFrameTarget = null; // 记住你正在给谁换装
+
+// 打开试衣间
+window.openFrameLib = function(element) {
+    currentFrameTarget = element;
+    const overlay = document.getElementById('frame-lib-overlay');
+    const grid = document.getElementById('frame-lib-grid');
+    
+    // 渲染列表 (如果还没渲染过)
+    if (grid.children.length === 0) {
+        renderFrameGrid();
+    }
+    
+    overlay.style.display = 'flex';
+};
+
+window.closeFrameLib = function() {
+    document.getElementById('frame-lib-overlay').style.display = 'none';
+};
+
+// 应用选中的框
+function applyFrame(url) {
+    if (currentFrameTarget) {
+        currentFrameTarget.style.backgroundImage = `url('${url}')`;
+        currentFrameTarget.style.backgroundSize = 'contain';
+        currentFrameTarget.style.backgroundRepeat = 'no-repeat';
+        
+        // 如果有默认边框，去掉它
+        currentFrameTarget.style.border = 'none';
+        
+        // 自动保存
+        saveMemory(); // 复用你现有的保存机制
+        
+        // 提示一下
+        showSystemAlert('换装成功！美美哒(≧∇≦)');
+        closeFrameLib();
+    }
+}
+
+// 移除框
+window.removeFrame = function() {
+    if (currentFrameTarget) {
+        currentFrameTarget.style.backgroundImage = 'none';
+        saveMemory();
+        closeFrameLib();
+    }
+};
+
+// 上传自定义框 (保留原来的功能)
+// 1. 渲染网格 (升级版：加了预览底图)
+function renderFrameGrid() {
+    const grid = document.getElementById('frame-lib-grid');
+    grid.innerHTML = '';
+    
+    AVATAR_FRAMES_DB.forEach(frame => {
+        const item = document.createElement('div');
+        item.className = 'frame-lib-item';
+        
+        // ★ 重点：加了一个 "preview-face" (假人头)，方便你看效果
+        item.innerHTML = `
+            <div class="preview-face"></div> 
+            <img src="${frame.url}" class="frame-lib-img" loading="lazy">
+        `;
+        
+        item.onclick = () => applyFrame(frame.url);
+        grid.appendChild(item);
+    });
+}
+
+// 2. 上传自定义框 (修正版：不自动关闭)
+window.triggerCustomFrameUpload = function() {
+    if (currentFrameTarget) {
+        handleImageUpload(currentFrameTarget);
+        // closeFrameLib();  <--这一行被我删掉了！现在选完图，库还在！
+    }
+};
+
 
 // ==========================================================
 // [13] 数据备份与恢复 (Data Backup & Restore)
