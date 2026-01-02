@@ -902,7 +902,10 @@ function loadMemory() {
 
 function initInteractions() {
     // 全局点击监听
-    document.addEventListener('click', (e) => {
+    
+updateGlobalBadges();
+
+document.addEventListener('click', (e) => {
         const target = e.target;
 
         // 文字编辑
@@ -1192,8 +1195,6 @@ window.switchWxTab = function(tabName) {
         if(globalHeader) globalHeader.style.display = 'none'; 
         document.getElementById('wx-page-moments').style.display = 'block';
         document.querySelectorAll('.wx-tab-item')[2].classList.add('active');
-        
-        // ★ 新增：渲染 Story 栏
         if(window.renderMomentsHeader) window.renderMomentsHeader();
     } 
 
@@ -1720,13 +1721,19 @@ window.closeDeleteChatAlert = function() {
 // ==========================================================
 // [10] 聊天详情与交互 (Chat Detail)
 // ==========================================================
-
-// === 替换：进入聊天 ===
+// === 修复版：进入聊天 (不再闪退啦) ===
 window.enterChat = function(chat) {
-    currentChatId = chat.id;
+    // 1. ★ 核心修复：先找到聊天对象是谁！
     const contact = contactsData.find(c => c.id === chat.contactId);
     
-    // 更新顶栏信息
+    // 2. 清除红点 & 更新数据
+    chat.unread = 0;
+    saveChatAndRefresh(chat); 
+    updateGlobalBadges(); 
+    
+    currentChatId = chat.id;
+    
+    // 3. 更新顶栏信息
     const nameEl = document.getElementById('chat_layer_name');
     if(nameEl) nameEl.innerText = contact ? contact.name : 'Unknown';
     
@@ -1735,7 +1742,7 @@ window.enterChat = function(chat) {
         avatarEl.style.backgroundImage = contact.avatar;
     }
 
-    // ★ 新增：读取这个角色的专属头像框
+    // 4. 读取这个角色的专属头像框 (如果有)
     const frameEl = document.getElementById('chat_layer_frame');
     if (frameEl) {
         if (contact && contact.frame) {
@@ -1745,22 +1752,25 @@ window.enterChat = function(chat) {
         }
     }
 
-    // 显示页面
-    document.getElementById('sub-page-chat-detail').style.display = 'flex';
-    setTimeout(() => document.getElementById('sub-page-chat-detail').classList.add('active'), 10);
+    // 5. 显示页面
+    const page = document.getElementById('sub-page-chat-detail');
+    if(page) {
+        page.style.display = 'flex';
+        setTimeout(() => page.classList.add('active'), 10);
+    }
     
-    // ★ 分页逻辑核心 1：重置数量，并绑定滚动事件
+    // 6. 滚动逻辑
     currentRenderLimit = 40;
     const msgArea = document.getElementById('chat-msg-area');
-    
-    // 监听滚动：如果你滑到了最顶部 (scrollTop === 0)，就加载更多
-    msgArea.onscroll = () => {
-        if (msgArea.scrollTop === 0) {
-            loadMoreMessages();
-        }
-    };
-    
-    renderMessages(chat.id);
+    if(msgArea) {
+        msgArea.onscroll = () => {
+            if (msgArea.scrollTop === 0) {
+                loadMoreMessages();
+            }
+        };
+        // 渲染消息
+        renderMessages(chat.id);
+    }
 };
 
 window.closeChatDetail = function() {
@@ -1957,68 +1967,57 @@ window.scrollToMsg = function(ts) {
     }
 };
 
-// === AI 逻辑 (拟人化 + 正在输入 + 气泡雨 + 引用 + 撤回) ===
+// === 最终完美版：AI 触发逻辑 (头像同步 + 后台影帝) ===
 window.triggerAI = async function() {
     if (!currentChatId) return;
     const chat = chatsData.find(c => c.id === currentChatId);
     if (!chat) return;
 
-    // 1. 获取角色和“我”的信息
-    const char = contactsData.find(c => c.id === chat.contactId);
-    const me = personasData.find(p => p.id === chat.personaId) || { name: 'User' };
+    // 1. 获取角色信息
+    const char = contactsData.find(c => c.id === chat.contactId); 
+    const me = personasData.find(p => p.id === chat.personaId) || { name: 'User', desc: '无', persona: '无' };
     
-// 修改 6: 更聪明的引用逻辑
-let aiQuote = null;
-if (Math.random() < 0.1 && chat.messages.length > 0) {
-    const recentMsgs = chat.messages.slice(-10).filter(m => m.role === 'me' && m.text && m.text.length > 4);
-    
-    if (recentMsgs.length > 0) {
-        const randomMsg = recentMsgs[Math.floor(Math.random() * recentMsgs.length)];
-        aiQuote = {
-            text: randomMsg.text,
-            name: me.name || '你',
-            id: randomMsg.timestamp
-        };
+    // 2. 引用逻辑
+    let aiQuote = null;
+    if (Math.random() < 0.3 && chat.messages.length > 0) {
+        const recentMsgs = chat.messages.slice(-10).filter(m => m.role === 'me' && m.text && m.text.length > 4);
+        if (recentMsgs.length > 0) {
+            const randomMsg = recentMsgs[Math.floor(Math.random() * recentMsgs.length)];
+            aiQuote = { text: randomMsg.text, name: me.name || '你', id: randomMsg.timestamp };
+        }
     }
-}
 
-    // 2. 构建历史记录 (让AI偷看撤回的消息)
+    // 3. 构建历史
     const history = (chat.messages || []).slice(-15).map(m => {
         let content = m.text;
-        let prefix = '';
-        
-        // ★★★ 关键点：如果消息被撤回了，强行把原话塞给AI ★★★
-        if (m.type === 'recall') {
-            content = m.originalText || "（内容丢失）";
-            prefix = ' (user表面上撤回了这条消息，但其实是想说): ';
-        }
-        
-        return `${m.role === 'me' ? '我' : '你'}${prefix}: ${content}`;
+        if (m.type === 'recall') content = m.originalText || "（撤回内容）";
+        return `${m.role === 'me' ? 'User' : 'You'}: ${content}`;
     }).join('\n');
     
-    // 3. ★★★ 注入灵魂的 System Prompt (修改版) ★★★
+    // 4. Prompt 
     const systemPrompt = `
     你现在进行一场Cosplay扮演。
     
     【你的角色信息】
     - 姓名：${char.name} (真名: ${char.realname || '未知'})
-    - 别名/昵称：${char.alias || '无'}
+    - 昵称：${char.alias || '无'}
     - 性别：${char.gender || '未知'}
     - 年龄：${char.age || '未知'}
     - 身高：${char.height || '未知'}
     - MBTI：${char.mbti || '未知'}
     - 标签：${char.tags || '无'}
     - 爱好/其他设定：${char.hobbies || '无'}
-    - 核心背景故事：${char.desc}
+    - 背景故事：${char.desc}
     - 性格/语气/说话方式：${char.persona}
     
-    【对话者信息 (User)】
+    【对话者信息】
     - 姓名：${me.name} (真名: ${me.realname || '未知'})
-    - 别名/昵称：${me.alias || '无'}
+    - 昵称：${me.alias || '无'}
     - 性别：${me.gender || '未知'}
     - 年龄：${me.age || '未知'}
-    - 爱好/设定：${me.hobbies || '无'}
-    - User背景/简介：${me.desc}
+    - 爱好/其他设定：${me.hobbies || '无'}
+    - MBTI：${me.mbti || '未知'}
+    - User背景：${me.desc}
     - User性格：${me.persona}
 
     【重要：模仿真实人类的聊天习惯】
@@ -2036,11 +2035,11 @@ if (Math.random() < 0.1 && chat.messages.length > 0) {
          “竟然是那个谁！”
        - 我会根据你的换行，把你回复的内容拆成多条消息发送。
     4. **回复长度**：短小精悍为主，偶尔可以长，但尽量多分段。
-    5. ★★★【核心玩法：口是心非与撤回】★★★
+    5. ★★★【玩法：口是心非与撤回】★★★
        - 你是一个有血有肉的人，不是机器人。
        - **请根据你的性格设定 (${char.persona}) 来决定是否使用撤回功能**：
          > 如果你是【傲娇/腹黑/占有欲强/病娇】的角色：请在感到吃醋、在意、或者不想承认自己感情时，**适度**使用撤回格式。
-         > 如果你是【直球/阳光/温柔/成熟】的角色：请**尽量少用**或者**不用**撤回，直接表达你的想法，除非你真的遇到了极度想要掩饰的尴尬瞬间。
+         > 如果你是【直球/阳光/温柔/成熟】的角色：请**尽量少用**或者**不用**撤回。请直接表达你的想法，除非你真的遇到了极度想要掩饰的尴尬瞬间。
        - **不要滥用！不要每一句都撤回！** 只有当“内心阴暗/真实的想法”与“必须维持的表面礼貌”发生**强烈冲突**时才使用。
        - **格式规则**：{{内心真实想法(会被撤回)::表面伪装回复(最终保留)}}
        - **错误示范** (不要这样)：{{你好::你好}} (毫无意义的撤回)
@@ -2055,73 +2054,106 @@ if (Math.random() < 0.1 && chat.messages.length > 0) {
     `;
     
 
-    // 4. 显示“正在输入”动画
+    // 5. 显示正在输入
     const container = document.getElementById('chat-msg-area');
     const loadingId = 'typing-' + Date.now();
-    const loadingDiv = document.createElement('div');
-    loadingDiv.id = loadingId;
-    loadingDiv.className = 'typing-row';
-    const avatarUrl = char ? char.avatar : '';
-    const bgStyle = getAvatarStyle(avatarUrl);
-    
-    loadingDiv.innerHTML = `
-        <div class="msg-avatar" style="${bgStyle}"></div>
-        <div class="typing-bubble">
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-        </div>
-    `;
-    container.appendChild(loadingDiv);
-    container.scrollTop = container.scrollHeight; 
+    if (currentChatId === chat.id && container) {
+        const loadingDiv = document.createElement('div');
+        loadingDiv.id = loadingId;
+        loadingDiv.className = 'typing-row';
+        loadingDiv.innerHTML = `<div class="msg-avatar" style="${getAvatarStyle(char.avatar)}"></div><div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+        container.appendChild(loadingDiv);
+        container.scrollTop = container.scrollHeight;
+    }
 
     try {
-        // 5. 调用 API
         const reply = await callApiInternal(systemPrompt);
-        
-        // 6. 移除“正在输入”
         const loadingEl = document.getElementById(loadingId);
         if (loadingEl) loadingEl.remove();
 
         if (reply) {
-            // 7. 气泡雨处理 (按换行符拆分)
             const segments = reply.split('\n').filter(s => s.trim() !== '');
-            
+            const targetChatId = chat.id; 
+
             for (let i = 0; i < segments.length; i++) {
                 let seg = segments[i];
+                await new Promise(r => setTimeout(r, 1500)); 
 
-                // 间隔稍微长一点，显得在打字思考
-                await new Promise(r => setTimeout(r, 800)); 
-                
-                // 只有第一条消息带引用 (如果刚才决定了要引用的话)
-                const currentQuote = (i === 0) ? aiQuote : null;
-                
-                // ★★★ 新逻辑：检测“口是心非”格式 {{心里话::表面话}} ★★★
-                // 正则表达式：匹配 {{...::...}}
                 const match = seg.match(/\{\{(.+?)::(.+?)\}\}/);
+                const currentQuote = (i === 0) ? aiQuote : null;
 
-                if (match) {
-                    // 捕获到了！AI想要表演撤回！
-                    const innerThought = match[1]; // 心里话 (比如：把腿打断)
-                    const outerText = match[2];    // 表面话 (比如：注意安全)
-                    
-                    // 执行撤回表演：先发“心里话” -> 撤回 -> 再发“表面话”
-                    await simulateAiRecall(innerThought, outerText, currentQuote);
-                    
-                } else {
-                    // 没有触发撤回，正常发送
-                    sendMsg('other', seg, 'text', currentQuote);
+                // === 后台模式 ===
+                if (currentChatId !== targetChatId) {
+                    const targetChat = chatsData.find(c => c.id === targetChatId);
+                    if(!targetChat) continue;
+
+                    if (match) {
+                        // 剧本：内心戏 -> 撤回 -> 表面话
+                        pushMsgToData(targetChat, match[1], 'other', currentQuote);
+                        saveChatAndRefresh(targetChat); updateGlobalBadges();
+                        // ★ 这里的 char.avatar 直接传，不需要 replace 了！
+                        showNotification(char.name, match[1], char.avatar); 
+
+                        await new Promise(r => setTimeout(r, 2500));
+
+                        // 撤回
+                        const lastMsg = targetChat.messages[targetChat.messages.length - 1];
+                        if (lastMsg) {
+                            lastMsg.type = 'recall'; lastMsg.originalText = match[1]; delete lastMsg.text;
+                            saveChatAndRefresh(targetChat);
+                        }
+                        showNotification(char.name, "撤回了一条消息", char.avatar);
+
+                        await new Promise(r => setTimeout(r, 1500));
+
+                        // 表面话
+                        pushMsgToData(targetChat, match[2], 'other', null);
+                        saveChatAndRefresh(targetChat); updateGlobalBadges();
+                        showNotification(char.name, match[2], char.avatar);
+
+                    } else {
+                        // 普通消息
+                        pushMsgToData(targetChat, seg, 'other', currentQuote);
+                        saveChatAndRefresh(targetChat); updateGlobalBadges();
+                        showNotification(char.name, seg, char.avatar);
+                    }
+                } 
+                // === 前台模式 ===
+                else {
+                    if (match) await simulateAiRecall(match[1], match[2], currentQuote);
+                    else sendMsg('other', seg, 'text', currentQuote);
                 }
             }
         }
     } catch (e) {
         const loadingEl = document.getElementById(loadingId);
         if (loadingEl) loadingEl.remove();
-        alert('断网啦？连不上大脑了qwq: ' + e.message);
+        alert('断网啦？连不上大脑了(＞人＜；)！：' + e.message);
     }
 };
 
-// === 修复后的 API 调用函数 (带错误侦测) ===
+// 后台塞消息助手 
+function pushMsgToData(chatObj, text, role, quote) {
+    if (!chatObj.messages) chatObj.messages = [];
+    
+    // 1. 塞入新消息
+    chatObj.messages.push({
+        role: role,
+        text: text,
+        timestamp: Date.now(),
+        type: 'text',
+        quote: quote
+    });
+    
+    // 2. 更新列表预览 (只在不是撤回的时候)
+    chatObj.lastMsg = text;
+    chatObj.lastTime = Date.now();
+    
+    // 3. 增加未读红点
+    chatObj.unread = (chatObj.unread || 0) + 1;
+}
+
+// === 修复后的 API 调用函数  ===
 async function callApiInternal(prompt) {
     // 1. 基础检查
     if (!apiConfig.main.key) { alert('没配置API Key呀笨蛋！'); return null; }
@@ -2195,7 +2227,6 @@ let currentLongPressElement;
 function bindLongPress(element) {
     element.addEventListener('touchstart', (e) => {
         // 阻止默认的长按选词行为
-        // e.preventDefault(); // 注：如果不想影响滚动，这里慎用 preventDefault
         longPressTimer = setTimeout(() => {
             showMsgMenu(element, e.touches[0].clientX, e.touches[0].clientY);
             if (navigator.vibrate) navigator.vibrate(50);
@@ -2942,48 +2973,121 @@ document.addEventListener('DOMContentLoaded', () => {
 // ====================
 // [15] 朋友圈 Story 逻辑
 // ====================
-
-// 渲染 Story 栏
 window.renderMomentsHeader = function() {
-    const container = document.getElementById('moments-story-tray');
+    // 1. 尝试找容器，兼容 class 和 id
+    let container = document.querySelector('.ins-highlights-scroll');
     if(!container) return;
+    
     container.innerHTML = '';
 
-    // 1. 先渲染 ME (自己)
-    // 假设 personasData[0] 是你当前使用的身份，或者我们写死一个默认的
-    const me = personasData[0] || { name: 'Me', avatar: '' }; 
-    const meEl = document.createElement('div');
-    meEl.className = 'story-item';
-    
-    // 给 ME 加个可编辑的气泡
-    meEl.innerHTML = `
-        <div class="story-bubble edit-text" contenteditable="true">喊话...</div>
-        <div class="story-avatar-ring">
-            <div class="story-avatar-img" style="${getAvatarStyle(me.avatar)}"></div>
+    // === 第一部分：固定显示“新建”按钮 ===
+    const addBtn = document.createElement('div');
+    addBtn.className = 'ins-highlight-item';
+    addBtn.onclick = () => alert('发朋友圈功能开发中...宝宝别急！');
+    addBtn.innerHTML = `
+        <div class="ins-highlight-circle plus-btn">
+            <svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:#333"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
         </div>
-        <div class="story-name">Me</div>
+        <div class="ins-highlight-text">New</div>
     `;
-    // 点击 ME 的头像触发什么？比如换头像或者发 Story
-    meEl.querySelector('.story-avatar-ring').onclick = () => {
-        alert('这是你自己哦！点击上面的气泡可以喊话～');
-    };
-    container.appendChild(meEl);
+    container.appendChild(addBtn);
 
-    // 2. 渲染好友 (Contacts)
+    // === 第二部分：显示“我” (Persona) ===
+    const me = personasData[0]; // 获取你的第一个面具
+    if(me) {
+        const meItem = document.createElement('div');
+        meItem.className = 'ins-highlight-item';
+        meItem.innerHTML = `
+            <div class="ins-highlight-circle upload-img" style="${getAvatarStyle(me.avatar)} border: 2px solid #007aff;"></div>
+            <div class="ins-highlight-text edit-text">Me</div>
+        `;
+        // 点击“我”的头像可以换图
+        meItem.querySelector('.upload-img').onclick = (e) => {
+             e.stopPropagation();
+             handleImageUpload(e.target);
+        };
+        container.appendChild(meItem);
+    }
+
+    // === 第三部分：显示“好友” (Contacts) ===
     contactsData.forEach(c => {
         const item = document.createElement('div');
-        item.className = 'story-item active'; // 默认给个 active 圈圈，假装有新消息
+        item.className = 'ins-highlight-item';
         item.innerHTML = `
-            <div class="story-avatar-ring">
-                <div class="story-avatar-img" style="${getAvatarStyle(c.avatar)}"></div>
-            </div>
-            <div class="story-name">${c.name}</div>
+            <div class="ins-highlight-circle" style="${getAvatarStyle(c.avatar)}"></div>
+            <div class="ins-highlight-text">${c.name}</div>
         `;
-        // 点击好友头像
         item.onclick = () => {
-            item.classList.remove('active'); // 点过就去掉圈圈
-            alert(`查看 ${c.name} 的 Story (假装弹出了一个全屏图片)`);
+             showSystemAlert(`正在查看 ${c.name} 的回忆...`);
         };
         container.appendChild(item);
     });
+};
+
+// ====================
+// [16] 通知与红点系统 (Notification System)
+// ====================
+
+// 更新桌面红点 & 底部Tab红点 (如果有的话)
+window.updateGlobalBadges = function() {
+    let totalUnread = 0;
+    chatsData.forEach(c => {
+        if(c.unread) totalUnread += c.unread;
+    });
+
+    // 1. 更新桌面图标红点
+    const badgeEl = document.getElementById('desktop-badge-wechat');
+    if(badgeEl) {
+        if(totalUnread > 0) {
+            badgeEl.innerText = totalUnread > 99 ? '99+' : totalUnread;
+            badgeEl.classList.add('show');
+        } else {
+            badgeEl.classList.remove('show');
+        }
+    }
+    
+    // 2. 更新Dock栏或者Tab栏的红点，原理一样
+};
+// === 顶部通知  ===
+window.showNotification = function(name, text, rawAvatar) {
+    const banner = document.getElementById('ios-notification');
+    const nTitle = document.getElementById('notif-title');
+    const nMsg = document.getElementById('notif-msg');
+    const nAvatar = document.getElementById('notif-avatar');
+    
+    // 如果页面里没有通知栏HTML，就直接略过
+    if(!banner || !nTitle || !nMsg || !nAvatar) return;
+
+    nTitle.innerText = name;
+    nMsg.innerText = text;
+    
+    // ★ 核心修复：智能解析头像样式
+    const styleStr = getAvatarStyle(rawAvatar);
+    
+    // 1. 先清空，防止残留
+    nAvatar.style.backgroundImage = 'none';
+    nAvatar.style.backgroundColor = 'transparent';
+    
+    // 2. 判断是图片还是颜色
+    if (styleStr.includes('url(')) {
+        // 如果是图片，提取 url(...) 部分
+        const urlPart = styleStr.replace('background-image: ', '').replace(';', '');
+        nAvatar.style.backgroundImage = urlPart;
+        nAvatar.style.backgroundSize = 'cover';
+    } else {
+        // 如果是默认灰色，或者是纯色背景
+        nAvatar.style.backgroundColor = '#f0f0f0'; // 默认给个浅灰
+        // 如果数据里有具体颜色也可以解析，这里简单处理
+    }
+    
+    // 播放音效 (如果你有的话)
+    // const audio = new Audio('notification.mp3'); audio.play().catch(()=>{});
+
+    // 动画显示
+    banner.classList.add('show');
+    
+    // 3秒后自动消失
+    setTimeout(() => {
+        banner.classList.remove('show');
+    }, 3000);
 };

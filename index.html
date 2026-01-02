@@ -37,7 +37,7 @@
                     <div class="cal-day-text" id="widget_day_text">星期五</div>
                 </div>
                 <div class="cal-text-area">
-                    <div class="edit-text cal-sub-text" style="text-align:right;">幸福的秘诀是拥有苹果时只在意苹果。 (๑＞＜)☆</div>
+                    <div class="edit-text cal-sub-text" style="text-align:right;">幸福的秘诀是拥有苹果时只在意苹果。   (๑＞＜)☆</div>
                     <div class="edit-text cal-main-text" style="margin-top:4px; text-align:right;">𝗪𝗶𝗻𝘁𝗲𝗿.🌨</div>
                 </div>
             </div>
@@ -103,10 +103,12 @@
         </div>
 
         <div class="app-grid" id="desktopGrid">
-            <div class="app-item" id="app-wechat" onclick="openApp('wechat')">
-                <div class="app-icon" id="icon_app_wechat" style="background-color: #07c160;"></div> 
-                <div class="app-name edit-text" id="name_app_wechat">微信</div>
-            </div>
+<div class="app-item" id="app-wechat" onclick="openApp('wechat')">
+    <div class="app-icon" id="icon_app_wechat" style="background-color: #07c160;">
+        <div class="app-badge" id="desktop-badge-wechat">0</div>
+    </div> 
+    <div class="app-name edit-text" id="name_app_wechat">微信</div>
+</div>
             <div class="app-item">
                 <div class="app-icon" id="icon_app_world"></div>
                 <div class="app-name edit-text" id="name_app_world">世界书</div>
@@ -965,6 +967,16 @@
             <div class="alert-btn confirm" onclick="confirmEditMsg()">Save</div>
         </div>
     </div>
+</div>
+
+<div id="ios-notification" class="ios-notification-banner" onclick="openApp('wechat'); switchWxTab('chat');">
+    <div class="notif-avatar" id="notif-avatar"></div>
+    <div class="notif-content">
+        <div class="notif-title" id="notif-title">许时雨</div>
+        <div class="notif-msg" id="notif-msg">想吃苹果吗？(｡・`ω´･)</div>
+    </div>
+    <div class="notif-time">just now</div>
+</div>
 </div>
 
 <div id="frame-lib-overlay" class="custom-alert-overlay" style="display: none; align-items: flex-end;">
