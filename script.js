@@ -16,6 +16,9 @@ let currentEditingId = null;   // 当前编辑ID
 let currentChatId = null;      // 当前聊天ID
 let tempChatObj = {};          // 临时聊天对象
 let currentQuoteMsg = null; // 当前正在引用的消息对象
+let currentEditMsgIndex = -1; // 记录当前正在编辑哪条消息
+let currentEditChatId = null; // 记录当前在哪个聊天里编辑
+let currentRenderLimit = 40; // 默认只加载40条
 
 // === API 配置默认值 ===
 let apiConfig = {
@@ -903,13 +906,22 @@ function initInteractions() {
         const target = e.target;
 
         // 文字编辑
-        if (target.classList.contains('edit-text')) {
-            if (!target.isContentEditable) {
-                target.contentEditable = "true";
-                target.focus();
-            }
-            return;
+if (target.classList.contains('edit-text')) {
+    if (!target.isContentEditable) {
+        target.contentEditable = "true";
+        target.focus();
+        
+        if (target.innerText.length > 0) {
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(target);
+            range.collapse(false); 
+            sel.removeAllRanges();
+            sel.addRange(range);
         }
+    }
+    return;
+}
 
         // 图片上传
         if (target.classList.contains('upload-img') || 
@@ -1175,11 +1187,16 @@ window.switchWxTab = function(tabName) {
         document.querySelectorAll('.wx-tab-item')[1].classList.add('active');
         switchContactTab('all');
     } 
+
     else if (tabName === 'moments') {
-        if(globalHeader) globalHeader.style.display = 'flex';
+        if(globalHeader) globalHeader.style.display = 'none'; 
         document.getElementById('wx-page-moments').style.display = 'block';
         document.querySelectorAll('.wx-tab-item')[2].classList.add('active');
+        
+        // ★ 新增：渲染 Story 栏
+        if(window.renderMomentsHeader) window.renderMomentsHeader();
     } 
+
     else if (tabName === 'me') {
         if(globalHeader) globalHeader.style.display = 'none';
         document.getElementById('wx-page-profile').style.display = 'flex';
@@ -1704,24 +1721,45 @@ window.closeDeleteChatAlert = function() {
 // [10] 聊天详情与交互 (Chat Detail)
 // ==========================================================
 
+// === 替换：进入聊天 ===
 window.enterChat = function(chat) {
     currentChatId = chat.id;
     const contact = contactsData.find(c => c.id === chat.contactId);
     
-    // === 更新新版顶栏的信息 ===
-    // 1. 名字
+    // 更新顶栏信息
     const nameEl = document.getElementById('chat_layer_name');
     if(nameEl) nameEl.innerText = contact ? contact.name : 'Unknown';
     
-    // 2. 头像 (新加的逻辑，自动把角色的头像同步到顶栏左边)
     const avatarEl = document.getElementById('chat_layer_avatar');
     if(avatarEl && contact) {
         avatarEl.style.backgroundImage = contact.avatar;
     }
 
+    // ★ 新增：读取这个角色的专属头像框
+    const frameEl = document.getElementById('chat_layer_frame');
+    if (frameEl) {
+        if (contact && contact.frame) {
+            frameEl.style.backgroundImage = `url('${contact.frame}')`;
+        } else {
+            frameEl.style.backgroundImage = 'none';
+        }
+    }
+
     // 显示页面
     document.getElementById('sub-page-chat-detail').style.display = 'flex';
     setTimeout(() => document.getElementById('sub-page-chat-detail').classList.add('active'), 10);
+    
+    // ★ 分页逻辑核心 1：重置数量，并绑定滚动事件
+    currentRenderLimit = 40;
+    const msgArea = document.getElementById('chat-msg-area');
+    
+    // 监听滚动：如果你滑到了最顶部 (scrollTop === 0)，就加载更多
+    msgArea.onscroll = () => {
+        if (msgArea.scrollTop === 0) {
+            loadMoreMessages();
+        }
+    };
+    
     renderMessages(chat.id);
 };
 
@@ -1732,10 +1770,9 @@ window.closeChatDetail = function() {
     renderChatList(); // 退出时刷新列表(以防万一)
 };
 
-// 渲染消息 (最终版：含动画、状态、引用)
-function renderMessages(chatId) {
+// === 替换：渲染消息函数 (支持分页) ===
+function renderMessages(chatId, autoScroll = true) {
     const container = document.getElementById('chat-msg-area');
-    // 注意：全量刷新会导致旧消息也闪烁，完美方案是Diff更新，但为了简单，我们只给最后一条加动画
     container.innerHTML = ''; 
     
     const chat = chatsData.find(c => c.id === chatId);
@@ -1744,10 +1781,29 @@ function renderMessages(chatId) {
     const contact = contactsData.find(c => c.id === chat.contactId);
     const persona = personasData.find(p => p.id === chat.personaId) || { avatar: '' };
 
-    let lastTime = 0;
-    const totalMsgs = chat.messages.length;
+    // ★ 分页逻辑核心 2：只截取最后 currentRenderLimit 条数据
+    const totalCount = chat.messages.length;
+    const startIndex = Math.max(0, totalCount - currentRenderLimit);
+    const msgsToRender = chat.messages.slice(startIndex);
+    
+    // 如果上面还有消息没加载，显示一个提示
+    if (startIndex > 0) {
+        const tip = document.createElement('div');
+        tip.style.textAlign = 'center'; tip.style.color = '#ccc'; tip.style.fontSize = '12px'; tip.style.padding = '10px';
+        tip.innerText = "下拉加载更多回忆...";
+        container.appendChild(tip);
+    }
 
-    chat.messages.forEach((msg, index) => {
+    let lastTime = 0;
+    const renderCount = msgsToRender.length;
+
+    // 开始遍历我们截取出来的这部分消息
+    msgsToRender.forEach((msg, i) => {
+        // 计算这条消息在原始数组里的真实索引（用于删除、编辑）
+        const realIndex = startIndex + i;
+
+        // --- 下面这些是原本的逻辑，保持不变 ---
+        
         // 1. 时间胶囊
         if (msg.timestamp - lastTime > 5 * 60 * 1000) {
             const timeDiv = document.createElement('div');
@@ -1758,7 +1814,8 @@ function renderMessages(chatId) {
         }
 
         const isMe = msg.role === 'me';
-        const nextMsg = chat.messages[index + 1];
+        // 这里的 nextMsg 逻辑稍微简化一下，防止数组越界
+        const nextMsg = msgsToRender[i + 1];
 
         // 2. 撤回消息
         if (msg.type === 'recall') {
@@ -1766,7 +1823,8 @@ function renderMessages(chatId) {
             recallDiv.className = 'msg-recall-pill';
             const who = isMe ? '我' : (contact ? contact.name : 'TA');
             const contentToPeek = msg.originalText || "未知内容";
-            recallDiv.innerHTML = `${who} 撤回了一条消息 <span class="recall-link" onclick="alert('偷看内容：\\n${contentToPeek}')">点击偷看</span>`;
+            // 这里把 alert 里的单引号转义一下，防止报错
+            recallDiv.innerHTML = `${who} 撤回了一条消息 <span class="recall-link" onclick="alert('偷看内容：\\n${contentToPeek.replace(/'/g, "")}')">点击偷看</span>`;
             container.appendChild(recallDiv);
             return; 
         }
@@ -1780,11 +1838,14 @@ function renderMessages(chatId) {
         // 4. 构建气泡
         const row = document.createElement('div');
         row.className = `msg-row ${isMe ? 'me' : 'other'} ${hasTail ? 'has-tail' : ''}`;
-        row.dataset.msgIndex = index; 
+        
+        // ★ 关键：必须把真实索引存进去，不然删除的时候删错人！
+        row.dataset.msgIndex = realIndex; 
+        
         row.id = `msg-${msg.timestamp}`;
 
-        // ★★★ 动画逻辑：如果是最后一条，且是刚发的(1秒内)，加动画 ★★★
-        if (index === totalMsgs - 1 && (Date.now() - msg.timestamp < 1000)) {
+        // 动画：只有最后一条，且是刚发的(1秒内)才动
+        if (realIndex === totalCount - 1 && (Date.now() - msg.timestamp < 1000)) {
              row.classList.add('new-msg-anim');
         }
 
@@ -1792,17 +1853,11 @@ function renderMessages(chatId) {
         const bgStyle = getAvatarStyle(avatarUrl);
         const mainBubble = `<div class="msg-content">${msg.text}</div>`;
         
-        // 引用块
         let quoteHtml = '';
         if (msg.quote) {
             let fullQuoteText = `${msg.quote.name}：${msg.quote.text}`;
             if (fullQuoteText.length > 15) fullQuoteText = fullQuoteText.substring(0, 15) + "...";
-            
-            quoteHtml = `
-                <div class="msg-quote-outside" onclick="scrollToMsg('${msg.quote.id}')">
-                    ${fullQuoteText}
-                </div>
-            `;
+            quoteHtml = `<div class="msg-quote-outside" onclick="scrollToMsg('${msg.quote.id}')">${fullQuoteText}</div>`;
         }
 
         row.innerHTML = `
@@ -1820,33 +1875,28 @@ function renderMessages(chatId) {
         container.appendChild(row);
     });
 
-    // 5. 底部状态 (已送达 / 已读)
-    if (totalMsgs > 0) {
-        const lastMsg = chat.messages[totalMsgs - 1];
+    // 5. 底部状态
+    if (totalCount > 0) {
+        const lastMsg = chat.messages[totalCount - 1];
         const statusDiv = document.createElement('div');
         statusDiv.className = 'msg-status-foot';
-        
         const d = new Date(lastMsg.timestamp);
         const timeStr = `${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}`;
-        
-        let statusText = "已送达";
-        if (lastMsg.role === 'other') statusText = "已读";
+        let statusText = lastMsg.role === 'other' ? "已读" : "已送达";
         
         statusDiv.innerText = `${statusText} ${timeStr}`;
-        
         if (lastMsg.role === 'other') {
-            statusDiv.style.textAlign = 'left';
-            statusDiv.style.paddingLeft = '58px'; 
+            statusDiv.style.textAlign = 'left'; statusDiv.style.paddingLeft = '58px'; 
         } else {
-            statusDiv.style.textAlign = 'right';
-            statusDiv.style.paddingRight = '18px'; 
+            statusDiv.style.textAlign = 'right'; statusDiv.style.paddingRight = '18px'; 
         }
-        
         container.appendChild(statusDiv);
     }
 
-    // 丝滑滚动
-    container.scrollTop = container.scrollHeight;
+    // ★ 自动滚动到底部 (仅当 autoScroll 为 true 时)
+    if (autoScroll) {
+        container.scrollTop = container.scrollHeight;
+    }
 }
 
 window.sendMsg = function(role, text = null, type = 'text', customQuote = null) {
@@ -1917,20 +1967,20 @@ window.triggerAI = async function() {
     const char = contactsData.find(c => c.id === chat.contactId);
     const me = personasData.find(p => p.id === chat.personaId) || { name: 'User' };
     
-    // === 补回来的部分：决定是否引用你 (20%概率) ===
-    let aiQuote = null;
-    // 只有当有消息记录时才引用
-    if (Math.random() < 0.2 && chat.messages.length > 0) {
-        // 找到你发的最后一条消息
-        const lastUserMsg = chat.messages.slice().reverse().find(m => m.role === 'me');
-        if (lastUserMsg) {
-            aiQuote = {
-                text: lastUserMsg.text,
-                name: me.name || '你',
-                id: lastUserMsg.timestamp
-            };
-        }
+// 修改 6: 更聪明的引用逻辑
+let aiQuote = null;
+if (Math.random() < 0.1 && chat.messages.length > 0) {
+    const recentMsgs = chat.messages.slice(-10).filter(m => m.role === 'me' && m.text && m.text.length > 4);
+    
+    if (recentMsgs.length > 0) {
+        const randomMsg = recentMsgs[Math.floor(Math.random() * recentMsgs.length)];
+        aiQuote = {
+            text: randomMsg.text,
+            name: me.name || '你',
+            id: randomMsg.timestamp
+        };
     }
+}
 
     // 2. 构建历史记录 (让AI偷看撤回的消息)
     const history = (chat.messages || []).slice(-15).map(m => {
@@ -2155,11 +2205,42 @@ function bindLongPress(element) {
     element.addEventListener('touchmove', () => clearTimeout(longPressTimer));
 }
 
-// 显示长按菜单 (修复版)
+// === 长按菜单===
 function showMsgMenu(el, touchX, touchY) {
     currentLongPressElement = el;
     const menu = document.getElementById('msg-pop-menu');
-    
+    const menuRow = menu.querySelector('.mpm-row'); // 获取菜单里的按钮容器
+
+    // 1. 判断消息是谁发的
+    const msgRow = el.closest('.msg-row');
+    const isMe = msgRow && msgRow.classList.contains('me');
+
+    // 2. 动态生成按钮 HTML (这样想加几个就加几个)
+    let buttonsHtml = '';
+
+    // [复制] - 谁都有
+    buttonsHtml += `<div class="mpm-item" onclick="menuAction('copy')">复制</div>`;
+
+    // [编辑] - 都要有！(之前就是这里漏了me)
+    if (isMe) {
+        buttonsHtml += `<div class="mpm-item" onclick="menuAction('edit-me')">编辑</div>`;
+    } else {
+        buttonsHtml += `<div class="mpm-item" onclick="menuAction('edit-ai')">编辑</div>`;
+    }
+
+    // [撤回] - 只有我有 (如果你想让AI也能撤回，就在else里也加一个)
+    if (isMe) {
+        buttonsHtml += `<div class="mpm-item" onclick="menuAction('recall')">撤回</div>`;
+    }
+
+    // [引用] & [删除] - 谁都有
+    buttonsHtml += `<div class="mpm-item" onclick="menuAction('reply')">引用</div>`;
+    buttonsHtml += `<div class="mpm-item" onclick="menuAction('delete')">删除</div>`;
+
+    // 3. 把按钮塞进去
+    menuRow.innerHTML = buttonsHtml;
+
+    // 4. 下面是定位逻辑 (保持不变)
     // 确保箭头存在
     let arrow = menu.querySelector('.mpm-arrow');
     if(!arrow) {
@@ -2168,32 +2249,16 @@ function showMsgMenu(el, touchX, touchY) {
         menu.appendChild(arrow);
     }
 
-    // 判断是“我”还是“他”，修改菜单项
-    const msgRow = el.closest('.msg-row');
-    const recallBtn = document.getElementById('menu-btn-recall');
-    
-    // 必须确保 index.html 里那个撤回按钮有 id="menu-btn-recall"
-    if (recallBtn) {
-        if (msgRow && msgRow.classList.contains('me')) {
-            // 如果是我的消息，显示“撤回”
-            recallBtn.innerText = '撤回';
-            recallBtn.setAttribute('onclick', "menuAction('recall')");
-        } else {
-            // 如果是对方(AI)的消息，显示“编辑”
-            recallBtn.innerText = '编辑';
-            recallBtn.setAttribute('onclick', "menuAction('edit-ai')");
-        }
-    }
-
     menu.style.display = 'flex';
     
     // 定位计算
     const rect = el.getBoundingClientRect();
     const menuHeight = menu.offsetHeight || 60;
-    const menuWidth = 260; 
+    const menuWidth = isMe ? 280 : 240; // 我自己的菜单长一点，因为多了个按钮
     
     // 水平居中
     let left = rect.left + (rect.width / 2) - (menuWidth / 2);
+    // 防止超出屏幕边缘
     if (left < 10) left = 10;
     if (left + menuWidth > window.innerWidth - 10) left = window.innerWidth - menuWidth - 10;
 
@@ -2210,8 +2275,8 @@ function showMsgMenu(el, touchX, touchY) {
     menu.style.top = top + 'px';
     menu.style.left = left + 'px';
     
-    arrow.className = `mpm-arrow ${arrowClass}`;
     // 箭头跟随气泡中心
+    arrow.className = `mpm-arrow ${arrowClass}`;
     const arrowLeft = (rect.left + rect.width / 2) - left; 
     arrow.style.left = arrowLeft + 'px';
 }
@@ -2233,10 +2298,12 @@ window.toggleChatMenu = function() {
 };
 
 // 菜单点击动作
+// === 替换：新的菜单动作逻辑 ===
 window.menuAction = function(action) {
     if (!currentLongPressElement) return;
     const row = currentLongPressElement.closest('.msg-row');
     if (!row) return;
+    
     const msgIndex = parseInt(row.dataset.msgIndex);
     const chat = chatsData.find(c => c.id === currentChatId);
     if (!chat || !chat.messages[msgIndex]) return;
@@ -2244,46 +2311,38 @@ window.menuAction = function(action) {
 
     if (action === 'copy') {
         navigator.clipboard.writeText(msg.text || '');
-        showSystemAlert('复制好啦～(^_−)−☆');
+        showSystemAlert('复制好啦～');
     } 
     else if (action === 'reply') {
-        // === 引用功能 ===
         const nameEl = document.getElementById('chat_layer_name');
         const who = msg.role === 'me' ? 'Me' : (nameEl ? nameEl.innerText : 'TA');
+        currentQuoteMsg = { text: msg.text, name: who, id: msg.timestamp };
         
-        currentQuoteMsg = {
-            text: msg.text,
-            name: who,
-            id: msg.timestamp
-        };
         const input = document.getElementById('chat-input');
-        input.placeholder = `回复 ${who}: ${msg.text.substring(0, 10)}...`;
+        input.placeholder = `回复 ${who}...`;
         input.focus();
     } 
     else if (action === 'recall') {
-        // === 撤回功能 (User) ===
         msg.originalText = msg.text || '[非文本]';
         msg.type = 'recall';
         delete msg.text; 
         saveChatAndRefresh(chat);
     }
-    else if (action === 'edit-ai') {
-        // === 编辑AI消息功能 ===
+    else if (action === 'edit-ai' || action === 'edit-me') {
+        // ★ 这里改了：无论是谁，都用自定义弹窗编辑
         if(msg.type !== 'text') {
-            showSystemAlert('只能编辑文本消息哦> ˄ ˂̥̥');
+            showSystemAlert('只能编辑文本消息哦');
             hideAllMenus();
             return;
         }
-        const newText = prompt("在这编辑TA的消息...:", msg.text);
-        if (newText !== null && newText.trim() !== '' && newText !== msg.text) {
-            msg.text = newText;
-            saveChatAndRefresh(chat);
-            showSystemAlert('保存成功啦(≧∇≦)！！');
-        }
+        currentEditChatId = chat.id;
+        currentEditMsgIndex = msgIndex;
+        // 呼叫我们刚才写的那个新函数
+        openEditOverlay(msg.text);
     }
     else if (action === 'delete') {
-        // === 删除功能 ===
-        if(confirm('确定要删除这条消息嘛？删了就找不回了哦Σ（・□・；）！！')) {
+        // 这里暂时用系统的 confirm，如果你想用自定义的，可以把 delete-alert-overlay 改改文字拿来用
+        if(confirm('真的要删掉这条回忆吗？(T_T)')) {
             chat.messages.splice(msgIndex, 1);
             saveChatAndRefresh(chat);
         }
@@ -2602,36 +2661,58 @@ window.closeFrameLib = function() {
     document.getElementById('frame-lib-overlay').style.display = 'none';
 };
 
-// 应用选中的框
+
+// === 头像框独立保存逻辑 ===
 function applyFrame(url) {
-    if (currentFrameTarget) {
-        currentFrameTarget.style.backgroundImage = `url('${url}')`;
-        currentFrameTarget.style.backgroundSize = 'contain';
-        currentFrameTarget.style.backgroundRepeat = 'no-repeat';
+    // 只有在聊天详情页，且有当前聊天对象时才能换
+    if (!currentChatId) {
+        showSystemAlert('要在聊天窗口里才能给TA换装哦qwq！');
+        return;
+    }
+
+    const chat = chatsData.find(c => c.id === currentChatId);
+    if (!chat) return;
+
+    // 找到当前聊天的角色数据
+    const contact = contactsData.find(c => c.id === chat.contactId);
+    if (contact) {
+        // 1. 视觉上立即应用
+        const frameEl = document.getElementById('chat_layer_frame');
+        if (frameEl) {
+            frameEl.style.backgroundImage = `url('${url}')`;
+        }
         
-        // 如果有默认边框，去掉它
-        currentFrameTarget.style.border = 'none';
+        // 2. 数据上保存给这个角色
+        contact.frame = url;
         
-        // 自动保存
-        saveMemory(); // 复用你现有的保存机制
-        
-        // 提示一下
-        showSystemAlert('换装成功！美美哒(≧∇≦)');
-        closeFrameLib();
+        // 3. 写入数据库
+        localforage.setItem('Wx_Contacts_Data', contactsData).then(() => {
+            showSystemAlert('换上萌萌嘟头像框啦！！(≧∇≦)');
+            closeFrameLib();
+        });
     }
 }
 
-// 移除框
 window.removeFrame = function() {
-    if (currentFrameTarget) {
-        currentFrameTarget.style.backgroundImage = 'none';
-        saveMemory();
-        closeFrameLib();
+    if (!currentChatId) return;
+    const chat = chatsData.find(c => c.id === currentChatId);
+    const contact = contactsData.find(c => c.id === chat.contactId);
+    
+    if (contact) {
+        const frameEl = document.getElementById('chat_layer_frame');
+        if(frameEl) frameEl.style.backgroundImage = 'none';
+        
+        delete contact.frame; // 删除数据
+        
+        localforage.setItem('Wx_Contacts_Data', contactsData).then(() => {
+            showSystemAlert('已恢复默认(≧▽≦)～');
+            closeFrameLib();
+        });
     }
 };
 
 // 上传自定义框 (保留原来的功能)
-// 1. 渲染网格 (升级版：加了预览底图)
+// 1. 渲染网格
 function renderFrameGrid() {
     const grid = document.getElementById('frame-lib-grid');
     grid.innerHTML = '';
@@ -2639,8 +2720,7 @@ function renderFrameGrid() {
     AVATAR_FRAMES_DB.forEach(frame => {
         const item = document.createElement('div');
         item.className = 'frame-lib-item';
-        
-        // ★ 重点：加了一个 "preview-face" (假人头)，方便你看效果
+
         item.innerHTML = `
             <div class="preview-face"></div> 
             <img src="${frame.url}" class="frame-lib-img" loading="lazy">
@@ -2651,14 +2731,75 @@ function renderFrameGrid() {
     });
 }
 
-// 2. 上传自定义框 (修正版：不自动关闭)
+// 2. 上传自定义框 
 window.triggerCustomFrameUpload = function() {
     if (currentFrameTarget) {
         handleImageUpload(currentFrameTarget);
-        // closeFrameLib();  <--这一行被我删掉了！现在选完图，库还在！
     }
 };
 
+// === 新增：打开编辑弹窗 ===
+window.openEditOverlay = function(text) {
+    const overlay = document.getElementById('edit-msg-overlay');
+    const input = document.getElementById('edit-msg-input');
+    if(overlay && input) {
+        input.value = text;
+        overlay.style.display = 'flex';
+        input.focus();
+    } else {
+        alert("宝宝，你是不是没在 index.html 里加那个 <div id='edit-msg-overlay'>...</div> 的代码呀？快去加！");
+    }
+};
+
+// === 新增：关闭编辑弹窗 ===
+window.closeEditOverlay = function() {
+    const overlay = document.getElementById('edit-msg-overlay');
+    if(overlay) overlay.style.display = 'none';
+    currentEditMsgIndex = -1;
+};
+
+// === 新增：确认修改消息 ===
+window.confirmEditMsg = function() {
+    const input = document.getElementById('edit-msg-input');
+    const newVal = input.value;
+    
+    if (newVal && currentEditChatId !== null && currentEditMsgIndex !== -1) {
+        const chat = chatsData.find(c => c.id === currentEditChatId);
+        if (chat && chat.messages[currentEditMsgIndex]) {
+            // 修改数据
+            chat.messages[currentEditMsgIndex].text = newVal;
+            
+            // 如果改的是最后一条，顺便更新列表页显示的预览
+            if (currentEditMsgIndex === chat.messages.length - 1 && chat.messages[currentEditMsgIndex].type === 'text') {
+                chat.lastMsg = newVal;
+            }
+            
+            saveChatAndRefresh(chat);
+            showSystemAlert('改好啦！神不知鬼不觉(^_−)−☆');
+        }
+    }
+    closeEditOverlay();
+};
+
+// === 新增：加载更多消息 ===
+function loadMoreMessages() {
+    const chat = chatsData.find(c => c.id === currentChatId);
+    if (!chat || !chat.messages || chat.messages.length <= currentRenderLimit) return;
+    
+    // 记住当前滚动的高度，为了加载完不乱跳
+    const container = document.getElementById('chat-msg-area');
+    const oldHeight = container.scrollHeight;
+    
+    // 多加载40条
+    currentRenderLimit += 40;
+    
+    // 重新渲染（参数 false 代表不要自动滚到底部）
+    renderMessages(currentChatId, false); 
+    
+    // 恢复滚动位置，让你感觉不到画面跳动
+    const newHeight = container.scrollHeight;
+    container.scrollTop = newHeight - oldHeight;
+}
 
 // ==========================================================
 // [13] 数据备份与恢复 (Data Backup & Restore)
@@ -2745,4 +2886,104 @@ window.triggerImport = function() {
     document.body.appendChild(input);
     input.click();
     document.body.removeChild(input);
+};
+
+// ====================
+// [14] 新桌面逻辑
+// ====================
+
+// 1. 更新日历组件的日期
+function updateWidgetDate() {
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const weekDays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+    
+    const dateEl = document.getElementById('widget_date_num');
+    const dayEl = document.getElementById('widget_day_text');
+    
+    if(dateEl) dateEl.innerText = `${month}/${day}`;
+    if(dayEl) dayEl.innerText = weekDays[now.getDay()];
+}
+
+// 2. 桌面滑动监听 (更新底部小圆点)
+window.updateDesktopDots = function(el) {
+    const scrollLeft = el.scrollLeft;
+    const width = el.offsetWidth;
+    // 计算当前是第几页 (0, 1, 2)
+    const pageIndex = Math.round(scrollLeft / width);
+    
+    // 更新圆点样式
+    [1, 2, 3].forEach(i => {
+        const dot = document.getElementById(`d-dot-${i}`);
+        if(dot) {
+            dot.className = (i === pageIndex + 1) ? 'd-dot active' : 'd-dot';
+        }
+    });
+};
+
+// 3. 自动滚动输入 (你想要的编辑优化)
+// 当任意 edit-text 聚焦时，确保它不被键盘遮挡
+document.addEventListener('focusin', (e) => {
+    if (e.target.classList.contains('edit-text')) {
+        // 延迟一点点，等键盘弹起（虽然这是Web模拟，但如果是真手机有用）
+        setTimeout(() => {
+            e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+    }
+});
+
+// 启动时调用一次日期更新
+document.addEventListener('DOMContentLoaded', () => {
+    updateWidgetDate();
+    // 每天0点刷新一下日期
+    setInterval(updateWidgetDate, 60000 * 60); 
+});
+// ====================
+// [15] 朋友圈 Story 逻辑
+// ====================
+
+// 渲染 Story 栏
+window.renderMomentsHeader = function() {
+    const container = document.getElementById('moments-story-tray');
+    if(!container) return;
+    container.innerHTML = '';
+
+    // 1. 先渲染 ME (自己)
+    // 假设 personasData[0] 是你当前使用的身份，或者我们写死一个默认的
+    const me = personasData[0] || { name: 'Me', avatar: '' }; 
+    const meEl = document.createElement('div');
+    meEl.className = 'story-item';
+    
+    // 给 ME 加个可编辑的气泡
+    meEl.innerHTML = `
+        <div class="story-bubble edit-text" contenteditable="true">喊话...</div>
+        <div class="story-avatar-ring">
+            <div class="story-avatar-img" style="${getAvatarStyle(me.avatar)}"></div>
+        </div>
+        <div class="story-name">Me</div>
+    `;
+    // 点击 ME 的头像触发什么？比如换头像或者发 Story
+    meEl.querySelector('.story-avatar-ring').onclick = () => {
+        alert('这是你自己哦！点击上面的气泡可以喊话～');
+    };
+    container.appendChild(meEl);
+
+    // 2. 渲染好友 (Contacts)
+    contactsData.forEach(c => {
+        const item = document.createElement('div');
+        item.className = 'story-item active'; // 默认给个 active 圈圈，假装有新消息
+        item.innerHTML = `
+            <div class="story-avatar-ring">
+                <div class="story-avatar-img" style="${getAvatarStyle(c.avatar)}"></div>
+            </div>
+            <div class="story-name">${c.name}</div>
+        `;
+        // 点击好友头像
+        item.onclick = () => {
+            item.classList.remove('active'); // 点过就去掉圈圈
+            alert(`查看 ${c.name} 的 Story (假装弹出了一个全屏图片)`);
+        };
+        container.appendChild(item);
+    });
 };

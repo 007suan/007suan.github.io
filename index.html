@@ -27,83 +27,124 @@
             </div>
         </div>
 
-        <div class="desktop-content">
-            <div class="top-widget-area">
-                <div class="side-pills">
-                    <div class="pill edit-text" id="widget_top_l1">*｡☆梦游症🎧｡*</div>
-                    <div class="pill edit-text" id="widget_top_l2">|||||||||| 17:49</div>
+<div class="desktop-wrapper" onscroll="updateDesktopDots(this)">
+    
+    <div class="desktop-page" id="page-1">
+        <div style="height: 5px;"></div> <div class="calendar-widget">
+            <div class="cal-header">
+                <div class="cal-date-area">
+                    <div class="cal-date-big" id="widget_date_num">01/01</div>
+                    <div class="cal-day-text" id="widget_day_text">星期五</div>
                 </div>
-                
-                <div class="center-avatar-area">
-                    <div class="avatar-circle upload-img" id="widget_center_avatar"></div>
-                    <div class="widget-text-sm edit-text" id="widget_center_t1">☆*: .｡. .｡.:*☆</div>
-                    <div class="widget-text-sm edit-text" id="widget_center_t2" style="margin-top:2px">♥ Memories </div>
-                    <div class="widget-title edit-text" id="widget_center_title">Top Widgets⁺</div>
-                </div>
-
-                <div class="side-pills">
-                    <div class="pill edit-text" id="widget_top_r1">⋈ 158GB</div>
-                    <div class="pill edit-text" id="widget_top_r2">♡milkㄐ kitty 9*</div>
+                <div class="cal-text-area">
+                    <div class="edit-text cal-sub-text" style="text-align:right;">幸福的秘诀是拥有苹果时只在意苹果。 (๑＞＜)☆</div>
+                    <div class="edit-text cal-main-text" style="margin-top:4px; text-align:right;">𝗪𝗶𝗻𝘁𝗲𝗿.🌨</div>
                 </div>
             </div>
 
-            <div class="photo-widget-area">
-                <div class="star-decoration">★</div>
-                <div class="polaroid p-left">
-                    <div class="clip"></div>
-                    <div class="polaroid-img upload-img" id="photo_polaroid_left"></div>
+            <div class="cal-photo-grid">
+                <div class="cal-photo-item upload-img" id="cal_p_1">
+                    <div class="wave-box">
+                        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                    </div>
                 </div>
-                <div class="polaroid p-center">
-                    <div class="clip" style="left: 40px;"></div>
-                    <div class="polaroid-img upload-img" id="photo_polaroid_center"></div>
+                <div class="cal-photo-item upload-img" id="cal_p_2">
+                    <div class="wave-box">
+                        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                    </div>
                 </div>
-                <div class="polaroid p-right">
-                    <div style="position:absolute; top:-5px; right:30px; width:40px; height:12px; background:rgba(255,255,255,0.7); transform:rotate(5deg); box-shadow:0 1px 2px rgba(0,0,0,0.1);"></div>
-                    <div class="polaroid-img upload-img" id="photo_polaroid_right"></div>
+                <div class="cal-photo-item upload-img" id="cal_p_3">
+                    <div class="wave-box">
+                        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                    </div>
                 </div>
-                <div class="widget-label-centered edit-text" id="photo_widget_label">Top Widgets⁺</div>
-            </div>
-
-            <div class="app-grid" id="desktopGrid">
-                <div class="app-item" id="app-wechat" onclick="openApp('wechat')">
-                    <div class="app-icon" id="icon_app_wechat" style="background-color: #07c160;"></div> 
-                    <div class="app-name edit-text" id="name_app_wechat">微信</div>
+                <div class="cal-photo-item upload-img" id="cal_p_4">
+                    <div class="wave-box">
+                        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                    </div>
                 </div>
-                <div class="app-item">
-                    <div class="app-icon" id="icon_app_world"></div>
-                    <div class="app-name edit-text" id="name_app_world">世界书</div>
-                </div>
-                <div class="app-item" id="app-settings" onclick="openApp('settings')">
-                    <div class="app-icon" id="icon_app_settings" style="background-color: #8e8e93;"></div> 
-                    <div class="app-name edit-text" id="name_app_settings">设置</div>
-                </div>
-                <div class="app-item" id="app-music" onclick="openApp('music')">
-                    <div class="app-icon" id="icon_app_music" style="background-color: #fa233b;"></div> 
-                    <div class="app-name edit-text" id="name_app_music">音乐</div>
-                </div>
-
-                <div class="app-item">
-                    <div class="app-icon upload-img" id="icon_app_idle_1" style="background-color: #ffcc00;"></div> 
-                    <div class="app-name edit-text" id="name_app_idle_1">相册</div>
-                </div>
-                <div class="app-item">
-                    <div class="app-icon upload-img" id="icon_app_idle_2" style="background-color: #5ac8fa;"></div>
-                    <div class="app-name edit-text" id="name_app_idle_2">天气</div>
-                </div>
-                <div class="app-item">
-                    <div class="app-icon upload-img" id="icon_app_idle_3" style="background-color: #ff9500;"></div> 
-                    <div class="app-name edit-text" id="name_app_idle_3">备忘录</div>
-                </div>
-                <div class="app-item">
-                    <div class="app-icon upload-img" id="icon_app_idle_4" style="background-color: #af52de;"></div> 
-                    <div class="app-name edit-text" id="name_app_idle_4">播客</div>
-                </div>
-            </div>
-
-            <div class="search-pill edit-text" id="desktop_search_text">
-                <span style="font-size: 12px;">🔍搜索</span>
             </div>
         </div>
+    </div>
+
+    <div class="desktop-page" id="page-2">
+        <div class="top-widget-area">
+            <div class="side-pills">
+                <div class="pill edit-text" id="widget_top_l1">*｡☆梦游症🎧｡*</div>
+                <div class="pill edit-text" id="widget_top_l2">|||||||||| 17:49</div>
+            </div>
+            <div class="center-avatar-area">
+                <div class="avatar-circle upload-img" id="widget_center_avatar"></div>
+                <div class="widget-text-sm edit-text" id="widget_center_t1">☆*: .｡. .｡.:*☆</div>
+                <div class="widget-text-sm edit-text" id="widget_center_t2" style="margin-top:2px">♥ Memories </div>
+                <div class="widget-title edit-text" id="widget_center_title">Top Widgets⁺</div>
+            </div>
+            <div class="side-pills">
+                <div class="pill edit-text" id="widget_top_r1">⋈ 158GB</div>
+                <div class="pill edit-text" id="widget_top_r2">♡milkㄐ kitty 9*</div>
+            </div>
+        </div>
+
+        <div class="photo-widget-area">
+            <div class="star-decoration">★</div>
+            <div class="polaroid p-left">
+                <div class="clip"></div>
+                <div class="polaroid-img upload-img" id="photo_polaroid_left"></div>
+            </div>
+            <div class="polaroid p-center">
+                <div class="clip" style="left: 40px;"></div>
+                <div class="polaroid-img upload-img" id="photo_polaroid_center"></div>
+            </div>
+            <div class="polaroid p-right">
+                <div style="position:absolute; top:-5px; right:30px; width:40px; height:12px; background:rgba(255,255,255,0.7); transform:rotate(5deg); box-shadow:0 1px 2px rgba(0,0,0,0.1);"></div>
+                <div class="polaroid-img upload-img" id="photo_polaroid_right"></div>
+            </div>
+            <div class="widget-label-centered edit-text" id="photo_widget_label">Top Widgets⁺</div>
+        </div>
+
+        <div class="app-grid" id="desktopGrid">
+            <div class="app-item" id="app-wechat" onclick="openApp('wechat')">
+                <div class="app-icon" id="icon_app_wechat" style="background-color: #07c160;"></div> 
+                <div class="app-name edit-text" id="name_app_wechat">微信</div>
+            </div>
+            <div class="app-item">
+                <div class="app-icon" id="icon_app_world"></div>
+                <div class="app-name edit-text" id="name_app_world">世界书</div>
+            </div>
+            <div class="app-item" id="app-settings" onclick="openApp('settings')">
+                <div class="app-icon" id="icon_app_settings" style="background-color: #8e8e93;"></div> 
+                <div class="app-name edit-text" id="name_app_settings">设置</div>
+            </div>
+            <div class="app-item" id="app-music" onclick="openApp('music')">
+                <div class="app-icon" id="icon_app_music" style="background-color: #fa233b;"></div> 
+                <div class="app-name edit-text" id="name_app_music">音乐</div>
+            </div>
+            <div class="app-item"><div class="app-icon upload-img" id="icon_app_idle_1" style="background-color: #ffcc00;"></div><div class="app-name edit-text" id="name_app_idle_1">相册</div></div>
+            <div class="app-item"><div class="app-icon upload-img" id="icon_app_idle_2" style="background-color: #5ac8fa;"></div><div class="app-name edit-text" id="name_app_idle_2">天气</div></div>
+            <div class="app-item"><div class="app-icon upload-img" id="icon_app_idle_3" style="background-color: #ff9500;"></div><div class="app-name edit-text" id="name_app_idle_3">备忘录</div></div>
+            <div class="app-item"><div class="app-icon upload-img" id="icon_app_idle_4" style="background-color: #af52de;"></div><div class="app-name edit-text" id="name_app_idle_4">播客</div></div>
+        </div>
+    </div>
+
+    <div class="desktop-page" id="page-3">
+        <div style="height: 100%; display:flex; justify-content:center; align-items:center; color:#ccc; font-size:12px;">
+            Waiting for decoration...<br>♡
+        </div>
+    </div>
+
+</div>
+
+<div class="desktop-footer-controls">
+    <div class="search-pill edit-text" id="desktop_search_text">
+        <span style="font-size: 12px;">🔍 搜索</span>
+    </div>
+
+    <div class="desktop-pagination">
+        <div class="d-dot active" id="d-dot-1"></div>
+        <div class="d-dot" id="d-dot-2"></div>
+        <div class="d-dot" id="d-dot-3"></div>
+    </div>
+</div>
 
         <div class="dock" id="dockGrid">
             <div class="app-item" style="margin-bottom: 0;"><div class="app-icon" id="dock_icon_1"></div></div>
@@ -212,11 +253,79 @@
                         <div id="contact-list-container" class="im-list-container"></div>
                     </div>
 
-                    <div id="wx-page-moments" style="display:none; padding-top: 80px; text-align: center;">
-                        <div style="font-size: 80px; color: #ddd; margin-bottom: 20px;">(T_T)</div>
-                        <div style="color: #999; font-size: 14px;">Paper Plane<br><span style="font-size: 12px; color: #ccc;">No new moments...</span></div>
-                    </div>
-                </div>
+<div id="wx-page-moments" class="ins-layout">
+    
+    <div class="ins-header-section">
+        <div class="ins-avatar-container">
+            <div class="ins-mood-bubble edit-text">ㅎㅇ...🤍</div>
+            
+            <div class="ins-big-avatar upload-img sync-avatar" id="ins_page_avatar"></div>
+        </div>
+        
+        <div class="ins-info">
+            <div class="ins-name edit-text">XuShiYu</div>
+            <div class="ins-bio edit-text">誓言是一场有时差的雨 🌧️<br>instagram: @lover</div>
+        </div>
+        
+        <div class="ins-stats">
+            <div class="ins-stat-item"><b class="edit-text">11</b><br><span>posts</span></div>
+            <div class="ins-stat-item"><b class="edit-text">1314</b><br><span>followers</span></div>
+            <div class="ins-stat-item"><b class="edit-text">520</b><br><span>following</span></div>
+        </div>
+        
+        <div class="ins-btn-row">
+            <div class="ins-btn primary">Edit profile</div>
+            <div class="ins-btn">Share profile</div>
+            <div class="ins-btn icon-btn">+</div>
+        </div>
+    </div>
+
+    <div class="ins-highlights-scroll">
+        <div class="ins-highlight-item" onclick="alert('发朋友圈/快拍功能开发中...宝宝别急！')">
+            <div class="ins-highlight-circle plus-btn">
+                <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            </div>
+            <div class="ins-highlight-text">新建</div>
+        </div>
+        
+        <div class="ins-highlight-item">
+            <div class="ins-highlight-circle upload-img" style="background-image: url('https://i.postimg.cc/dVrTXFYn/kuku10.gif');"></div>
+            <div class="ins-highlight-text edit-text">Love</div>
+        </div>
+        <div class="ins-highlight-item">
+            <div class="ins-highlight-circle upload-img" style="background-image: url('https://i.postimg.cc/TYY6FJvs/kuku16.gif');"></div>
+            <div class="ins-highlight-text edit-text">Daily</div>
+        </div>
+        <div class="ins-highlight-item">
+            <div class="ins-highlight-circle upload-img" style="background-image: url('https://i.postimg.cc/jjTJY1qT/kuku1.gif');"></div>
+            <div class="ins-highlight-text edit-text">OOTD</div>
+        </div>
+        <div class="ins-highlight-item">
+            <div class="ins-highlight-circle upload-img"></div>
+            <div class="ins-highlight-text edit-text">Cat</div>
+        </div>
+    </div>
+
+    <div class="ins-feed-area">
+        <div class="ins-feed-tabs">
+            <div class="ins-tab active"><svg viewBox="0 0 24 24"><path d="M3 3v18h18V3H3zm16 16H5V5h14v14zM7 7h10v2H7V7zm0 4h10v2H7v-2zm0 4h7v2H7v-2z"/></svg></div>
+            <div class="ins-tab"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg></div>
+        </div>
+        
+        <div class="ins-photo-grid">
+             <div class="ins-grid-item upload-img"></div>
+             <div class="ins-grid-item upload-img"></div>
+             <div class="ins-grid-item upload-img"></div>
+             <div class="ins-grid-item upload-img"></div>
+        </div>
+        
+        <div style="height: 100px; text-align: center; color: #ddd; font-size: 12px; margin-top: 20px;">
+            End of Memories
+        </div>
+    </div>
+</div>
+          </div>
+     </div>
 
 <div class="wx-tab-bar" style="z-index: 999;">
     <div class="wx-tab-item active" onclick="switchWxTab('chat', this)">
@@ -530,11 +639,13 @@
 
         <div id="wx-profile-view">
             <div class="wx-profile-cover upload-img" id="wx_profile_cover_bg"></div>
-            <div class="wx-p3-nav">
-                <div class="wx-p2-back" onclick="closeWxProfile()" style="top: 0; left: 0; position: relative; margin: 0; color: #fff; mix-blend-mode: difference;">
-                    <svg viewBox="0 0 24 24" style="fill: currentColor;"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-                </div>
-            </div>
+<div class="wx-p3-footer-area">
+    <div class="wx-profile-close-btn" onclick="closeWxProfile()">
+        <svg viewBox="0 0 24 24" width="24" height="24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    </div>
+    
+    <div class="wx-p3-footer-text edit-text">有你不是很坏。</div>
+</div>
             <div class="wx-p3-container">
                 <div class="wx-p3-header-area">
                     <div class="wx-p3-bubble"><span class="edit-text">你的存在 即之我所爱 = > u < =</span></div>
@@ -548,13 +659,12 @@
                     <div class="wx-p3-desc edit-text">你好像过的很好，<br>迫不及待地抹去我的存在。</div>
                 </div>
                 <div class="wx-p3-tags">
-                    <div class="wx-p3-tag edit-text">让过去过去，让将来将来</div>
+                    <div class="wx-p3-tag edit-textarea">让过去过去，让将来将来</div>
                     <div class="wx-p3-tag edit-text">淡淡的就会顺顺的。</div>
                     <div class="wx-p3-tag grey edit-text">誓言是一场有时差的雨</div>
-                </div>
-                <div class="wx-p3-footer edit-text">有你不是很坏。</div>
+      </div>
+         </div>
             </div>
-        </div>
 
         <div id="sub-page-creator" class="exp-theme-root" style="display: none;">
             <div class="exp-browser-top">
@@ -648,31 +758,40 @@
         </div>
 <div id="sub-page-chat-detail" class="sub-page" style="background: #f2f2f7; z-index: 2000;">
     
-    <div class="chat-header-layer upload-img" id="chat_layer_header_bg">
-        <div class="chl-overlay"></div>
-        
-        <div class="chl-content">
-            <div class="chl-left-group">
-                <div class="chl-back-btn" onclick="closeChatDetail()">
-                    <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-                </div>
-                
-                <div class="chl-avatar-wrapper">
-                    <div class="chl-bubble edit-text">Mood..☁️</div>
-                    <div class="chl-avatar" id="chat_layer_avatar"></div>
-                    <div class="chl-frame" onclick="openFrameLib(this)"></div>
-                    <div class="chl-online-dot"></div>
-                </div>
+<div class="chat-header-layer" id="chat_layer_header_bg">
+    <div class="chl-overlay"></div>
+    
+    <div class="chl-content">
+        <div class="chl-left-group">
+            <div class="chl-back-btn" onclick="closeChatDetail()">
+                <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+            </div>
+            
+            <div class="chl-avatar-wrapper">
+                <div class="chl-bubble edit-text">Mood..☁️</div>
+                <div class="chl-avatar" id="chat_layer_avatar"></div>
+                <div class="chl-frame" id="chat_layer_frame" onclick="openFrameLib(this)"></div>
+                <div class="chl-online-dot"></div>
+            </div>
 
-                <div class="chl-text-info">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <div class="chl-name edit-text" id="chat_layer_name">AI Name</div>
-                        <div class="chl-tag edit-text" style="background: rgba(255,100,100,0.1); color: #ff6b6b;">Love</div>
-                        <div class="chl-tag edit-text" style="background: rgba(100,200,255,0.1); color: #007aff;">i lk soo</div>
+            <div class="chl-text-info">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <div class="chl-name edit-text" id="chat_layer_name">Name</div>
+                    <div class="chl-status-pill">
+                         <span style="color:#555">★</span> <span id="chat-mood-text">i luv u <3…🩶</span>
                     </div>
-                    <div class="chl-status edit-text">˚❅𝓦𝓲𝓷𝓽𝓮𝓻 𝓲𝓼 𝓬𝓸𝓶𝓲𝓷𝓰✲*</div>
                 </div>
-            </div> </div> </div> <div id="chat-msg-area" class="chat-body-ios" onclick="hideAllMenus()"></div>
+                <div class="chl-status edit-text">˚❅𝓦𝓲𝓷𝓽𝓮𝓻 𝓲𝓼 𝓬𝓸𝓶𝓲𝓷𝓰✲*</div>
+            </div>
+        </div> 
+
+        <div class="chl-right-group">
+            <div class="chl-menu-btn" onclick="alert('控制面板装修中...宝宝稍等！')">
+                <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+            </div>
+        </div>
+    </div>
+</div> <div id="chat-msg-area" class="chat-body-ios" onclick="hideAllMenus()"></div>
 
     <div class="chat-footer-ios">
         <div class="cf-icon-btn" onclick="toggleChatMenu()">
@@ -835,6 +954,18 @@
                 </div>
             </div>
         </div>
+
+<div id="edit-msg-overlay" class="custom-alert-overlay" style="display: none;">
+    <div class="custom-alert-box">
+        <div class="alert-title">Edit Message</div>
+        <div class="alert-msg">神不知鬼不觉...</div>
+        <input type="text" id="edit-msg-input" style="width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px; font-size: 16px; margin-bottom: 20px; outline:none;">
+        <div class="alert-btn-group">
+            <div class="alert-btn cancel" onclick="closeEditOverlay()">Cancel</div>
+            <div class="alert-btn confirm" onclick="confirmEditMsg()">Save</div>
+        </div>
+    </div>
+</div>
 
 <div id="frame-lib-overlay" class="custom-alert-overlay" style="display: none; align-items: flex-end;">
     <div class="selector-sheet" style="height: 70vh;">
