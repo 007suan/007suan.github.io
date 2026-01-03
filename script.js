@@ -2148,7 +2148,7 @@ window.triggerAI = async function() {
     }
 };
 
-// 后台塞消息助手 
+// === 后台消息助手 (会自动刷新列表！) ===
 function pushMsgToData(chatObj, text, role, quote) {
     if (!chatObj.messages) chatObj.messages = [];
     
@@ -2161,15 +2161,29 @@ function pushMsgToData(chatObj, text, role, quote) {
         quote: quote
     });
     
-    // 2. 更新列表预览 (只在不是撤回的时候)
+    // 2. 更新最后一条消息预览
     chatObj.lastMsg = text;
     chatObj.lastTime = Date.now();
     
     // 3. 增加未读红点
     chatObj.unread = (chatObj.unread || 0) + 1;
+
+    // 4. ★ 核心修复：立刻保存并刷新界面！
+    // 这一步会把数据存进本地，防止刷新丢失
+    localforage.setItem('Wx_Chats_Data', chatsData);
+    
+    // 5. 更新全局红点 (桌面的)
+    updateGlobalBadges();
+
+    // 6. ★ 关键：如果你正在盯着消息列表看，必须立刻强制刷新列表！
+    // 判断当前是不是在“微信”Tab页
+    const wechatTab = document.getElementById('wx-page-chats');
+    if (wechatTab && wechatTab.style.display !== 'none') {
+        renderChatList();
+    }
 }
 
-// === 修复后的 API 调用函数  ===
+// === API 调用函数  ===
 async function callApiInternal(prompt) {
     // 1. 基础检查
     if (!apiConfig.main.key) { alert('没配置API Key呀笨蛋！'); return null; }
@@ -3064,49 +3078,44 @@ window.updateGlobalBadges = function() {
     
     // 2. 更新Dock栏或者Tab栏的红点，原理一样
 };
-// === 顶部通知  ===
+// === 修复版：顶部通知 (之前这里多了一截尾巴！) ===
 window.showNotification = function(name, text, rawAvatar) {
     const banner = document.getElementById('ios-notification');
     const nTitle = document.getElementById('notif-title');
     const nMsg = document.getElementById('notif-msg');
     const nAvatar = document.getElementById('notif-avatar');
     
-    // 如果页面里没有通知栏HTML，就直接略过
     if(!banner || !nTitle || !nMsg || !nAvatar) return;
 
     nTitle.innerText = name;
     nMsg.innerText = text;
     
-    // ★ 核心修复：智能解析头像样式
-    const styleStr = getAvatarStyle(rawAvatar);
-    
-    // 1. 先清空，防止残留
-    nAvatar.style.backgroundImage = 'none';
-    nAvatar.style.backgroundColor = 'transparent';
-    
-    // 2. 判断是图片还是颜色
-    if (styleStr.includes('url(')) {
-        // 如果是图片，提取 url(...) 部分
-        const urlPart = styleStr.replace('background-image: ', '').replace(';', '');
-        nAvatar.style.backgroundImage = urlPart;
-        nAvatar.style.backgroundSize = 'cover';
+    // ★ 核心修复：更暴力的头像解析逻辑
+    let avatarUrl = '';
+    if (rawAvatar && rawAvatar.includes('url(')) {
+        const match = rawAvatar.match(/url\(['"]?(.*?)['"]?\)/);
+        if (match && match[1]) {
+            avatarUrl = match[1];
+        }
     } else {
-        // 如果是默认灰色，或者是纯色背景
-        nAvatar.style.backgroundColor = '#f0f0f0'; // 默认给个浅灰
-        // 如果数据里有具体颜色也可以解析，这里简单处理
+        avatarUrl = rawAvatar;
+    }
+
+    if (avatarUrl) {
+        nAvatar.style.backgroundImage = `url('${avatarUrl}')`;
+        nAvatar.style.backgroundColor = 'transparent';
+    } else {
+        nAvatar.style.backgroundImage = 'none';
+        nAvatar.style.backgroundColor = '#ddd'; 
     }
     
-    // 播放音效 (如果你有的话)
-    // const audio = new Audio('notification.mp3'); audio.play().catch(()=>{});
-
     // 动画显示
     banner.classList.add('show');
-    
-    // 3秒后自动消失
     setTimeout(() => {
         banner.classList.remove('show');
     }, 3000);
-};
+}; 
+
 // ====================
 // [17] 聊天控制面板逻辑 (Chat Control)
 // ====================
@@ -3134,7 +3143,7 @@ window.openChatControl = function() {
     document.getElementById('cc-ctx-slider').value = limit;
     updateTokenPredict(limit);
 
-    // 显示面板 (从右侧滑入 或者 从底部滑入，这里用 sub-page 的默认右侧滑入)
+    // 显示面板
     const panel = document.getElementById('chat-control-overlay');
     panel.style.display = 'flex';
     setTimeout(() => panel.classList.add('active'), 10);
@@ -3204,10 +3213,10 @@ window.jumpToEditor = function(type) {
     }
 };
 
-// 触发背景上传
+// ====================
+// [18] 聊天背景上传 (Wallpaper Upload)
+// ====================
 window.triggerBgUpload = function() {
-    // 复用你的 handleImageUpload，但是我们需要知道这是在传壁纸
-    // 这里偷个懒，创建一个临时的隐藏 input
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -3222,14 +3231,14 @@ window.triggerBgUpload = function() {
                 if(chat) {
                     chat.bgImage = url;
                     localforage.setItem('Wx_Chats_Data', chatsData).then(() => {
-                        // 应用背景
-                        const bgLayer = document.getElementById('chat_layer_header_bg'); 
-                        // 注意：这里你是想改聊天区域背景，还是顶栏背景？
-                        // 如果是聊天区域背景，我们需要在 renderMessages 里应用
-                        // 假设我们要改聊天区域背景：
-                        document.getElementById('chat-msg-area').style.backgroundImage = url;
-                        document.getElementById('chat-msg-area').style.backgroundSize = 'cover';
-                        document.getElementById('chat-msg-area').style.backgroundPosition = 'center';
+                        // 如果当前就在这个聊天里，立即应用
+                        const msgArea = document.getElementById('chat-msg-area');
+                        if (msgArea) {
+                            msgArea.style.backgroundImage = url;
+                            msgArea.style.backgroundSize = 'cover';
+                            msgArea.style.backgroundPosition = 'center';
+                            msgArea.style.backgroundAttachment = 'fixed';
+                        }
                         showSystemAlert('聊天背景换好啦！✨');
                     });
                 }
@@ -3239,3 +3248,52 @@ window.triggerBgUpload = function() {
     };
     input.click();
 };
+
+// ====================
+// [19] 后台消息助手 (修复版：自动刷新列表)
+// ====================
+function pushMsgToData(chatObj, text, role, quote) {
+    if (!chatObj.messages) chatObj.messages = [];
+    
+    // 1. 塞入新消息
+    chatObj.messages.push({
+        role: role,
+        text: text,
+        timestamp: Date.now(),
+        type: 'text',
+        quote: quote
+    });
+    
+    // 2. 更新最后一条消息预览
+    chatObj.lastMsg = text;
+    chatObj.lastTime = Date.now();
+    
+    // 3. 增加未读红点
+    chatObj.unread = (chatObj.unread || 0) + 1;
+
+    // 4. 保存数据
+    localforage.setItem('Wx_Chats_Data', chatsData);
+    
+    // 5. 更新全局红点 (桌面)
+    if (window.updateGlobalBadges) window.updateGlobalBadges();
+
+    // 6. 如果正在看消息列表，强制刷新
+    const wechatTab = document.getElementById('wx-page-chats');
+    if (wechatTab && wechatTab.style.display !== 'none') {
+        if (window.renderChatList) window.renderChatList();
+    }
+}
+
+// ====================
+// [20] 页面初始化监听 (防止红点刷新消失)
+// ====================
+window.addEventListener('load', () => {
+    // 1. 恢复全局红点
+    if (window.updateGlobalBadges) window.updateGlobalBadges();
+    
+    // 2. 如果刚好停留在消息列表页，刷新列表
+    if (document.querySelector('.wx-tab-item.active') && 
+        document.querySelector('.wx-tab-item.active').innerText.includes('微信')) {
+        if (window.renderChatList) window.renderChatList();
+    }
+});
