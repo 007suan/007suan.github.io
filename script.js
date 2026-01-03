@@ -1721,9 +1721,9 @@ window.closeDeleteChatAlert = function() {
 // ==========================================================
 // [10] 聊天详情与交互 (Chat Detail)
 // ==========================================================
-// === 修复版：进入聊天 (不再闪退啦) ===
+// === 修复版：进入聊天 (不再报错啦) ===
 window.enterChat = function(chat) {
-    // 1. ★ 核心修复：先找到聊天对象是谁！
+    // 1. 找到聊天对象
     const contact = contactsData.find(c => c.id === chat.contactId);
     
     // 2. 清除红点 & 更新数据
@@ -1731,18 +1731,21 @@ window.enterChat = function(chat) {
     saveChatAndRefresh(chat); 
     updateGlobalBadges(); 
     
-    currentChatId = chat.id;
+    currentChatId = chat.id; // 锁定当前聊天ID
     
-    // 3. 更新顶栏信息
+    // 3. 更新顶栏信息 (名字、头像、背景)
     const nameEl = document.getElementById('chat_layer_name');
-    if(nameEl) nameEl.innerText = contact ? contact.name : 'Unknown';
-    
+    if(nameEl) {
+        // 优先显示私有备注
+        nameEl.innerText = contact ? (contact.privateAlias || contact.name) : 'Unknown';
+    }
+
     const avatarEl = document.getElementById('chat_layer_avatar');
     if(avatarEl && contact) {
         avatarEl.style.backgroundImage = contact.avatar;
     }
-
-    // 4. 读取这个角色的专属头像框 (如果有)
+    
+    // 4. 读取专属头像框
     const frameEl = document.getElementById('chat_layer_frame');
     if (frameEl) {
         if (contact && contact.frame) {
@@ -1759,16 +1762,29 @@ window.enterChat = function(chat) {
         setTimeout(() => page.classList.add('active'), 10);
     }
     
-    // 6. 滚动逻辑
+    // 6. 滚动逻辑 & 背景图设置
     currentRenderLimit = 40;
-    const msgArea = document.getElementById('chat-msg-area');
+    const msgArea = document.getElementById('chat-msg-area'); // ★ 只定义这一次！
+    
     if(msgArea) {
+        // (A) 设置背景图
+        if (chat.bgImage) {
+            msgArea.style.backgroundImage = chat.bgImage;
+            msgArea.style.backgroundSize = 'cover';
+            msgArea.style.backgroundPosition = 'center';
+            msgArea.style.backgroundAttachment = 'fixed'; 
+        } else {
+            msgArea.style.backgroundImage = 'none';
+        }
+
+        // (B) 绑定滚动
         msgArea.onscroll = () => {
             if (msgArea.scrollTop === 0) {
                 loadMoreMessages();
             }
         };
-        // 渲染消息
+        
+        // (C) 渲染消息
         renderMessages(chat.id);
     }
 };
@@ -3090,4 +3106,136 @@ window.showNotification = function(name, text, rawAvatar) {
     setTimeout(() => {
         banner.classList.remove('show');
     }, 3000);
+};
+// ====================
+// [17] 聊天控制面板逻辑 (Chat Control)
+// ====================
+
+// 打开控制面板
+window.openChatControl = function() {
+    if (!currentChatId) return;
+    const chat = chatsData.find(c => c.id === currentChatId);
+    const contact = contactsData.find(c => c.id === chat.contactId);
+    if (!chat || !contact) return;
+
+    // 1. 填充基础信息
+    document.getElementById('cc-char-name').innerText = contact.name;
+    document.getElementById('cc-char-avatar').style.backgroundImage = getAvatarStyle(contact.avatar).replace('background-image: ', '').replace(';', '');
+    
+    // 2. 填充私有备注 (存放在 contact.privateAlias)
+    document.getElementById('cc-private-alias').value = contact.privateAlias || '';
+
+    // 3. 填充逻辑开关
+    // 默认开启时间感知
+    document.getElementById('cc-switch-time').checked = (chat.enableTime !== false); 
+    
+    // 4. 填充记忆条数 (默认20)
+    const limit = chat.contextLimit || 20;
+    document.getElementById('cc-ctx-slider').value = limit;
+    updateTokenPredict(limit);
+
+    // 显示面板 (从右侧滑入 或者 从底部滑入，这里用 sub-page 的默认右侧滑入)
+    const panel = document.getElementById('chat-control-overlay');
+    panel.style.display = 'flex';
+    setTimeout(() => panel.classList.add('active'), 10);
+};
+
+window.closeChatControl = function() {
+    const panel = document.getElementById('chat-control-overlay');
+    panel.classList.remove('active');
+    setTimeout(() => panel.style.display = 'none', 300);
+    
+    // 关闭时顺便刷新一下聊天界面(如果有改动背景之类的)
+    if(currentChatId) renderMessages(currentChatId);
+};
+
+// 实时更新 Token 预测 & 显示数值
+window.updateTokenPredict = function(val) {
+    document.getElementById('cc-ctx-display').innerText = val;
+    // 估算公式：假设每条消息平均 50 个汉字/单词，加上 System Prompt 约 500 tokens
+    // 1个汉字 ≈ 1.5 - 2 tokens (保守估计)
+    const estimated = 500 + (val * 50 * 1.5); 
+    document.getElementById('cc-token-predict').innerText = `~${Math.floor(estimated)}`;
+    
+    // 既然拖动了，就顺手保存一下
+    saveChatSettings();
+};
+
+// 保存所有设定
+window.saveChatSettings = function() {
+    if (!currentChatId) return;
+    const chat = chatsData.find(c => c.id === currentChatId);
+    const contact = contactsData.find(c => c.id === chat.contactId);
+    
+    if (chat && contact) {
+        // 1. 保存备注 (存到 Contact)
+        const newAlias = document.getElementById('cc-private-alias').value;
+        contact.privateAlias = newAlias;
+        
+        // 2. 保存 Chat 设定
+        chat.enableTime = document.getElementById('cc-switch-time').checked;
+        chat.contextLimit = parseInt(document.getElementById('cc-ctx-slider').value);
+        
+        // 写入数据库
+        localforage.setItem('Wx_Contacts_Data', contactsData);
+        localforage.setItem('Wx_Chats_Data', chatsData);
+        
+        // 如果改了备注，顶栏名字要变
+        const nameEl = document.getElementById('chat_layer_name');
+        if(nameEl) nameEl.innerText = newAlias || contact.name;
+    }
+};
+
+// 跳转编辑
+window.jumpToEditor = function(type) {
+    if (!currentChatId) return;
+    const chat = chatsData.find(c => c.id === currentChatId);
+    
+    // 先关闭当前面板
+    // closeChatControl(); 
+    // 不关闭也行，直接叠在上面，但我建议还是保持层级清晰
+    
+    if (type === 'char') {
+        creatorMode = 'character';
+        openCreatorPage(chat.contactId);
+    } else {
+        creatorMode = 'persona';
+        openCreatorPage(chat.personaId);
+    }
+};
+
+// 触发背景上传
+window.triggerBgUpload = function() {
+    // 复用你的 handleImageUpload，但是我们需要知道这是在传壁纸
+    // 这里偷个懒，创建一个临时的隐藏 input
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if(file) {
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const url = `url('${evt.target.result}')`;
+                // 保存到 chat 对象
+                const chat = chatsData.find(c => c.id === currentChatId);
+                if(chat) {
+                    chat.bgImage = url;
+                    localforage.setItem('Wx_Chats_Data', chatsData).then(() => {
+                        // 应用背景
+                        const bgLayer = document.getElementById('chat_layer_header_bg'); 
+                        // 注意：这里你是想改聊天区域背景，还是顶栏背景？
+                        // 如果是聊天区域背景，我们需要在 renderMessages 里应用
+                        // 假设我们要改聊天区域背景：
+                        document.getElementById('chat-msg-area').style.backgroundImage = url;
+                        document.getElementById('chat-msg-area').style.backgroundSize = 'cover';
+                        document.getElementById('chat-msg-area').style.backgroundPosition = 'center';
+                        showSystemAlert('聊天背景换好啦！✨');
+                    });
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    input.click();
 };

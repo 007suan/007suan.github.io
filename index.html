@@ -788,7 +788,7 @@
         </div> 
 
 <div class="chl-right-group">
-    <div class="chl-menu-btn" onclick="alert('控制面板装修中...宝宝稍等！')">
+  <div class="chl-menu-btn" onclick="openChatControl()">
         <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: #333;">
             <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
         </svg>
@@ -870,6 +870,114 @@
         </div>
     </div>
 </div> 
+
+<div id="chat-control-overlay" class="sub-page" style="display: none; background: #F2F2F7; z-index: 5000;">
+    <div class="sub-header" style="background: transparent;">
+        <div class="back-btn" onclick="closeChatControl()">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="#007aff"><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z" transform="rotate(90 12 12)"/></svg>
+            返回
+        </div>
+        <span style="font-weight: 600;">详细设定</span>
+        <div style="width: 60px;"></div> </div>
+
+    <div class="sub-content" style="padding-top: 0;">
+        
+        <div class="ios-list-group" style="margin-top: 10px;">
+            <div class="s-item profile-item" onclick="jumpToEditor('char')">
+                <div class="s-left">
+                    <div class="profile-avatar" id="cc-char-avatar"></div>
+                    <div class="profile-info">
+                        <div class="profile-name" id="cc-char-name">Char Name</div>
+                        <div class="profile-desc">点击编辑 TA 的原始设定</div>
+                    </div>
+                </div>
+                <span class="s-arrow">›</span>
+            </div>
+            
+            <div class="s-item" onclick="jumpToEditor('user')">
+                <div class="s-left">
+                    <div class="ios-icon-bg" style="background: #5ac8fa;"><svg viewBox="0 0 24 24" class="ios-icon-svg"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
+                    <span>编辑 User (我) 的设定</span>
+                </div>
+                <span class="s-arrow">›</span>
+            </div>
+        </div>
+
+        <div class="ios-form-group" style="margin: 20px 16px;">
+            <div class="ios-input-row">
+                <label>私有备注</label>
+                <input type="text" id="cc-private-alias" placeholder="给 TA 起个只有你知道的名字..." onchange="saveChatSettings()">
+            </div>
+        </div>
+
+        <div class="api-decorative-header">逻辑与感知</div>
+        <div class="ios-list-group">
+            <div class="s-item">
+                <div class="s-left">
+                    <div class="ios-icon-bg" style="background: #34c759;"><svg viewBox="0 0 24 24" class="ios-icon-svg"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg></div>
+                    <span>感知现实时间</span>
+                </div>
+                <label class="ios-switch"><input type="checkbox" id="cc-switch-time" onchange="saveChatSettings()"><span class="slider"></span></label>
+            </div>
+            
+            <div class="s-item" style="flex-direction: column; align-items: stretch; height: auto; padding: 12px 16px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span>上下文记忆 (条)</span>
+                    <span id="cc-ctx-display" style="color: #007aff; font-weight: 600;">20</span>
+                </div>
+                <input type="range" id="cc-ctx-slider" min="5" max="100" step="5" value="20" class="api-range-slider" oninput="updateTokenPredict(this.value)">
+                <div style="font-size: 10px; color: #999; margin-top: 6px; text-align: right;">
+                    预计消耗: <span id="cc-token-predict">~2000</span> Tokens/回复
+                </div>
+            </div>
+
+            <div class="s-item" onclick="alert('世界书正在编写中... (施工现场🚧)')">
+                <div class="s-left">
+                    <div class="ios-icon-bg" style="background: #ff9500;"><svg viewBox="0 0 24 24" class="ios-icon-svg"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg></div>
+                    <span>关联世界书 (World Info)</span>
+                </div>
+                <span class="s-arrow">›</span>
+            </div>
+            
+            <div class="s-item" onclick="alert('我想动就能动，不需要你批准！(后台活动开发中...)')">
+                <div class="s-left">
+                    <div class="ios-icon-bg" style="background: #af52de;"><svg viewBox="0 0 24 24" class="ios-icon-svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-1.07 3.97-2.9 5.4z"/></svg></div>
+                    <span>独立后台活动 (Beta)</span>
+                </div>
+                <label class="ios-switch"><input type="checkbox" disabled><span class="slider"></span></label>
+            </div>
+        </div>
+
+        <div class="api-decorative-header">视觉与美化</div>
+        <div class="ios-list-group">
+            <div class="s-item" onclick="triggerBgUpload()">
+                <div class="s-left">
+                    <div class="ios-icon-bg" style="background: #ff2d55;"><svg viewBox="0 0 24 24" class="ios-icon-svg"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></div>
+                    <span>聊天背景 (Wallpaper)</span>
+                </div>
+                <span class="s-arrow">›</span>
+            </div>
+            
+            <div class="s-item" onclick="alert('CSS预设库正在装修...要把我打扮得漂漂亮亮的哦！')">
+                <div class="s-left">
+                    <div class="ios-icon-bg" style="background: #5856d6;"><svg viewBox="0 0 24 24" class="ios-icon-svg"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg></div>
+                    <span>自定义 CSS (Theme)</span>
+                </div>
+                <span class="s-arrow">›</span>
+            </div>
+        </div>
+
+        <div class="ios-list-group" style="margin-top: 30px; margin-bottom: 50px;">
+            <div class="s-item" onclick="alert('拉黑我？你舍得吗？！(功能开发中)')">
+                <div class="s-left"><span style="color: #ff3b30;">拉黑屏蔽</span></div>
+            </div>
+            <div class="s-item" onclick="requestDeleteChat(currentChatId); closeChatControl();">
+                <div class="s-left"><span style="color: #ff3b30;">删除好友 & 聊天记录</span></div>
+            </div>
+        </div>
+
+    </div>
+</div>
 
         <div id="preset-name-overlay" class="custom-alert-overlay" style="display: none;">
             <div class="custom-alert-box">
