@@ -2076,7 +2076,7 @@ window.scrollToMsg = function(ts) {
     }
 };
 
-// === AI 触发逻辑 (头像同步 + 后台影帝) ===
+// === AI 触发逻辑 (已注入总结记忆) ===
 window.triggerAI = async function() {
     if (!currentChatId) return;
     const chat = chatsData.find(c => c.id === currentChatId);
@@ -2086,7 +2086,7 @@ window.triggerAI = async function() {
     const char = contactsData.find(c => c.id === chat.contactId); 
     const me = personasData.find(p => p.id === chat.personaId) || { name: 'User', desc: '无', persona: '无' };
     
-    // 2. 引用逻辑
+    // 2. 引用逻辑 (随机引用旧消息)
     let aiQuote = null;
     if (Math.random() < 0.3 && chat.messages.length > 0) {
         const recentMsgs = chat.messages.slice(-10).filter(m => m.role === 'me' && m.text && m.text.length > 4);
@@ -2096,14 +2096,28 @@ window.triggerAI = async function() {
         }
     }
 
-    // 3. 构建历史
+    // 3. 构建历史消息 (最近15条)
     const history = (chat.messages || []).slice(-15).map(m => {
         let content = m.text;
         if (m.type === 'recall') content = m.originalText || "（撤回内容）";
         return `${m.role === 'me' ? 'User' : 'You'}: ${content}`;
     }).join('\n');
+
+    // ★★★ 4. 构建总结记忆 (这就是你要的功能！) ★★★
+    // 把所有 summary 拼成一个长字符串
+    const summaryList = chat.summaries || [];
+    let memoryPrompt = "";
+    if (summaryList.length > 0) {
+        // 提取 summary 的文本
+        const memoryText = summaryList.map((s, i) => `[回忆片段 ${i+1}]: ${s.text}`).join('\n');
+        memoryPrompt = `
+    【双方的重要回忆/剧情总结】
+    (以下是你们之前的经历总结，请务必基于这些回忆进行对话，保持剧情连贯，不要忘记发生过的事情)
+    ${memoryText}
+    `;
+    }
     
-    // 4. Prompt 
+    // 5. 组装最终 Prompt
     const systemPrompt = `
     你现在进行一场Cosplay扮演。
     
@@ -2129,32 +2143,22 @@ window.triggerAI = async function() {
     - User背景：${me.desc}
     - User性格：${me.persona}
 
+    - 过往记忆：${memoryPrompt}
+
     【重要：模仿真实人类的聊天习惯】
     1. **拒绝翻译腔**：说话要口语化，不要像写作文。
     2. **标点符号**：
-       - 线上聊天**尽量减少**在句尾加句号“。”的次数（除非你想表达生气、冷漠、阴阳怪气或者难过，比如“哦。”“哄哄我。”）。
-       - 情绪激动时可以使用“！！！”或“？？？”、“。。。。”“！？！！？”或等等多个符号的组合，但请以人设为准。
-       - 此时此刻，你就是个拿着手机打字的活人。
+       - 线上聊天**尽量减少**在句尾加句号“。”的次数。
+       - 情绪激动时可以使用“！！！”或“？？？”、“。。。。”等。
     3. **气泡雨（分段发送）**：
-       - 现实中人们不会在一个气泡里发一大段话。
        - **请务必**用换行符分隔你的不同念头。
-       - 例如：
-         “笑死我了”
-         “你猜我刚才看见谁了”
-         “竟然是那个谁！”
        - 我会根据你的换行，把你回复的内容拆成多条消息发送。
     4. **回复长度**：短小精悍为主，偶尔可以长，但尽量多分段。
     5. ★★★【玩法：口是心非与撤回】★★★
-       - 你是一个有血有肉的人，不是机器人。
-       - **请根据你的性格设定 (${char.persona}) 来决定是否使用撤回功能**：
-         > 如果你是【傲娇/腹黑/占有欲强/病娇】的角色：请在感到吃醋、在意、或者不想承认自己感情时，**适度**使用撤回格式。
-         > 如果你是【直球/阳光/温柔/成熟】的角色：请**尽量少用**或者**不用**撤回。请直接表达你的想法，除非你真的遇到了极度想要掩饰的尴尬瞬间。
-       - **不要滥用！不要每一句都撤回！** 只有当“内心阴暗/真实的想法”与“必须维持的表面礼貌”发生**强烈冲突**时才使用。
+       - **请根据你的性格设定 (${char.persona}) 来决定是否使用撤回功能**。
        - **格式规则**：{{内心真实想法(会被撤回)::表面伪装回复(最终保留)}}
-       - **错误示范** (不要这样)：{{你好::你好}} (毫无意义的撤回)
-       - **正确示范**：
-         User: "今晚我要加班，不陪你了。"
-         You (傲娇男友): "{{你是想死吗？又要丢下我！::噢，知道了，那你忙吧。}}"
+       - **傲娇/腹黑/病娇角色**：请在感到吃醋、在意或不想承认感情时适度且偶尔使用。
+       - 只有当“内心阴暗/真实的想法”与“必须维持的表面礼貌”发生**强烈冲突**时才使用。
        
     历史记录：
     ${history}
@@ -2163,7 +2167,7 @@ window.triggerAI = async function() {
     `;
     
 
-    // 5. 显示正在输入
+    // 6. 显示正在输入
     const container = document.getElementById('chat-msg-area');
     const loadingId = 'typing-' + Date.now();
     if (currentChatId === chat.id && container) {
@@ -2197,31 +2201,22 @@ window.triggerAI = async function() {
                     if(!targetChat) continue;
 
                     if (match) {
-                        // 剧本：内心戏 -> 撤回 -> 表面话
                         pushMsgToData(targetChat, match[1], 'other', currentQuote);
                         saveChatAndRefresh(targetChat); updateGlobalBadges();
-                        // ★ 这里的 char.avatar 直接传，不需要 replace 了！
                         showNotification(char.name, match[1], char.avatar); 
-
                         await new Promise(r => setTimeout(r, 2500));
-
-                        // 撤回
                         const lastMsg = targetChat.messages[targetChat.messages.length - 1];
                         if (lastMsg) {
                             lastMsg.type = 'recall'; lastMsg.originalText = match[1]; delete lastMsg.text;
                             saveChatAndRefresh(targetChat);
                         }
                         showNotification(char.name, "撤回了一条消息", char.avatar);
-
                         await new Promise(r => setTimeout(r, 1500));
-
-                        // 表面话
                         pushMsgToData(targetChat, match[2], 'other', null);
                         saveChatAndRefresh(targetChat); updateGlobalBadges();
                         showNotification(char.name, match[2], char.avatar);
 
                     } else {
-                        // 普通消息
                         pushMsgToData(targetChat, seg, 'other', currentQuote);
                         saveChatAndRefresh(targetChat); updateGlobalBadges();
                         showNotification(char.name, seg, char.avatar);
@@ -2237,7 +2232,7 @@ window.triggerAI = async function() {
     } catch (e) {
         const loadingEl = document.getElementById(loadingId);
         if (loadingEl) loadingEl.remove();
-        alert('断网啦？连不上大脑了(＞人＜；)！：' + e.message);
+        alert('大脑短路啦(＞人＜；)！：' + e.message);
     }
 };
 
