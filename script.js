@@ -1363,7 +1363,7 @@ window.saveCharacter = function() {
         updateList(contactsData, newChar);
         
         localforage.setItem('Wx_Contacts_Data', contactsData).then(() => {
-            alert('角色保存成功啦（๑＞ ＜)☆～');
+            alert('角色保存成功啦<br>（๑＞ ＜)☆～');
             // 刷新列表，让那个方框头像变过来
             if(window.renderChatList) window.renderChatList();
             // 刷新消息详情页的头像
@@ -1796,7 +1796,64 @@ window.closeChatDetail = function() {
     renderChatList(); // 退出时刷新列表(以防万一)
 };
 
-// === 替换：渲染消息函数 (支持分页) ===
+// 辅助：高级时间格式化
+function formatChatSystemTime(ts) {
+    const d = new Date(ts);
+    const now = new Date();
+    const diffMs = now - d;
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+    const timeStr = `${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}`;
+    const daysEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    // 24小时内：只显示时间
+    if (d.toDateString() === now.toDateString()) {
+        return timeStr;
+    }
+    // 7天内：星期 + 时间
+    if (diffDays < 7) {
+        return `${daysEn[d.getDay()]} ${timeStr}`;
+    }
+    // 超过7天：日期 + 时间
+    return `${d.getMonth()+1}/${d.getDate()} ${timeStr}`;
+}
+
+// 辅助：头像下的小时间 (只显示 时:分)
+function formatMiniTime(ts) {
+    const d = new Date(ts);
+    return `${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}`;
+}
+
+// === 渲染消息 ===
+// 辅助：高级时间格式化
+function formatChatSystemTime(ts) {
+    const d = new Date(ts);
+    const now = new Date();
+    const diffMs = now - d;
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+    const timeStr = `${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}`;
+    const daysEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    // 24小时内：只显示时间
+    if (d.toDateString() === now.toDateString()) {
+        return timeStr;
+    }
+    // 7天内：星期 + 时间
+    if (diffDays < 7) {
+        return `${daysEn[d.getDay()]} ${timeStr}`;
+    }
+    // 超过7天：日期 + 时间
+    return `${d.getMonth()+1}/${d.getDate()} ${timeStr}`;
+}
+
+// 辅助：头像下的小时间 (只显示 时:分)
+function formatMiniTime(ts) {
+    const d = new Date(ts);
+    return `${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}`;
+}
+
+// === 渲染消息  ===
 function renderMessages(chatId, autoScroll = true) {
     const container = document.getElementById('chat-msg-area');
     container.innerHTML = ''; 
@@ -1807,12 +1864,11 @@ function renderMessages(chatId, autoScroll = true) {
     const contact = contactsData.find(c => c.id === chat.contactId);
     const persona = personasData.find(p => p.id === chat.personaId) || { avatar: '' };
 
-    // ★ 分页逻辑核心 2：只截取最后 currentRenderLimit 条数据
+    // 分页截取
     const totalCount = chat.messages.length;
     const startIndex = Math.max(0, totalCount - currentRenderLimit);
     const msgsToRender = chat.messages.slice(startIndex);
     
-    // 如果上面还有消息没加载，显示一个提示
     if (startIndex > 0) {
         const tip = document.createElement('div');
         tip.style.textAlign = 'center'; tip.style.color = '#ccc'; tip.style.fontSize = '12px'; tip.style.padding = '10px';
@@ -1821,64 +1877,80 @@ function renderMessages(chatId, autoScroll = true) {
     }
 
     let lastTime = 0;
-    const renderCount = msgsToRender.length;
+    let lastRole = null; 
 
-    // 开始遍历我们截取出来的这部分消息
     msgsToRender.forEach((msg, i) => {
-        // 计算这条消息在原始数组里的真实索引（用于删除、编辑）
         const realIndex = startIndex + i;
-
-        // --- 下面这些是原本的逻辑，保持不变 ---
+        const isMe = msg.role === 'me';
         
-        // 1. 时间胶囊
-        if (msg.timestamp - lastTime > 5 * 60 * 1000) {
+        // 1. 系统时间胶囊
+        if (msg.timestamp - lastTime > 15 * 60 * 1000) {
             const timeDiv = document.createElement('div');
             timeDiv.className = 'msg-time-pill';
-            timeDiv.innerText = formatDetailTime(msg.timestamp);
+            timeDiv.innerText = formatChatSystemTime(msg.timestamp);
             container.appendChild(timeDiv);
             lastTime = msg.timestamp;
+            lastRole = null; // 时间断层后，强制重新显示头像
         }
 
-        const isMe = msg.role === 'me';
-        // 这里的 nextMsg 逻辑稍微简化一下，防止数组越界
-        const nextMsg = msgsToRender[i + 1];
-
-        // 2. 撤回消息
+        // 2. 撤回消息处理
         if (msg.type === 'recall') {
             const recallDiv = document.createElement('div');
             recallDiv.className = 'msg-recall-pill';
             const who = isMe ? '我' : (contact ? contact.name : 'TA');
             const contentToPeek = msg.originalText || "未知内容";
-            // 这里把 alert 里的单引号转义一下，防止报错
             recallDiv.innerHTML = `${who} 撤回了一条消息 <span class="recall-link" onclick="alert('偷看内容：\\n${contentToPeek.replace(/'/g, "")}')">点击偷看</span>`;
             container.appendChild(recallDiv);
+            lastRole = null; // 撤回打断连续性
             return; 
         }
 
-        // 3. 智能尾巴
+        // 3. 决定是否显示头像 (头部逻辑)
+        let showAvatar = false;
+        if (msg.role !== lastRole || (msg.timestamp - (msgsToRender[i-1]?.timestamp || 0) > 2 * 60 * 1000)) {
+            showAvatar = true;
+        }
+
+        // ★★★ 核心修复：计算是否要有尾巴 (尾部逻辑) ★★★
+        // 规则：如果下一条消息不是我发的，或者下一条间隔太久，或者没有下一条了，那我就是最后一条，要有尾巴！
         let hasTail = false;
-        if (!nextMsg || isMe !== (nextMsg.role === 'me') || (nextMsg.timestamp - msg.timestamp > 2 * 60 * 1000)) {
+        const nextMsg = msgsToRender[i + 1];
+        if (!nextMsg || nextMsg.role !== msg.role || (nextMsg.timestamp - msg.timestamp > 2 * 60 * 1000)) {
             hasTail = true;
         }
 
-        // 4. 构建气泡
+        // 4. 构建气泡行 (把 hasTail 加上去了！！)
         const row = document.createElement('div');
         row.className = `msg-row ${isMe ? 'me' : 'other'} ${hasTail ? 'has-tail' : ''}`;
-        
-        // ★ 关键：必须把真实索引存进去，不然删除的时候删错人！
-        row.dataset.msgIndex = realIndex; 
-        
+        row.dataset.msgIndex = realIndex;
         row.id = `msg-${msg.timestamp}`;
 
-        // 动画：只有最后一条，且是刚发的(1秒内)才动
         if (realIndex === totalCount - 1 && (Date.now() - msg.timestamp < 1000)) {
              row.classList.add('new-msg-anim');
         }
 
+        // 准备头像 HTML
         const avatarUrl = isMe ? persona.avatar : (contact ? contact.avatar : '');
         const bgStyle = getAvatarStyle(avatarUrl);
+        const miniTime = formatMiniTime(msg.timestamp);
+
+        // 头像列结构
+        let avatarHtml = '';
+        if (showAvatar) {
+            avatarHtml = `
+                <div class="msg-avatar-col">
+                    <div class="msg-avatar" style="${bgStyle}"></div>
+                    <div class="msg-avatar-time">${miniTime}</div>
+                </div>
+            `;
+        } else {
+            avatarHtml = `<div class="msg-avatar-placeholder"></div>`;
+        }
+
+        // 内容气泡
         const mainBubble = `<div class="msg-content">${msg.text}</div>`;
         
+        // 引用
         let quoteHtml = '';
         if (msg.quote) {
             let fullQuoteText = `${msg.quote.name}：${msg.quote.text}`;
@@ -1886,19 +1958,34 @@ function renderMessages(chatId, autoScroll = true) {
             quoteHtml = `<div class="msg-quote-outside" onclick="scrollToMsg('${msg.quote.id}')">${fullQuoteText}</div>`;
         }
 
-        row.innerHTML = `
-            ${!isMe ? `<div class="msg-avatar" style="${bgStyle}"></div>` : ''}
-            <div class="msg-container-col">
-                ${mainBubble}
-                ${quoteHtml}
-            </div>
-            ${isMe ? `<div class="msg-avatar" style="${bgStyle}"></div>` : ''}
-        `;
+        // 组合 HTML
+        if (isMe) {
+            // 我发的消息：内容 + 头像列
+            row.innerHTML = `
+                <div class="msg-container-col">
+                    ${mainBubble}
+                    ${quoteHtml}
+                </div>
+                ${avatarHtml}
+            `;
+        } else {
+            // 对方消息：头像列 + 内容
+            row.innerHTML = `
+                ${avatarHtml}
+                <div class="msg-container-col">
+                    ${mainBubble}
+                    ${quoteHtml}
+                </div>
+            `;
+        }
         
         const bubbleContent = row.querySelector('.msg-content');
         if(bubbleContent) bindLongPress(bubbleContent);
         
         container.appendChild(row);
+
+        // 更新 lastRole
+        lastRole = msg.role;
     });
 
     // 5. 底部状态
@@ -1914,16 +2001,16 @@ function renderMessages(chatId, autoScroll = true) {
         if (lastMsg.role === 'other') {
             statusDiv.style.textAlign = 'left'; statusDiv.style.paddingLeft = '58px'; 
         } else {
-            statusDiv.style.textAlign = 'right'; statusDiv.style.paddingRight = '18px'; 
+            statusDiv.style.textAlign = 'right'; statusDiv.style.paddingRight = '58px'; 
         }
         container.appendChild(statusDiv);
     }
 
-    // ★ 自动滚动到底部 (仅当 autoScroll 为 true 时)
     if (autoScroll) {
         container.scrollTop = container.scrollHeight;
     }
 }
+
 
 window.sendMsg = function(role, text = null, type = 'text', customQuote = null) {
     if (!currentChatId) return;
@@ -1958,13 +2045,19 @@ chatsData[chatIndex].messages.push(newMsg);
     }
     chatsData[chatIndex].lastTime = Date.now();
     
-    // 自动顶置
-    if (!chatsData[chatIndex].pinned) {
-        const item = chatsData.splice(chatIndex, 1)[0];
-        chatsData.unshift(item);
+    // 先把这个聊天对象牢牢抓住，存到一个变量里！
+    let targetChat = chatsData[chatIndex]; 
+    
+    // 自动顶置逻辑
+    if (!targetChat.pinned) {
+        // 从原来的位置删掉
+        chatsData.splice(chatIndex, 1);
+        // 放到第一位
+        chatsData.unshift(targetChat);
     }
 
-    saveChatAndRefresh(chatsData[chatIndex]);
+    // 保存并刷新
+saveChatAndRefresh(targetChat);
 
     if (role === 'me') input.value = ''; 
 };
@@ -1983,7 +2076,7 @@ window.scrollToMsg = function(ts) {
     }
 };
 
-// === 最终完美版：AI 触发逻辑 (头像同步 + 后台影帝) ===
+// === AI 触发逻辑 (头像同步 + 后台影帝) ===
 window.triggerAI = async function() {
     if (!currentChatId) return;
     const chat = chatsData.find(c => c.id === currentChatId);
@@ -2148,7 +2241,7 @@ window.triggerAI = async function() {
     }
 };
 
-// === 后台消息助手 (会自动刷新列表！) ===
+// === 后台消息助手 ===
 function pushMsgToData(chatObj, text, role, quote) {
     if (!chatObj.messages) chatObj.messages = [];
     
@@ -2161,26 +2254,27 @@ function pushMsgToData(chatObj, text, role, quote) {
         quote: quote
     });
     
-    // 2. 更新最后一条消息预览
+    // 2. 更新预览和红点
     chatObj.lastMsg = text;
     chatObj.lastTime = Date.now();
-    
-    // 3. 增加未读红点
     chatObj.unread = (chatObj.unread || 0) + 1;
 
-    // 4. ★ 核心修复：立刻保存并刷新界面！
-    // 这一步会把数据存进本地，防止刷新丢失
+    // ★★★ 新增：自动顶置 (让这个聊天跳到第一个) ★★★
+    const idx = chatsData.findIndex(c => c.id === chatObj.id);
+    if (idx > -1 && !chatObj.pinned) {
+        // 先拿出来，再插到最前面
+        chatsData.splice(idx, 1);
+        chatsData.unshift(chatObj);
+    }
+
+    // 3. 保存数据
     localforage.setItem('Wx_Chats_Data', chatsData);
     
-    // 5. 更新全局红点 (桌面的)
-    updateGlobalBadges();
+    // 4. 更新桌面图标的大红点
+    if (window.updateGlobalBadges) window.updateGlobalBadges();
 
-    // 6. ★ 关键：如果你正在盯着消息列表看，必须立刻强制刷新列表！
-    // 判断当前是不是在“微信”Tab页
-    const wechatTab = document.getElementById('wx-page-chats');
-    if (wechatTab && wechatTab.style.display !== 'none') {
-        renderChatList();
-    }
+    // 5. 刷新列表
+    if (window.renderChatList) window.renderChatList();
 }
 
 // === API 调用函数  ===
@@ -2614,14 +2708,37 @@ function formatDetailTime(ts) {
 }
 
 // 覆盖 Alert
+// === 新版：轻盈提示条 (Toast) ===
 window.showSystemAlert = function(msg) {
-    const el = document.getElementById('system-alert-overlay');
-    const msgEl = document.getElementById('system-alert-msg');
-    if (!el || !msgEl) { console.warn("Index.html missing alert overlay"); return; }
-    msgEl.innerHTML = msg; 
-    el.style.display = 'flex';
+    // 1. 如果屏幕上已经有一个提示条，先把它删掉 (防止重叠)
+    const existing = document.getElementById('system-toast-container');
+    if (existing) existing.remove();
+
+    // 2. 创建新的提示元素
+    const toast = document.createElement('div');
+    toast.id = 'system-toast-container';
+    toast.className = 'system-toast';
+    toast.innerHTML = msg; // 支持换行符 <br>
+
+    // 3. 放到页面里
+    document.body.appendChild(toast);
+
+    // 4. 稍微等一丢丢再加 .show，为了触发 CSS 的渐变动画
+    requestAnimationFrame(() => {
+        toast.classList.add('show');
+    });
+
+    // 5. 设定 2秒 后自动消失
+    setTimeout(() => {
+        // 先变透明
+        toast.classList.remove('show');
+        
+        // 等透明动画(0.3s)播完，再把元素从 DOM 里删掉
+        setTimeout(() => {
+            if(toast.parentNode) toast.remove();
+        }, 300); 
+    }, 2000); // <--- 这里控制显示多久 (2000ms = 2秒)
 };
-window.closeSystemAlert = function() { document.getElementById('system-alert-overlay').style.display = 'none'; };
 
 // === 通用：关闭弹窗 (带退场动画) ===
 window.closeAlertWithAnim = function(overlayId) {
@@ -3119,26 +3236,36 @@ window.showNotification = function(name, text, rawAvatar) {
 // ====================
 // [17] 聊天控制面板逻辑 (Chat Control)
 // ====================
-
-// 打开控制面板
 window.openChatControl = function() {
     if (!currentChatId) return;
     const chat = chatsData.find(c => c.id === currentChatId);
-    const contact = contactsData.find(c => c.id === chat.contactId);
-    if (!chat || !contact) return;
+    if (!chat) return;
 
-    // 1. 填充基础信息
-    document.getElementById('cc-char-name').innerText = contact.name;
-    document.getElementById('cc-char-avatar').style.backgroundImage = getAvatarStyle(contact.avatar).replace('background-image: ', '').replace(';', '');
+    // 获取双方数据
+    const contact = contactsData.find(c => c.id === chat.contactId) || {name: '未知', avatar: ''};
+    const persona = personasData.find(p => p.id === chat.personaId) || {name: 'Me', avatar: ''};
+
+    // 1. 填充双人头像 (同步！)
+    document.getElementById('cc-char-name-big').innerText = contact.name;
+    document.getElementById('cc-char-avatar-big').style.backgroundImage = getAvatarStyle(contact.avatar).replace('background-image: ', '').replace(';', '');
     
-    // 2. 填充私有备注 (存放在 contact.privateAlias)
+    document.getElementById('cc-user-name-big').innerText = persona.name;
+    document.getElementById('cc-user-avatar-big').style.backgroundImage = getAvatarStyle(persona.avatar).replace('background-image: ', '').replace(';', '');
+
+    // 2. 填充私有备注
     document.getElementById('cc-private-alias').value = contact.privateAlias || '';
 
-    // 3. 填充逻辑开关
-    // 默认开启时间感知
+    // 3. ★★★ 相识天数计算 ★★★
+    // 如果没有记录 createTime，就用 chat.id (通常是时间戳)
+    const startTime = chat.createTime || chat.id; 
+    const diff = Date.now() - startTime;
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    document.getElementById('cc-friend-days').innerText = days + 1; // 第一天也算一天！
+
+    // 4. 填充逻辑开关
     document.getElementById('cc-switch-time').checked = (chat.enableTime !== false); 
     
-    // 4. 填充记忆条数 (默认20)
+    // 5. 记忆条数
     const limit = chat.contextLimit || 20;
     document.getElementById('cc-ctx-slider').value = limit;
     updateTokenPredict(limit);
@@ -3154,15 +3281,14 @@ window.closeChatControl = function() {
     panel.classList.remove('active');
     setTimeout(() => panel.style.display = 'none', 300);
     
-    // 关闭时顺便刷新一下聊天界面(如果有改动背景之类的)
+
     if(currentChatId) renderMessages(currentChatId);
 };
 
 // 实时更新 Token 预测 & 显示数值
 window.updateTokenPredict = function(val) {
     document.getElementById('cc-ctx-display').innerText = val;
-    // 估算公式：假设每条消息平均 50 个汉字/单词，加上 System Prompt 约 500 tokens
-    // 1个汉字 ≈ 1.5 - 2 tokens (保守估计)
+
     const estimated = 500 + (val * 50 * 1.5); 
     document.getElementById('cc-token-predict').innerText = `~${Math.floor(estimated)}`;
     
@@ -3200,15 +3326,14 @@ window.jumpToEditor = function(type) {
     if (!currentChatId) return;
     const chat = chatsData.find(c => c.id === currentChatId);
     
-    // 先关闭当前面板
-    // closeChatControl(); 
-    // 不关闭也行，直接叠在上面，但我建议还是保持层级清晰
+    // 暂时关闭控制面板，体验更好
+    closeChatControl();
     
     if (type === 'char') {
-        creatorMode = 'character';
+        creatorMode = 'character'; // 关键！标记当前模式
         openCreatorPage(chat.contactId);
     } else {
-        creatorMode = 'persona';
+        creatorMode = 'persona'; // 关键！标记当前模式
         openCreatorPage(chat.personaId);
     }
 };
@@ -3297,3 +3422,267 @@ window.addEventListener('load', () => {
         if (window.renderChatList) window.renderChatList();
     }
 });
+// ====================
+// [21] 聊天总结 (Summary) 逻辑
+// ====================
+// === 辅助：强力设置头像背景 ===
+function applyAvatarStyle(elementId, avatarStr) {
+    const el = document.getElementById(elementId);
+    if (el) {
+        // 先清空，防止旧样式干扰
+        el.style.backgroundImage = '';
+        
+        // 获取处理过的样式字符串 (e.g., "background-image: url(...)")
+        const styleStr = getAvatarStyle(avatarStr);
+        
+        // 提取 url(...) 部分
+        const urlMatch = styleStr.match(/url\(['"]?(.*?)['"]?\)/);
+        if (urlMatch && urlMatch[1]) {
+            el.style.backgroundImage = `url('${urlMatch[1]}')`;
+        } else {
+            // 如果提取失败，或者没有头像，设为默认灰
+            el.style.backgroundColor = '#f0f0f0';
+        }
+        
+        el.style.backgroundSize = 'cover';
+        el.style.backgroundPosition = 'center';
+    }
+}
+
+// === 1. 详细设定 (Detailed Settings) ===
+window.openChatControl = function() {
+    if (!currentChatId) return;
+    const chat = chatsData.find(c => c.id === currentChatId);
+    if (!chat) return;
+
+    // 获取双方数据
+    const contact = contactsData.find(c => c.id === chat.contactId) || {name: '未知', avatar: ''};
+    const persona = personasData.find(p => p.id === chat.personaId) || {name: 'Me', avatar: ''};
+
+    // 1. 填充名字
+    document.getElementById('cc-char-name-big').innerText = contact.name;
+    document.getElementById('cc-user-name-big').innerText = persona.name;
+
+    // 2. ★★★ 强力同步头像 (修复灰色问题) ★★★
+    applyAvatarStyle('cc-char-avatar-big', contact.avatar);
+    applyAvatarStyle('cc-user-avatar-big', persona.avatar);
+
+    // 3. 填充其他数据
+    document.getElementById('cc-private-alias').value = contact.privateAlias || '';
+    
+    // 相识天数
+    const startTime = chat.createTime || chat.id; 
+    const diff = Date.now() - startTime;
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    document.getElementById('cc-friend-days').innerText = days + 1;
+
+    // 开关状态
+    document.getElementById('cc-switch-time').checked = (chat.enableTime !== false); 
+    const limit = chat.contextLimit || 20;
+    document.getElementById('cc-ctx-slider').value = limit;
+    updateTokenPredict(limit);
+
+    // 显示面板
+    const panel = document.getElementById('chat-control-overlay');
+    panel.style.display = 'flex';
+    setTimeout(() => panel.classList.add('active'), 10);
+};
+
+// === 2. 聊天总结 (Summary Page) ===
+window.openSummaryPage = function() {
+    const chat = chatsData.find(c => c.id === currentChatId);
+    if (!chat) return;
+
+    // 1. ★★★ 同步侧边栏头像 (只显示Char的) ★★★
+    const contact = contactsData.find(c => c.id === chat.contactId);
+    applyAvatarStyle('sum-sidebar-avatar', contact ? contact.avatar : '');
+
+    // 2. 渲染列表
+    renderSummaries();
+    
+    // 3. 显示页面
+    const page = document.getElementById('sub-page-summary');
+    page.style.display = 'flex'; // 这里 CSS 强制了 flex-direction: row
+    setTimeout(() => page.classList.add('active'), 10);
+};
+
+// === 渲染总结列表 (头像时间轴版) ===
+function renderSummaries() {
+    const container = document.getElementById('summary-list-container');
+    container.innerHTML = ''; 
+    
+    const chat = chatsData.find(c => c.id === currentChatId);
+    if(!chat) return;
+    
+    const summaries = chat.summaries || [];
+    
+    // 获取Char头像
+    const contact = contactsData.find(c => c.id === chat.contactId);
+    const charAvatarStyle = getAvatarStyle(contact ? contact.avatar : '');
+
+    if(summaries.length === 0) {
+        container.innerHTML = `<div style="color:#ccc; font-size:12px; margin-top:20px;">这里空空的...<br>点左下角生成回忆吧！</div>`;
+        return;
+    }
+
+    // 倒序显示
+    [...summaries].reverse().forEach((sum, index) => {
+        const realIndex = summaries.length - 1 - index; 
+        
+        const card = document.createElement('div');
+        card.className = 'chapter-card';
+        
+        // HTML 结构对应新的 CSS
+        card.innerHTML = `
+            <div class="chapter-mini-avatar" style="${charAvatarStyle}"></div>
+            <div class="chapter-content">
+                <div class="chapter-header">
+                    <span class="chapter-title">Chapter ${summaries.length - index}</span>
+                    <span class="chapter-date">${formatTime(sum.time)}</span>
+                </div>
+                <div class="chapter-text edit-text" contenteditable="true" data-idx="${realIndex}">${sum.text}</div>
+            </div>
+        `;
+
+        // 绑定编辑保存
+        const textBlock = card.querySelector('.chapter-text');
+        textBlock.addEventListener('blur', function() {
+            if(this.innerText !== sum.text) {
+                chat.summaries[realIndex].text = this.innerText;
+                saveChatAndRefresh(chat);
+            }
+        });
+        
+        // 绑定长按删除
+        let pressTimer;
+        textBlock.addEventListener('touchstart', () => {
+             pressTimer = setTimeout(() => {
+                 if(confirm('要删除这条回忆吗？')) {
+                     chat.summaries.splice(realIndex, 1);
+                     saveChatAndRefresh(chat);
+                     renderSummaries();
+                 }
+             }, 800);
+        });
+        textBlock.addEventListener('touchend', () => clearTimeout(pressTimer));
+
+        container.appendChild(card);
+    });
+}
+
+// 确认 AI 总结
+window.confirmAiSummary = function() {
+    if(confirm('要让 AI 帮我们整理回忆吗？\n(这将会消耗api哦宝宝(＞人＜;)！)')) {
+        triggerAiSummary();
+    }
+};
+
+// 手动添加
+window.manualAddSummary = function() {
+    const text = prompt("写下此刻的心情或总结♪( ´▽｀)：");
+    if(text) {
+        saveSummaryToChat(text);
+    }
+};
+
+// ★ 核心：AI 总结逻辑
+async function triggerAiSummary() {
+    const chat = chatsData.find(c => c.id === currentChatId);
+    if(!chat) return;
+
+    // 1. 找出未总结的消息
+    // 记录上一次总结的时间点
+    const lastSumTime = chat.lastSummaryTime || 0;
+    
+    // 筛选出 timestamp > lastSumTime 的消息
+    const newMsgs = (chat.messages || []).filter(m => m.timestamp > lastSumTime && m.type === 'text');
+    
+    if(newMsgs.length < 5) {
+        showSystemAlert('最近聊得有点少，攒攒再总结吧！(＞﹏＜)');
+        return;
+    }
+
+    // 2. 构建 Prompt
+    const historyText = newMsgs.map(m => `${m.role === 'me' ? 'User' : 'Char'}: ${m.text}`).join('\n');
+    
+    const prompt = `
+    请对以下聊天记录进行一段【简短、深情、有画面感】的总结。
+    
+    要求：
+    1. 不要流水账，提炼出互动的核心、甜蜜的瞬间或有趣的话题，尽量详细而细腻。
+    2. 语气要像写日记或回忆录一样，温暖一点。
+    3. 500字以内。
+    
+    聊天记录：
+    ${historyText}
+    `;
+
+    showSystemAlert('AI正在拼命回忆中...(♯｀∧´)');
+
+    try {
+        // 调用你现有的 API 函数
+        const summary = await callApiInternal(prompt);
+        if(summary) {
+            saveSummaryToChat(summary);
+            // 更新最后总结时间为最新一条消息的时间
+            chat.lastSummaryTime = newMsgs[newMsgs.length - 1].timestamp;
+            saveChatAndRefresh(chat);
+        }
+    } catch(e) {
+        alert('总结失败惹(T_T)：' + e.message);
+    }
+}
+
+function saveSummaryToChat(text) {
+    const chat = chatsData.find(c => c.id === currentChatId);
+    if(!chat) return;
+    
+    if(!chat.summaries) chat.summaries = [];
+    
+    chat.summaries.push({
+        text: text,
+        time: Date.now()
+    });
+    
+    saveChatAndRefresh(chat); // 保存到数据库
+    renderSummaries();        // 刷新界面
+    showSystemAlert('回忆保持成功啦！！(≧▽≦)');
+}
+
+// ====================
+// [22] 书签头像戳一戳逻辑 
+// ====================
+
+// 吐槽文案
+const moodTexts = [
+    "hallo～",
+    "欸？",
+    "戳我干嘛！",
+    "(𓐍ㅇㅂㅇ𓐍)",
+    "别戳啦！！",
+    "我生气了。",
+    "(♯｀∧´)",
+    " ᗜ ˰ ᗜ ",
+    "哼！"
+];
+
+let moodIndex = 0; 
+
+window.cycleSummaryMood = function() {
+    const bubble = document.getElementById('sum-mood-bubble');
+    if (!bubble) return;
+
+    // 1. 切文字
+    moodIndex = (moodIndex + 1) % moodTexts.length;
+    bubble.innerText = moodTexts[moodIndex];
+    
+    // 2. ★ 触发弹跳动画 (核心修复) ★
+    bubble.classList.remove('pop-anim'); // 先移除
+
+    void bubble.offsetWidth; 
+    
+    bubble.classList.add('pop-anim'); // 再加上，动画就会重新播放
+    
+    // 3. 震动反馈
+    if(navigator.vibrate) navigator.vibrate(30);
+};
