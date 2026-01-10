@@ -761,11 +761,13 @@ window.loadAllData = function() {
         localforage.getItem('Wx_Personas_Data'),
         localforage.getItem('Wx_Chats_Data'),
         localforage.getItem('Wx_Api_Config'),
-        localforage.getItem('Wx_Api_Presets')
-    ]).then(([contacts, personas, chats, config, presets]) => {
+        localforage.getItem('Wx_Api_Presets'),
+        localforage.getItem('Wx_Moments_Data') // ★ 1. 补上了这里的逗号和数据项
+    ]).then(([contacts, personas, chats, config, presets, moments]) => { // ★ 2. 这里接收 moments
         contactsData = contacts || [];
         personasData = personas || [];
         chatsData = chats || [];
+        momentsData = moments || []; // ★ 3. 赋值给全局变量
         
         if (config) {
             // 兼容旧数据
@@ -785,6 +787,7 @@ window.loadAllData = function() {
         renderChatList();
         renderApiUI();
         renderPresetDropdown();
+        renderMomentsFeed(); // 渲染朋友圈
     });
 };
 
@@ -2076,7 +2079,7 @@ window.scrollToMsg = function(ts) {
     }
 };
 
-// === AI 触发逻辑 (已注入总结记忆) ===
+// === AI 触发逻辑 (回归初心·活人版 + 记忆注入) ===
 window.triggerAI = async function() {
     if (!currentChatId) return;
     const chat = chatsData.find(c => c.id === currentChatId);
@@ -2086,7 +2089,7 @@ window.triggerAI = async function() {
     const char = contactsData.find(c => c.id === chat.contactId); 
     const me = personasData.find(p => p.id === chat.personaId) || { name: 'User', desc: '无', persona: '无' };
     
-    // 2. 引用逻辑 (随机引用旧消息)
+    // 2. 引用逻辑 (随机引用旧消息 - 增加互动感)
     let aiQuote = null;
     if (Math.random() < 0.3 && chat.messages.length > 0) {
         const recentMsgs = chat.messages.slice(-10).filter(m => m.role === 'me' && m.text && m.text.length > 4);
@@ -2103,62 +2106,72 @@ window.triggerAI = async function() {
         return `${m.role === 'me' ? 'User' : 'You'}: ${content}`;
     }).join('\n');
 
-    // ★★★ 4. 构建总结记忆 (这就是你要的功能！) ★★★
-    // 把所有 summary 拼成一个长字符串
+    // ★★★ 4. 构建总结记忆 (在这里注入！) ★★★
     const summaryList = chat.summaries || [];
     let memoryPrompt = "";
     if (summaryList.length > 0) {
-        // 提取 summary 的文本
         const memoryText = summaryList.map((s, i) => `[回忆片段 ${i+1}]: ${s.text}`).join('\n');
+        // 用最简单的自然语言告诉它，不要复杂的指令
         memoryPrompt = `
-    【双方的重要回忆/剧情总结】
-    (以下是你们之前的经历总结，请务必基于这些回忆进行对话，保持剧情连贯，不要忘记发生过的事情)
+    【你们过往的重要回忆】
     ${memoryText}
+    (请记住这些发生过的事情，保持剧情连贯)
     `;
     }
     
-    // 5. 组装最终 Prompt
+    // 5. 组装最终 Prompt (你最爱的清爽版)
     const systemPrompt = `
     你现在进行一场Cosplay扮演。
     
     【你的角色信息】
     - 姓名：${char.name} (真名: ${char.realname || '未知'})
-    - 昵称：${char.alias || '无'}
+    - 别名/昵称：${char.alias || '无'}
     - 性别：${char.gender || '未知'}
     - 年龄：${char.age || '未知'}
     - 身高：${char.height || '未知'}
     - MBTI：${char.mbti || '未知'}
     - 标签：${char.tags || '无'}
     - 爱好/其他设定：${char.hobbies || '无'}
-    - 背景故事：${char.desc}
+    - 核心背景故事：${char.desc}
     - 性格/语气/说话方式：${char.persona}
     
-    【对话者信息】
+    【对话者信息 (User)】
     - 姓名：${me.name} (真名: ${me.realname || '未知'})
-    - 昵称：${me.alias || '无'}
+    - 别名/昵称：${me.alias || '无'}
     - 性别：${me.gender || '未知'}
     - 年龄：${me.age || '未知'}
-    - 爱好/其他设定：${me.hobbies || '无'}
-    - MBTI：${me.mbti || '未知'}
-    - User背景：${me.desc}
+    - 爱好/设定：${me.hobbies || '无'}
+    - User背景/简介：${me.desc}
     - User性格：${me.persona}
 
-    - 过往记忆：${memoryPrompt}
+    ${memoryPrompt}
 
     【重要：模仿真实人类的聊天习惯】
     1. **拒绝翻译腔**：说话要口语化，不要像写作文。
     2. **标点符号**：
-       - 线上聊天**尽量减少**在句尾加句号“。”的次数。
-       - 情绪激动时可以使用“！！！”或“？？？”、“。。。。”等。
+       - 线上聊天**尽量减少**在句尾加句号“。”的次数（除非你想表达态度疏离、高冷、生气、冷漠、阴阳怪气或者悲伤、难过，比如“哦。”“哄哄我。”）。
+       - 情绪激动时可以使用“！！！”或“？？？”、“。。。。”“！？！！？”或等等多个符号的组合，但请以人设为准。
+       - 此时此刻，你就是个拿着手机打字的活人。
     3. **气泡雨（分段发送）**：
+       - 现实中人们不会在一个气泡里发一大段话。
        - **请务必**用换行符分隔你的不同念头。
+       - 例如：
+         “笑死我了”
+         “你猜我刚才看见谁了”
+         “竟然是那个谁！”
        - 我会根据你的换行，把你回复的内容拆成多条消息发送。
     4. **回复长度**：短小精悍为主，偶尔可以长，但尽量多分段。
-    5. ★★★【玩法：口是心非与撤回】★★★
-       - **请根据你的性格设定 (${char.persona}) 来决定是否使用撤回功能**。
+    5. ★★★【核心玩法：口是心非与撤回】★★★
+       - 你是一个有血有肉的人，不是机器人。
+       - **请根据你的性格设定 (${char.persona}) 来决定是否使用撤回功能**：
+         > 如果你是【傲娇/腹黑/占有欲强/病娇】的角色：请在感到吃醋、在意、或者不想承认自己感情时，**适度**且**非常偶尔**使用撤回格式，确保每次使用时超过10次对话及以上。
+         > 如果你是【直球/直白/阳光/温柔/成熟】的角色：请**尽量少用**或者**不用**撤回，直接表达你的想法，除非你真的遇到了极度想要掩饰的尴尬瞬间。
+       - **不要滥用！不要每一句都撤回！** 只有当“内心阴暗/真实的想法”与“必须维持的表面礼貌”发生**强烈冲突**时才使用。
        - **格式规则**：{{内心真实想法(会被撤回)::表面伪装回复(最终保留)}}
-       - **傲娇/腹黑/病娇角色**：请在感到吃醋、在意或不想承认感情时适度且偶尔使用。
-       - 只有当“内心阴暗/真实的想法”与“必须维持的表面礼貌”发生**强烈冲突**时才使用。
+       - **错误示范** (不要这样)：{{你好::你好}} (毫无意义的撤回)
+       - **正确示范**：
+         User: "今晚我要加班，不陪你了。"
+         You (傲娇男友): "{{你是想死吗？又要丢下我！::噢，知道了，那你忙吧。}}"
        
     历史记录：
     ${history}
@@ -2167,7 +2180,7 @@ window.triggerAI = async function() {
     `;
     
 
-    // 6. 显示正在输入
+    // 6. 显示正在输入 (保持不变)
     const container = document.getElementById('chat-msg-area');
     const loadingId = 'typing-' + Date.now();
     if (currentChatId === chat.id && container) {
@@ -2210,7 +2223,7 @@ window.triggerAI = async function() {
                             lastMsg.type = 'recall'; lastMsg.originalText = match[1]; delete lastMsg.text;
                             saveChatAndRefresh(targetChat);
                         }
-                        showNotification(char.name, "撤回了一条消息", char.avatar);
+                        showNotification(char.name, "对方撤回了一条消息", char.avatar);
                         await new Promise(r => setTimeout(r, 1500));
                         pushMsgToData(targetChat, match[2], 'other', null);
                         saveChatAndRefresh(targetChat); updateGlobalBadges();
@@ -2232,7 +2245,7 @@ window.triggerAI = async function() {
     } catch (e) {
         const loadingEl = document.getElementById(loadingId);
         if (loadingEl) loadingEl.remove();
-        alert('大脑短路啦(＞人＜；)！：' + e.message);
+        alert('大脑短路啦(＞人＜；)！！：' + e.message);
     }
 };
 
@@ -2683,23 +2696,47 @@ window.confirmDeletePreset = function() {
     });
 };
 
-// ==========================================================
-// [12] 工具函数 (Utilities)
-// ==========================================================
-
-function formatTime(ts) {
-    if (!ts) return 'Just now';
-    const d = new Date(ts);
+// ====================
+// [工具] 时间格式化 (智能版)
+// ====================
+function formatTime(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
     const now = new Date();
-    if (d.toDateString() === now.toDateString()) {
-        return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+    
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hour = date.getHours().toString().padStart(2, '0');
+    const minute = date.getMinutes().toString().padStart(2, '0');
+    
+    // 1. 跨年判断：如果不是今年，显示完整年份
+    if (year !== now.getFullYear()) {
+        return `${year}年${month}月${day}日 ${hour}:${minute}`;
     }
-    return `${d.getMonth()+1}/${d.getDate()}`;
+    
+    // 2. 如果是今天，只显示时间
+    if (date.toDateString() === now.toDateString()) {
+        return `${hour}:${minute}`;
+    }
+    
+    // 3. 今年其他时间，显示日期+时间
+    return `${month}月${day}日 ${hour}:${minute}`;
 }
 
-function formatDetailTime(ts) {
-    const d = new Date(ts);
-    return `${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}`;
+// ★ 新增：专门给总结页用的详细时间格式 (YYYY/MM/DD)
+function formatSummaryTime(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hour = date.getHours().toString().padStart(2, '0');
+    const minute = date.getMinutes().toString().padStart(2, '0');
+    
+    // 比如：2025/01/09 14:30
+    return `${year}/${month}/${day} ${hour}:${minute}`;
 }
 
 // 覆盖 Alert
@@ -3125,7 +3162,8 @@ window.renderMomentsHeader = function() {
     // === 第一部分：固定显示“新建”按钮 ===
     const addBtn = document.createElement('div');
     addBtn.className = 'ins-highlight-item';
-    addBtn.onclick = () => alert('发朋友圈功能开发中...宝宝别急！');
+    // ★ 改成下面这句，就可以打开发布界面啦！
+    addBtn.onclick = () => window.openPostCreator(); 
     addBtn.innerHTML = `
         <div class="ins-highlight-circle plus-btn">
             <svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:#333"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
@@ -3504,6 +3542,7 @@ window.openSummaryPage = function() {
 // === 渲染总结列表 (头像时间轴版) ===
 function renderSummaries() {
     const container = document.getElementById('summary-list-container');
+    if (!container) return; // 防止找不到容器报错
     container.innerHTML = ''; 
     
     const chat = chatsData.find(c => c.id === currentChatId);
@@ -3511,53 +3550,60 @@ function renderSummaries() {
     
     const summaries = chat.summaries || [];
     
-    // 获取Char头像
+    // 获取Char头像 (用于左侧时间轴的串串)
     const contact = contactsData.find(c => c.id === chat.contactId);
     const charAvatarStyle = getAvatarStyle(contact ? contact.avatar : '');
 
+    // 空状态提示
     if(summaries.length === 0) {
-        container.innerHTML = `<div style="color:#ccc; font-size:12px; margin-top:20px;">这里空空的...<br>点左下角生成回忆吧！</div>`;
+        container.innerHTML = `
+            <div style="text-align:center; padding-top:60px; color:#bbb; font-size:12px; line-height:1.6;">
+                还没有生成过回忆...<br>
+                点击右下角的 <span style="color:#FFD700;">★</span> 按钮试试吧！
+            </div>`;
         return;
     }
 
-    // 倒序显示
+    // 倒序遍历 (最新的在上面)
     [...summaries].reverse().forEach((sum, index) => {
+        // 计算在原始数组里的真实索引 (用于编辑/删除)
         const realIndex = summaries.length - 1 - index; 
         
         const card = document.createElement('div');
         card.className = 'chapter-card';
         
-        // HTML 结构对应新的 CSS
+        // ★ 核心改动：使用 formatSummaryTime 显示详细时间 ★
         card.innerHTML = `
             <div class="chapter-mini-avatar" style="${charAvatarStyle}"></div>
             <div class="chapter-content">
                 <div class="chapter-header">
                     <span class="chapter-title">Chapter ${summaries.length - index}</span>
-                    <span class="chapter-date">${formatTime(sum.time)}</span>
+                    <span class="chapter-date">${formatSummaryTime(sum.time)}</span>
                 </div>
                 <div class="chapter-text edit-text" contenteditable="true" data-idx="${realIndex}">${sum.text}</div>
             </div>
         `;
 
-        // 绑定编辑保存
+        // === 绑定事件：编辑保存 ===
         const textBlock = card.querySelector('.chapter-text');
         textBlock.addEventListener('blur', function() {
+            // 只有内容变了才保存
             if(this.innerText !== sum.text) {
                 chat.summaries[realIndex].text = this.innerText;
                 saveChatAndRefresh(chat);
             }
         });
         
-        // 绑定长按删除
+        // === 绑定事件：长按删除 ===
         let pressTimer;
         textBlock.addEventListener('touchstart', () => {
              pressTimer = setTimeout(() => {
                  if(confirm('要删除这条回忆吗？')) {
                      chat.summaries.splice(realIndex, 1);
                      saveChatAndRefresh(chat);
-                     renderSummaries();
+                     renderSummaries(); // 重新渲染列表
                  }
-             }, 800);
+             }, 800); // 长按800毫秒触发
         });
         textBlock.addEventListener('touchend', () => clearTimeout(pressTimer));
 
@@ -3574,7 +3620,7 @@ window.confirmAiSummary = function() {
 
 // 手动添加
 window.manualAddSummary = function() {
-    const text = prompt("写下此刻的心情或总结♪( ´▽｀)：");
+    const text = prompt("写下此刻的心情或总结₍^˶ ╸𖥦  ╸˵^₎⟆：");
     if(text) {
         saveSummaryToChat(text);
     }
@@ -3612,7 +3658,7 @@ async function triggerAiSummary() {
     ${historyText}
     `;
 
-    showSystemAlert('AI正在拼命回忆中...(♯｀∧´)');
+    showSystemAlert('对方正在拼命回忆中...˶ｰ`֊´ｰ˶');
 
     try {
         // 调用你现有的 API 函数
@@ -3624,7 +3670,7 @@ async function triggerAiSummary() {
             saveChatAndRefresh(chat);
         }
     } catch(e) {
-        alert('总结失败惹(T_T)：' + e.message);
+        alert('回忆失败惹(T_T)：' + e.message);
     }
 }
 
@@ -3641,7 +3687,7 @@ function saveSummaryToChat(text) {
     
     saveChatAndRefresh(chat); // 保存到数据库
     renderSummaries();        // 刷新界面
-    showSystemAlert('回忆保持成功啦！！(≧▽≦)');
+    showSystemAlert('回忆保持成功啦！！(=^▽^=)');
 }
 
 // ====================
@@ -3650,15 +3696,15 @@ function saveSummaryToChat(text) {
 
 // 吐槽文案
 const moodTexts = [
-    "hallo～",
+    "꒪ˊ꒳ˋ꒪",
     "欸？",
     "戳我干嘛！",
     "(𓐍ㅇㅂㅇ𓐍)",
     "别戳啦！！",
     "我生气了。",
-    "(♯｀∧´)",
-    " ᗜ ˰ ᗜ ",
-    "哼！"
+    " ＞𐋣＜ ",
+    "♡=•ㅅ＜=)☆",
+    " ⦁ ɷ ⦁ "
 ];
 
 let moodIndex = 0; 
@@ -3680,4 +3726,190 @@ window.cycleSummaryMood = function() {
     
     // 3. 震动反馈
     if(navigator.vibrate) navigator.vibrate(30);
+};
+// ==========================================================
+// [23] 朋友圈/动态 (Moments) 逻辑
+// ==========================================================
+
+let momentsData = []; // 存储动态数据
+let tempPostImg = null; // 临时存储发布时的图片
+
+// 1. 初始化加载动态数据
+window.initMoments = function() {
+    localforage.getItem('Wx_Moments_Data').then(data => {
+        momentsData = data || [];
+        renderMomentsFeed();
+    });
+};
+// 绑定到页面加载
+document.addEventListener('DOMContentLoaded', window.initMoments);
+
+
+// 2. 打开/关闭 发布器
+window.openPostCreator = function() {
+    document.getElementById('post-text-input').value = "";
+    document.getElementById('post-img-preview-area').innerHTML = `
+        <div onclick="triggerPostImgUpload()" style="width: 80px; height: 80px; background: #f7f7f7; border-radius: 4px; display: flex; justify-content: center; align-items: center; cursor: pointer;">
+            <svg viewBox="0 0 24 24" width="30" height="30" fill="#ccc"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        </div>`;
+    tempPostImg = null;
+    openSubPage('sub-page-post-creator');
+};
+
+// 3. 触发图片上传 (发布器用)
+window.triggerPostImgUpload = function() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                tempPostImg = evt.target.result; // 存 Base64
+                // 显示预览
+                const area = document.getElementById('post-img-preview-area');
+                // 插入到加号前面
+                const div = document.createElement('div');
+                div.className = 'preview-img-box';
+                div.style.backgroundImage = `url('${tempPostImg}')`;
+                div.innerHTML = `<div class="preview-del-btn" onclick="this.parentNode.remove(); tempPostImg=null;">×</div>`;
+                area.prepend(div);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    input.click();
+};
+
+// 4. 发布动态 (核心逻辑)
+window.publishPost = function() {
+    const text = document.getElementById('post-text-input').value;
+    const privacy = document.getElementById('post-privacy-select').value;
+    
+    if (!text && !tempPostImg) {
+        showSystemAlert('写点什么吧(๑＞＜)☆～');
+        return;
+    }
+
+    // 获取当前“我”的信息
+    const me = personasData[0] || { name: 'Me', avatar: '' };
+
+    const newPost = {
+        id: Date.now(),
+        author: {
+            name: me.name,
+            avatar: me.avatar
+        },
+        content: text,
+        image: tempPostImg,
+        time: Date.now(),
+        privacy: privacy, // public, private, friends
+        likes: 0,
+        isLiked: false
+    };
+
+    momentsData.unshift(newPost); // 加到最前面
+    localforage.setItem('Wx_Moments_Data', momentsData).then(() => {
+        showSystemAlert('发布成功！✨');
+        closeSubPage('sub-page-post-creator');
+        renderMomentsFeed();
+        
+        // 更新一下上面的帖子数
+        const countEl = document.querySelector('.ins-stats b');
+        if(countEl) countEl.innerText = momentsData.length;
+    });
+};
+
+// 5. 渲染动态流 (Feed)
+window.renderMomentsFeed = function() {
+    const container = document.getElementById('moments-feed-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (momentsData.length === 0) {
+        container.innerHTML = `<div style="padding: 50px; text-align: center; color: #ccc; font-size: 12px;">还没有动态哦(𓐍ㅇㅂㅇ𓐍)，点击上方的 + 发一条吧！</div>`;
+        return;
+    }
+
+    momentsData.forEach(post => {
+        // 渲染单张卡片
+        const card = document.createElement('div');
+        card.className = 'moment-card';
+        
+        const avatarStyle = getAvatarStyle(post.author.avatar);
+        const timeStr = formatTime(post.time);
+        
+        // 隐私图标
+        let privacyIcon = '';
+        if (post.privacy === 'private') privacyIcon = '🔒 ';
+        if (post.privacy === 'friends') privacyIcon = '👥 ';
+
+        // 图片 HTML
+        let imgHtml = '';
+        if (post.image) {
+            imgHtml = `<div class="m-card-media"><img src="${post.image}" class="m-single-img" loading="lazy"></div>`;
+        }
+
+        // 爱心状态
+        const likeColor = post.isLiked ? '#ff3b30' : '#262626';
+        const likeFill = post.isLiked ? '#ff3b30' : 'none';
+
+        card.innerHTML = `
+            <div class="m-card-header">
+                <div class="m-card-avatar" style="${avatarStyle}"></div>
+                <div class="m-card-user">${post.author.name}</div>
+                <div class="m-card-more" onclick="deleteMoment(${post.id})">•••</div>
+            </div>
+            
+            ${imgHtml}
+
+            <div class="m-action-bar">
+                <div class="m-icon-btn ${post.isLiked ? 'liked' : ''}" onclick="toggleLike(${post.id})">
+                    <svg viewBox="0 0 24 24" style="stroke: ${likeColor}; stroke-width: 2px; fill: ${likeFill};"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                </div>
+                <div class="m-icon-btn">
+                     <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                </div>
+                <div class="m-icon-btn">
+                    <svg viewBox="0 0 24 24"><path d="M21 11l-8-8v5c-5.5 0-10 4.5-10 10 2-3.5 6-5 10-5v5l8-8z"/></svg>
+                </div>
+            </div>
+
+            <div class="m-content-area">
+                <div class="m-likes-count">${post.likes} likes</div>
+                <div class="m-caption">
+                    <span class="m-caption-user">${post.author.name}</span>
+                    ${post.content}
+                </div>
+                <div class="m-time">${privacyIcon}${timeStr}</div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+};
+
+// 6. 点赞功能
+window.toggleLike = function(id) {
+    const post = momentsData.find(p => p.id === id);
+    if (post) {
+        post.isLiked = !post.isLiked;
+        post.likes += post.isLiked ? 1 : -1;
+        localforage.setItem('Wx_Moments_Data', momentsData).then(() => {
+             renderMomentsFeed();
+        });
+    }
+};
+
+// 7. 删除功能 (点击三个点触发)
+window.deleteMoment = function(id) {
+    if(confirm("要删除这条动态吗？")) {
+        momentsData = momentsData.filter(p => p.id !== id);
+        localforage.setItem('Wx_Moments_Data', momentsData).then(() => {
+            renderMomentsFeed();
+            // 更新上面的计数
+            const countEl = document.querySelector('.ins-stats b');
+            if(countEl) countEl.innerText = momentsData.length;
+        });
+    }
 };

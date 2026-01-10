@@ -260,37 +260,42 @@
 
 <div id="wx-page-moments" class="ins-layout">
     
-    <div class="ins-header-section">
-        <div class="ins-avatar-container">
-            <div class="ins-mood-bubble edit-text">ㅎㅇ...🤍</div>
+    <div class="ins-header-section" style="padding-bottom: 0;">
+        <div style="display: flex; align-items: center; width: 100%; padding: 0 15px; margin-bottom: 15px;">
+            <div class="ins-avatar-container" style="margin: 0; margin-right: 20px;">
+                <div class="ins-mood-bubble edit-text" style="top: -25px;">Ing..💭</div>
+                <div class="ins-big-avatar upload-img sync-avatar" id="ins_page_avatar" style="width: 80px; height: 80px; border: 2px solid #ddd; padding: 2px; background-clip: content-box;"></div>
+            </div>
             
-            <div class="ins-big-avatar upload-img sync-avatar" id="ins_page_avatar"></div>
+            <div style="flex: 1;">
+                <div class="ins-name edit-text" style="text-align: left; font-size: 20px; margin-bottom: 5px;">XuShiYu</div>
+                <div class="ins-stats" style="gap: 20px; justify-content: flex-start; margin-bottom: 10px;">
+                    <div class="ins-stat-item"><b class="edit-text">11</b><br><span>posts</span></div>
+                    <div class="ins-stat-item"><b class="edit-text">1314</b><br><span>followers</span></div>
+                    <div class="ins-stat-item"><b class="edit-text">520</b><br><span>following</span></div>
+                </div>
+            </div>
         </div>
-        
-        <div class="ins-info">
-            <div class="ins-name edit-text">XuShiYu</div>
-            <div class="ins-bio edit-text">誓言是一场有时差的雨 🌧️<br>instagram: @lover</div>
+
+        <div style="width: 100%; padding: 0 15px; text-align: left; margin-bottom: 15px;">
+             <div class="ins-bio edit-text">誓言是一场有时差的雨 🌧️<br>Love with u > ~ < 🤍</div>
         </div>
-        
-        <div class="ins-stats">
-            <div class="ins-stat-item"><b class="edit-text">11</b><br><span>posts</span></div>
-            <div class="ins-stat-item"><b class="edit-text">1314</b><br><span>followers</span></div>
-            <div class="ins-stat-item"><b class="edit-text">520</b><br><span>following</span></div>
-        </div>
-        
-        <div class="ins-btn-row">
+
+        <div class="ins-btn-row" style="padding: 0 15px;">
             <div class="ins-btn primary">Edit profile</div>
             <div class="ins-btn">Share profile</div>
-            <div class="ins-btn icon-btn">+</div>
+            <div class="ins-btn icon-btn" style="background: #EFEFEF;">
+                <svg viewBox="0 0 24 24" style="width:16px;height:16px;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            </div>
         </div>
     </div>
 
-    <div class="ins-highlights-scroll">
-        <div class="ins-highlight-item" onclick="alert('发朋友圈/快拍功能开发中...宝宝别急！')">
-            <div class="ins-highlight-circle plus-btn">
+    <div class="ins-highlights-scroll" style="padding: 15px 15px; border-bottom: 1px solid #f0f0f0;">
+        <div class="ins-highlight-item" onclick="openPostCreator()">
+            <div class="ins-highlight-circle plus-btn" style="border: 1px solid #333;">
                 <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
             </div>
-            <div class="ins-highlight-text">新建</div>
+            <div class="ins-highlight-text">New</div>
         </div>
         
         <div class="ins-highlight-item">
@@ -301,31 +306,15 @@
             <div class="ins-highlight-circle upload-img" style="background-image: url('https://i.postimg.cc/TYY6FJvs/kuku16.gif');"></div>
             <div class="ins-highlight-text edit-text">Daily</div>
         </div>
-        <div class="ins-highlight-item">
+         <div class="ins-highlight-item">
             <div class="ins-highlight-circle upload-img" style="background-image: url('https://i.postimg.cc/jjTJY1qT/kuku1.gif');"></div>
-            <div class="ins-highlight-text edit-text">OOTD</div>
-        </div>
-        <div class="ins-highlight-item">
-            <div class="ins-highlight-circle upload-img"></div>
             <div class="ins-highlight-text edit-text">Cat</div>
         </div>
     </div>
 
-    <div class="ins-feed-area">
-        <div class="ins-feed-tabs">
-            <div class="ins-tab active"><svg viewBox="0 0 24 24"><path d="M3 3v18h18V3H3zm16 16H5V5h14v14zM7 7h10v2H7V7zm0 4h10v2H7v-2zm0 4h7v2H7v-2z"/></svg></div>
-            <div class="ins-tab"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg></div>
-        </div>
-        
-        <div class="ins-photo-grid">
-             <div class="ins-grid-item upload-img"></div>
-             <div class="ins-grid-item upload-img"></div>
-             <div class="ins-grid-item upload-img"></div>
-             <div class="ins-grid-item upload-img"></div>
-        </div>
-        
-        <div style="height: 100px; text-align: center; color: #ddd; font-size: 12px; margin-top: 20px;">
-            End of Memories
+    <div id="moments-feed-container" class="ins-feed-area" style="padding-bottom: 100px; background: #fff;">
+        <div style="padding: 50px; text-align: center; color: #ccc; font-size: 12px;">
+            还没有动态哦，点击上方的 + 发一条吧！
         </div>
     </div>
 </div>
@@ -981,66 +970,112 @@
     </div>
 </div>
 
-<div id="sub-page-summary" class="sub-page" style="display: none; background: #fff; z-index: 6000; flex-direction: row; overflow: hidden;">
-    
-    <div class="book-sidebar-layout">
-        <div class="back-circle-btn" onclick="closeSubPage('sub-page-summary')">‹</div>
+<div id="sub-page-post-creator" class="sub-page" style="background: #fff; z-index: 6000;">
+    <div class="sub-header" style="background: #fff; border-bottom: none; justify-content: space-between; padding-right: 16px;">
+        <div class="back-btn" onclick="closeSubPage('sub-page-post-creator')">Cancel</div>
+        <div style="font-weight: 600; font-size: 16px;">New Post</div>
+        <div onclick="publishPost()" style="color: #fff; background: #007aff; padding: 6px 14px; border-radius: 4px; font-size: 14px; font-weight: 600; cursor: pointer;">Post</div>
+    </div>
+
+    <div class="sub-content" style="padding: 20px;">
+        <textarea id="post-text-input" placeholder="Say something..." style="width: 100%; border: none; outline: none; font-size: 16px; font-family: inherit; resize: none; min-height: 100px; margin-bottom: 20px;"></textarea>
         
-        <div class="bookmark-card">
-            <div class="book-avatar-container">
-                <div class="sum-bubble-wrapper">
-                    <div class="sum-bubble" id="sum-mood-bubble">hallo哇～</div>
-                </div>
-                <div class="book-char-avatar sync-avatar-target" id="sum-sidebar-avatar" onclick="cycleSummaryMood()"></div>
-                <div class="sum-online-dot"></div>
-            </div>
-            
-            <div class="book-info-box">
-                <div class="book-title">Our<br>Story</div>
-                <div class="book-subtitle">MEMORIES</div>
+        <div id="post-img-preview-area" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 30px;">
+            <div onclick="triggerPostImgUpload()" style="width: 80px; height: 80px; background: #f7f7f7; border-radius: 4px; display: flex; justify-content: center; align-items: center; cursor: pointer;">
+                <svg viewBox="0 0 24 24" width="30" height="30" fill="#ccc"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
             </div>
         </div>
 
-        <div class="sidebar-decoration">
-            <div class="deco-line"></div>
-            <div class="deco-star">✦</div>
-            <div class="deco-text">Time flows,<br>Love grows.</div>
-            <div class="deco-star" style="font-size: 10px; margin-top:5px;">✨</div>
-        </div>
+        <div style="border-top: 1px solid #f5f5f5; margin: 0 -20px;"></div>
 
-        <div class="book-actions-col">
-            <div class="rect-btn ai-btn" onclick="confirmAiSummary()">
-                <div class="rect-icon-box">
-                    <svg viewBox="0 0 24 24" class="icon-gradient-ai">
-                        <defs>
-                            <linearGradient id="aiYellowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:#FFA500;stop-opacity:1" />
-                            </linearGradient>
-                        </defs>
-                        <path fill="url(#aiYellowGradient)" d="M12 0l3.09 6.26L22 7.27l-5 4.87 1.18 6.88L12 15.77l-6.18 3.25L7 12.14 2 7.27l6.91-1.01L12 0z"/>
-                        <path fill="#FFD700" d="M5 20l2-4-4-1 4-2-2-4 3 3 4-2-3 4 2 3-4-1-2 4z" opacity="0.6" transform="scale(0.5) translate(30, 30)"/>
-                    </svg>
-                </div>
-                <div class="rect-text-col">
-                    <span class="btn-main-text">AI 总结</span>
-                    <span class="btn-sub-text">Generate Memory</span>
-                </div>
-            </div>
-            
-            <div class="rect-btn manual-btn" onclick="manualAddSummary()">
-                <div class="rect-icon-box">
-                    <svg viewBox="0 0 24 24" fill="#555">
-                        <path d="M7.127 22.562l-7.127 1.438 1.438-7.128 5.689 5.69zm1.414-1.414l11.228-11.225-5.69-5.692-11.227 11.227 5.689 5.69zm9.768-21.148l-2.816 2.817 5.691 5.691 2.816-2.819-5.691-5.689z"/>
-                    </svg>
-                </div>
-                <div class="rect-text-col">
-                    <span class="btn-main-text">手写记录</span>
-                    <span class="btn-sub-text">Write it down</span>
-                </div>
-            </div>
+        <div class="post-option-row" onclick="alert('假装定位到了：月球表面 🌑')">
+            <div class="p-opt-icon">📍</div>
+            <div class="p-opt-text">Location</div>
+            <div class="p-opt-arrow">›</div>
+        </div>
+        <div class="post-option-row">
+            <div class="p-opt-icon">🔒</div>
+            <div class="p-opt-text">Hide From (Who can see)</div>
+            <select id="post-privacy-select" style="border: none; background: transparent; outline: none; color: #007aff; font-size: 14px; text-align: right; margin-left: auto;">
+                <option value="public">Public</option>
+                <option value="private">Private (Me only)</option>
+                <option value="friends">Friends only</option>
+            </select>
+        </div>
+         <div class="post-option-row">
+            <div class="p-opt-icon">@</div>
+            <div class="p-opt-text">Mention</div>
+            <div class="p-opt-arrow">›</div>
         </div>
     </div>
+</div>
+
+<div id="sub-page-summary" class="sub-page ticket-layout">
+    
+    <div class="ticket-header-stub">
+        <div class="ticket-back-btn" onclick="closeSubPage('sub-page-summary')">
+            <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        </div>
+        
+        <div class="ticket-info">
+            <div class="ticket-brand">MEMORY LOG</div>
+            <div class="ticket-meta">
+                <span>NO. 000001</span><span class="ticket-divider">|</span>
+                <span>ADMIT TWO</span><span class="ticket-divider">|</span>
+                <span>∞ INFINITY</span>
+            </div>
+        </div>
+
+        <div class="ticket-dashed-line"></div>
+        <div class="ticket-cutout left"></div>
+        <div class="ticket-cutout right"></div>
+    </div>
+
+    <div class="ticket-body-container">
+        
+        <div class="narrow-sidebar">
+             <div class="hanging-ribbon">
+                 <div class="ribbon-hole"></div>
+                 
+                 <div class="book-avatar-container compact">
+                      <div class="sum-bubble-wrapper">
+                          <div class="sum-bubble" id="sum-mood-bubble">(𓐍ㅇㅂㅇ𓐍)</div>
+                      </div>
+                      <div class="book-char-avatar sync-avatar-target" id="sum-sidebar-avatar" onclick="cycleSummaryMood()"></div>
+                      <div class="sum-online-dot"></div>
+                 </div>
+                 
+                 <div class="ribbon-text">OUR STORY</div>
+             </div>
+        </div>
+
+        <div class="wide-content-area" id="book-scroll-area">
+             <div id="summary-list-container">
+                 </div>
+             <div style="height: 100px;"></div>
+        </div>
+    </div>
+
+    <div class="fab-group">
+        <div class="fab-btn ai-fab" onclick="confirmAiSummary()">
+            <svg viewBox="0 0 24 24">
+                <defs>
+                    <linearGradient id="fabGold" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#FFA500;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <path fill="url(#fabGold)" d="M12 0l3.09 6.26L22 7.27l-5 4.87 1.18 6.88L12 15.77l-6.18 3.25L7 12.14 2 7.27l6.91-1.01L12 0z"/>
+            </svg>
+        </div>
+        
+        <div class="fab-btn write-fab" onclick="manualAddSummary()">
+            <svg viewBox="0 0 24 24" fill="#555">
+                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+            </svg>
+        </div>
+    </div>
+</div>
 
     <div class="book-content-area" id="book-scroll-area">
         <div id="summary-list-container">
