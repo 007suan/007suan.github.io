@@ -260,35 +260,32 @@
 
 <div id="wx-page-moments" class="ins-layout">
     
-    <div class="ins-header-section" style="padding-bottom: 0;">
-        <div style="display: flex; align-items: center; width: 100%; padding: 0 15px; margin-bottom: 15px;">
-            <div class="ins-avatar-container" style="margin: 0; margin-right: 20px;">
-                <div class="ins-mood-bubble edit-text" style="top: -25px;">Ing..💭</div>
-                <div class="ins-big-avatar upload-img sync-avatar" id="ins_page_avatar" style="width: 80px; height: 80px; border: 2px solid #ddd; padding: 2px; background-clip: content-box;"></div>
-            </div>
-            
-            <div style="flex: 1;">
-                <div class="ins-name edit-text" style="text-align: left; font-size: 20px; margin-bottom: 5px;">XuShiYu</div>
-                <div class="ins-stats" style="gap: 20px; justify-content: flex-start; margin-bottom: 10px;">
-                    <div class="ins-stat-item"><b class="edit-text">11</b><br><span>posts</span></div>
-                    <div class="ins-stat-item"><b class="edit-text">1314</b><br><span>followers</span></div>
-                    <div class="ins-stat-item"><b class="edit-text">520</b><br><span>following</span></div>
-                </div>
-            </div>
+<div class="ins-new-header">
+    <div class="ins-top-row">
+        <div class="ins-avatar-section">
+            <div class="ins-mood-bubble edit-text" style="top: -20px; left: 5px; transform:none;">Ing..☁️</div>
+            <div class="ins-big-avatar upload-img sync-avatar" id="ins_page_avatar" style="width: 86px; height: 86px; border: 1px solid rgba(0,0,0,0.1);"></div>
         </div>
-
-        <div style="width: 100%; padding: 0 15px; text-align: left; margin-bottom: 15px;">
-             <div class="ins-bio edit-text">誓言是一场有时差的雨 🌧️<br>Love with u > ~ < 🤍</div>
-        </div>
-
-        <div class="ins-btn-row" style="padding: 0 15px;">
-            <div class="ins-btn primary">Edit profile</div>
-            <div class="ins-btn">Share profile</div>
-            <div class="ins-btn icon-btn" style="background: #EFEFEF;">
-                <svg viewBox="0 0 24 24" style="width:16px;height:16px;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-            </div>
+        <div class="ins-stats-section">
+            <div class="ins-stat-box"><span class="ins-stat-num">11</span><span class="ins-stat-label">posts</span></div>
+            <div class="ins-stat-box"><span class="ins-stat-num">1314</span><span class="ins-stat-label">followers</span></div>
+            <div class="ins-stat-box"><span class="ins-stat-num">520</span><span class="ins-stat-label">following</span></div>
         </div>
     </div>
+
+    <div class="ins-bio-section">
+        <div class="ins-bio-name edit-text">昵称</div>
+        <div class="ins-bio-text edit-text">誓言是一场有时差的雨 🌧️<br>instagram: @lover</div>
+    </div>
+
+    <div class="ins-action-btns">
+        <div class="ins-edit-btn">Edit profile</div>
+        <div class="ins-edit-btn">Share profile</div>
+        <div class="ins-icon-btn-small">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        </div>
+    </div>
+</div>
 
     <div class="ins-highlights-scroll" style="padding: 15px 15px; border-bottom: 1px solid #f0f0f0;">
         <div class="ins-highlight-item" onclick="openPostCreator()">
@@ -779,8 +776,12 @@
             </div>
         </div> 
 
-<div class="chl-right-group">
-  <div class="chl-menu-btn" onclick="openChatControl()">
+<div class="chl-right-group" style="gap: 8px;">
+    <div class="chl-menu-btn" onclick="openLocationMap()">
+        <img src="https://i.postimg.cc/yWCzHdyK/wu-biao-ti117-20260110141805.png" style="width: 22px; height: 22px;">
+    </div>
+
+    <div class="chl-menu-btn" onclick="openChatControl()">
         <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: #333;">
             <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
         </svg>
@@ -971,42 +972,45 @@
 </div>
 
 <div id="sub-page-post-creator" class="sub-page" style="background: #fff; z-index: 6000;">
-    <div class="sub-header" style="background: #fff; border-bottom: none; justify-content: space-between; padding-right: 16px;">
-        <div class="back-btn" onclick="closeSubPage('sub-page-post-creator')">Cancel</div>
-        <div style="font-weight: 600; font-size: 16px;">New Post</div>
-        <div onclick="publishPost()" style="color: #fff; background: #007aff; padding: 6px 14px; border-radius: 4px; font-size: 14px; font-weight: 600; cursor: pointer;">Post</div>
+    <div class="wx-post-header">
+        <div class="wx-post-cancel" onclick="closeSubPage('sub-page-post-creator')">Cancel</div>
+        <div class="wx-post-publish" onclick="publishPost()">Post</div>
     </div>
 
-    <div class="sub-content" style="padding: 20px;">
-        <textarea id="post-text-input" placeholder="Say something..." style="width: 100%; border: none; outline: none; font-size: 16px; font-family: inherit; resize: none; min-height: 100px; margin-bottom: 20px;"></textarea>
+    <div class="wx-post-content">
+        <textarea id="post-text-input" class="wx-post-input" placeholder="Say something..."></textarea>
         
-        <div id="post-img-preview-area" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 30px;">
-            <div onclick="triggerPostImgUpload()" style="width: 80px; height: 80px; background: #f7f7f7; border-radius: 4px; display: flex; justify-content: center; align-items: center; cursor: pointer;">
+        <div id="post-img-preview-area" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;">
+            <div onclick="triggerPostImgUpload()" style="width: 100px; height: 100px; background: #f7f7f7; display: flex; justify-content: center; align-items: center; cursor: pointer;">
                 <svg viewBox="0 0 24 24" width="30" height="30" fill="#ccc"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
             </div>
         </div>
 
-        <div style="border-top: 1px solid #f5f5f5; margin: 0 -20px;"></div>
-
-        <div class="post-option-row" onclick="alert('假装定位到了：月球表面 🌑')">
-            <div class="p-opt-icon">📍</div>
-            <div class="p-opt-text">Location</div>
-            <div class="p-opt-arrow">›</div>
-        </div>
-        <div class="post-option-row">
-            <div class="p-opt-icon">🔒</div>
-            <div class="p-opt-text">Hide From (Who can see)</div>
-            <select id="post-privacy-select" style="border: none; background: transparent; outline: none; color: #007aff; font-size: 14px; text-align: right; margin-left: auto;">
-                <option value="public">Public</option>
-                <option value="private">Private (Me only)</option>
-                <option value="friends">Friends only</option>
+<div class="wx-options-list">
+    <div class="wx-opt-item" onclick="alert('定位ing...')">
+        <img src="https://i.postimg.cc/yWCzHdyK/wu-biao-ti117-20260110141805.png" class="wx-opt-icon" style="width: 24px; height: 24px;">
+        <div class="wx-opt-text">Location</div>
+        <div class="wx-opt-right"><span>Moon</span><svg class="wx-opt-arrow" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5v10z"/></svg></div>
+    </div>
+    
+    <div class="wx-opt-item">
+        <img src="https://i.postimg.cc/PNnkjxQn/wu-biao-ti117-20260110141818.png" class="wx-opt-icon" style="width: 24px; height: 24px;">
+        <div class="wx-opt-text">Mention</div>
+        <div class="wx-opt-right"><svg class="wx-opt-arrow" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5v10z"/></svg></div>
+    </div>
+    
+    <div class="wx-opt-item">
+        <img src="https://i.postimg.cc/xqVS2CyW/wu-biao-ti117-20260110141831.png" class="wx-opt-icon" style="width: 24px; height: 24px;">
+        <div class="wx-opt-text">Visible To</div>
+        <div class="wx-opt-right">
+            <select id="post-privacy-select" style="border:none;background:transparent;text-align:right;font-size:14px;color:#999;outline:none;">
+                <option value="public">All</option>
+                <option value="private">Private</option>
             </select>
+            <svg class="wx-opt-arrow" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5v10z"/></svg>
         </div>
-         <div class="post-option-row">
-            <div class="p-opt-icon">@</div>
-            <div class="p-opt-text">Mention</div>
-            <div class="p-opt-arrow">›</div>
-        </div>
+          </div>
+       </div>
     </div>
 </div>
 
@@ -1079,6 +1083,102 @@
 
     <div class="book-content-area" id="book-scroll-area">
         <div id="summary-list-container">
+            </div>
+    </div>
+</div>
+
+<div id="sub-page-map" class="sub-page" style="background: #eef0f3; z-index: 8000;">
+    <div class="map-search-bar">
+        <div class="map-back-btn" onclick="closeLocationMap()">
+            <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        </div>
+        <div class="map-search-input">
+            <div class="map-dot state-green"></div>
+            <span id="map-current-status">正在定位 TA 的位置...</span>
+        </div>
+        <div class="map-avatar-small" id="map-corner-avatar"></div>
+    </div>
+
+    <div class="map-container">
+<div class="map-container" id="virtual-map-viewport">
+    <div id="large-map-world" class="large-map-world">
+        
+        <div class="map-road road-h" style="top: 400px; content: '梧桐大道';"></div>
+        <div class="map-road road-h" style="top: 1200px; content: '杏花街';"></div>
+        <div class="map-road road-v" style="left: 600px; content: '中央大街';"></div>
+        <div class="map-road road-v" style="left: 1400px; content: '滨海路';"></div>
+
+        <div class="map-landmark" id="loc-home-char" style="top: 320px; left: 500px;">
+            <div class="land-icon">🏠</div>
+            <div class="land-name">许时雨的家</div>
+        </div>
+
+        <div class="map-landmark" id="loc-home-user" style="top: 550px; left: 650px;">
+            <div class="land-icon">🏡</div>
+            <div class="land-name">我的家</div>
+        </div>
+
+        <div class="map-landmark" id="loc-school" style="top: 200px; left: 1200px;">
+            <div class="land-icon">🏫</div>
+            <div class="land-name">圣南大学</div>
+        </div>
+
+        <div class="map-landmark" id="loc-cafe" style="top: 450px; left: 1450px;">
+            <div class="land-icon">☕</div>
+            <div class="land-name">转角咖啡</div>
+        </div>
+
+        <div class="map-landmark" id="loc-hotel" style="top: 1300px; left: 1500px;">
+            <div class="land-icon">🏩</div>
+            <div class="land-name">爱琴海酒店</div>
+        </div>
+
+        <div class="map-landmark" id="loc-hospital" style="top: 1100px; left: 200px;">
+            <div class="land-icon">🏥</div>
+            <div class="land-name">市中心医院</div>
+        </div>
+        
+        <div class="map-landmark" id="loc-park" style="top: 800px; left: 1000px;">
+            <div class="land-icon">🌳</div>
+            <div class="land-name">中央公园</div>
+        </div>
+
+        <div class="map-pin-wrapper" id="my-map-pin">
+            <div class="map-pin-halo"></div>
+            <div class="map-pin-core"></div>
+            <div class="map-pin-arrow"></div>
+        </div>
+    </div>
+</div>
+
+<div class="map-bottom-sheet">
+    <div class="map-sheet-handle-area" onclick="toggleMapState()">
+        <div class="map-sheet-handle"></div>
+    </div>
+    
+    <div class="map-sheet-header">
+        <div class="map-sheet-title">我的足迹</div>
+        <div class="map-sheet-subtitle">共记录 <span id="map-total-count">0</span> 个行程点</div>
+    </div>
+
+        <div class="map-quick-actions">
+            <div class="map-qa-item">
+                <div class="map-qa-icon home-icon">🏠</div>
+                <span>家</span>
+            </div>
+            <div class="map-qa-item">
+                <div class="map-qa-icon work-icon">💼</div>
+                <span>公司</span>
+            </div>
+            <div class="map-qa-item">
+                <div class="map-qa-icon plus-icon">➕</div>
+                <span>常去</span>
+            </div>
+        </div>
+
+        <div class="map-divider"></div>
+
+        <div id="map-history-list" class="map-history-scroll">
             </div>
     </div>
 </div>

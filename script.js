@@ -2079,7 +2079,7 @@ window.scrollToMsg = function(ts) {
     }
 };
 
-// === AI 触发逻辑 (回归初心·活人版 + 记忆注入) ===
+// === AI 触发逻辑 (修复版：包含位置追踪 + 消息分段循环) ===
 window.triggerAI = async function() {
     if (!currentChatId) return;
     const chat = chatsData.find(c => c.id === currentChatId);
@@ -2089,7 +2089,7 @@ window.triggerAI = async function() {
     const char = contactsData.find(c => c.id === chat.contactId); 
     const me = personasData.find(p => p.id === chat.personaId) || { name: 'User', desc: '无', persona: '无' };
     
-    // 2. 引用逻辑 (随机引用旧消息 - 增加互动感)
+    // 2. 引用逻辑 (随机引用旧消息)
     let aiQuote = null;
     if (Math.random() < 0.3 && chat.messages.length > 0) {
         const recentMsgs = chat.messages.slice(-10).filter(m => m.role === 'me' && m.text && m.text.length > 4);
@@ -2099,27 +2099,26 @@ window.triggerAI = async function() {
         }
     }
 
-    // 3. 构建历史消息 (最近15条)
+    // 3. 构建历史消息
     const history = (chat.messages || []).slice(-15).map(m => {
         let content = m.text;
         if (m.type === 'recall') content = m.originalText || "（撤回内容）";
         return `${m.role === 'me' ? 'User' : 'You'}: ${content}`;
     }).join('\n');
 
-    // ★★★ 4. 构建总结记忆 (在这里注入！) ★★★
+    // 4. 构建总结记忆 (这里之前断掉了，现在修好了！)
     const summaryList = chat.summaries || [];
     let memoryPrompt = "";
     if (summaryList.length > 0) {
         const memoryText = summaryList.map((s, i) => `[回忆片段 ${i+1}]: ${s.text}`).join('\n');
-        // 用最简单的自然语言告诉它，不要复杂的指令
         memoryPrompt = `
     【你们过往的重要回忆】
     ${memoryText}
     (请记住这些发生过的事情，保持剧情连贯)
     `;
     }
-    
-    // 5. 组装最终 Prompt (你最爱的清爽版)
+
+    // 5. 组装Prompt
     const systemPrompt = `
     你现在进行一场Cosplay扮演。
     
@@ -2173,14 +2172,30 @@ window.triggerAI = async function() {
          User: "今晚我要加班，不陪你了。"
          You (傲娇男友): "{{你是想死吗？又要丢下我！::噢，知道了，那你忙吧。}}"
        
+    6.【玩法：位置汇报协议 (必须执行)】
+    为了让用户知道你在哪里，请在**每一次**回复的**最后一行**，
+    严格按照以下格式汇报你当前的位置和正在做的事：
+    
+    [[LOC::地点名称::正在做的事情]]
+    
+    例如：
+    [[LOC::家里的沙发上::正在边吃薯片边回你消息]]
+    [[LOC::学校图书馆::正在假装复习其实在发呆]]
+    [[LOC::公司楼下咖啡厅::正在买续命冰美式]]
+    
+    *注意：*
+    1. 这个格式必须写在回复的最后面。
+    2. 即使位置没变，也要汇报（可以写“还在家里”）。
+    3. **LOC指令不会显示给用户看**，后台会自动处理，所以请放心大胆地写。
+
     历史记录：
     ${history}
     
     请以${char.name}的口吻回复：
     `;
     
-
-    // 6. 显示正在输入 (保持不变)
+    
+    // 6. 显示正在输入
     const container = document.getElementById('chat-msg-area');
     const loadingId = 'typing-' + Date.now();
     if (currentChatId === chat.id && container) {
@@ -2198,24 +2213,40 @@ window.triggerAI = async function() {
         if (loadingEl) loadingEl.remove();
 
         if (reply) {
-            const segments = reply.split('\n').filter(s => s.trim() !== '');
+            // ★★★ 第一步：处理位置信息 ★★★
+            let cleanReply = reply;
+            const locMatch = reply.match(/\[\[LOC::(.+?)::(.+?)\]\]/);
+            
+            if (locMatch) {
+                // 存入数据库
+                if (!chat.locationHistory) chat.locationHistory = [];
+                chat.locationHistory.push({
+                    time: Date.now(),
+                    place: locMatch[1],
+                    action: locMatch[2]
+                });
+                // 从回复中剔除
+                cleanReply = reply.replace(locMatch[0], '').trim();
+                localforage.setItem('Wx_Chats_Data', chatsData);
+            }
+
+            // ★★★ 第二步：消息分段循环 ★★★
+            const segments = cleanReply.split('\n').filter(s => s.trim() !== '');
             const targetChatId = chat.id; 
 
             for (let i = 0; i < segments.length; i++) {
                 let seg = segments[i];
-                await new Promise(r => setTimeout(r, 1500)); 
+                await new Promise(r => setTimeout(r, 1500 + Math.random() * 1000)); 
 
+                // 检查是否有撤回格式
                 const match = seg.match(/\{\{(.+?)::(.+?)\}\}/);
                 const currentQuote = (i === 0) ? aiQuote : null;
 
-                // === 后台模式 ===
                 if (currentChatId !== targetChatId) {
                     const targetChat = chatsData.find(c => c.id === targetChatId);
-                    if(!targetChat) continue;
-
+                    if (!targetChat) continue;
                     if (match) {
                         pushMsgToData(targetChat, match[1], 'other', currentQuote);
-                        saveChatAndRefresh(targetChat); updateGlobalBadges();
                         showNotification(char.name, match[1], char.avatar); 
                         await new Promise(r => setTimeout(r, 2500));
                         const lastMsg = targetChat.messages[targetChat.messages.length - 1];
@@ -2223,22 +2254,20 @@ window.triggerAI = async function() {
                             lastMsg.type = 'recall'; lastMsg.originalText = match[1]; delete lastMsg.text;
                             saveChatAndRefresh(targetChat);
                         }
-                        showNotification(char.name, "对方撤回了一条消息", char.avatar);
+                        showNotification(char.name, "撤回了一条消息", char.avatar);
                         await new Promise(r => setTimeout(r, 1500));
                         pushMsgToData(targetChat, match[2], 'other', null);
-                        saveChatAndRefresh(targetChat); updateGlobalBadges();
                         showNotification(char.name, match[2], char.avatar);
-
                     } else {
                         pushMsgToData(targetChat, seg, 'other', currentQuote);
-                        saveChatAndRefresh(targetChat); updateGlobalBadges();
                         showNotification(char.name, seg, char.avatar);
                     }
-                } 
-                // === 前台模式 ===
-                else {
-                    if (match) await simulateAiRecall(match[1], match[2], currentQuote);
-                    else sendMsg('other', seg, 'text', currentQuote);
+                } else {
+                    if (match) {
+                        await simulateAiRecall(match[1], match[2], currentQuote);
+                    } else {
+                        sendMsg('other', seg, 'text', currentQuote);
+                    }
                 }
             }
         }
@@ -3828,61 +3857,69 @@ window.renderMomentsFeed = function() {
     container.innerHTML = '';
 
     if (momentsData.length === 0) {
-        container.innerHTML = `<div style="padding: 50px; text-align: center; color: #ccc; font-size: 12px;">还没有动态哦(𓐍ㅇㅂㅇ𓐍)，点击上方的 + 发一条吧！</div>`;
+        container.innerHTML = `<div style="padding: 50px; text-align: center; color: #ccc; font-size: 12px;">还没有动态哦，点击上方的 + 发一条吧！</div>`;
         return;
     }
 
     momentsData.forEach(post => {
-        // 渲染单张卡片
         const card = document.createElement('div');
         card.className = 'moment-card';
+        card.style.borderBottom = '1px solid #f0f0f0'; 
         
         const avatarStyle = getAvatarStyle(post.author.avatar);
         const timeStr = formatTime(post.time);
         
-        // 隐私图标
-        let privacyIcon = '';
-        if (post.privacy === 'private') privacyIcon = '🔒 ';
-        if (post.privacy === 'friends') privacyIcon = '👥 ';
-
-        // 图片 HTML
         let imgHtml = '';
         if (post.image) {
-            imgHtml = `<div class="m-card-media"><img src="${post.image}" class="m-single-img" loading="lazy"></div>`;
+            imgHtml = `<div class="m-card-media" style="margin-top:10px;"><img src="${post.image}" class="m-single-img" style="border-radius:8px; max-height:350px; width:auto; max-width:100%; object-fit:contain;" loading="lazy"></div>`;
         }
 
-        // 爱心状态
-        const likeColor = post.isLiked ? '#ff3b30' : '#262626';
-        const likeFill = post.isLiked ? '#ff3b30' : 'none';
+        // 评论区显示逻辑
+        const showCommentBox = post.isLiked || (post.likes > 0) ? 'show' : '';
+
+        // ★★★ 核心逻辑：判断显示实心黑心(SVG) 还是 空心图(IMG) ★★★
+        // 如果已点赞 -> 显示实心黑色 SVG
+        // 如果未点赞 -> 显示你提供的空心 PNG
+        const likeIconHtml = post.isLiked 
+            ? `<svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:#000;"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`
+            : `<img src="https://i.postimg.cc/K4hy2zDX/wu-biao-ti117-20260110142016.png" style="width:24px; height:24px;">`;
 
         card.innerHTML = `
             <div class="m-card-header">
                 <div class="m-card-avatar" style="${avatarStyle}"></div>
-                <div class="m-card-user">${post.author.name}</div>
+                <div style="flex:1;">
+                    <div class="m-card-user">${post.author.name}</div>
+                    <div style="font-size:11px; color:#999;">${post.privacy === 'private' ? '🔒 ' : ''}${timeStr}</div>
+                </div>
                 <div class="m-card-more" onclick="deleteMoment(${post.id})">•••</div>
             </div>
             
-            ${imgHtml}
+            <div style="padding:0 15px;">
+                 <div class="m-caption" style="margin:5px 0;">${post.content}</div>
+                 ${imgHtml}
+            </div>
 
-            <div class="m-action-bar">
-                <div class="m-icon-btn ${post.isLiked ? 'liked' : ''}" onclick="toggleLike(${post.id})">
-                    <svg viewBox="0 0 24 24" style="stroke: ${likeColor}; stroke-width: 2px; fill: ${likeFill};"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            <div class="m-action-bar" style="margin-top:5px; justify-content: flex-start; gap: 15px;">
+                <div class="m-icon-btn" id="like-btn-${post.id}" onclick="toggleLike(${post.id})">
+                    ${likeIconHtml}
                 </div>
-                <div class="m-icon-btn">
-                     <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                
+                <div class="m-icon-btn" onclick="alert('评论功能开发中...(≧∇≦)')">
+                     <img src="https://i.postimg.cc/6TxNX3Lk/wu-biao-ti117-20260110142025.png" style="width:24px; height:24px;">
                 </div>
-                <div class="m-icon-btn">
-                    <svg viewBox="0 0 24 24"><path d="M21 11l-8-8v5c-5.5 0-10 4.5-10 10 2-3.5 6-5 10-5v5l8-8z"/></svg>
+                
+                <div class="m-icon-btn" style="margin-left:auto;">
+                    <img src="https://i.postimg.cc/V5Pc86B2/wu-biao-ti117-20260110142036.png" style="width:24px; height:24px;">
                 </div>
             </div>
 
-            <div class="m-content-area">
-                <div class="m-likes-count">${post.likes} likes</div>
-                <div class="m-caption">
-                    <span class="m-caption-user">${post.author.name}</span>
-                    ${post.content}
+            <div class="m-content-area" style="padding-bottom:15px;">
+                <div id="comment-box-${post.id}" class="m-comment-box ${showCommentBox}">
+                    <div class="m-like-row">
+                        <svg class="m-like-icon" viewBox="0 0 24 24" style="fill:#000; border:none;"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        <span id="like-count-${post.id}">${post.likes}</span> likes
+                    </div>
                 </div>
-                <div class="m-time">${privacyIcon}${timeStr}</div>
             </div>
         `;
         container.appendChild(card);
@@ -3893,11 +3930,39 @@ window.renderMomentsFeed = function() {
 window.toggleLike = function(id) {
     const post = momentsData.find(p => p.id === id);
     if (post) {
+        // 更新数据
         post.isLiked = !post.isLiked;
         post.likes += post.isLiked ? 1 : -1;
-        localforage.setItem('Wx_Moments_Data', momentsData).then(() => {
-             renderMomentsFeed();
-        });
+        if(post.likes < 0) post.likes = 0;
+
+        // 局部更新 UI 
+        const btn = document.getElementById(`like-btn-${id}`);
+        const countSpan = document.getElementById(`like-count-${id}`);
+        const commentBox = document.getElementById(`comment-box-${id}`);
+        
+        if (btn) {
+            //如果点赞了：塞入实心黑色 SVG
+            if(post.isLiked) {
+                btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:#000;"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
+                // 震动一下
+                if(navigator.vibrate) navigator.vibrate(30);
+            } 
+            // ★ 如果取消赞：塞回你的空心 PNG
+            else {
+                btn.innerHTML = `<img src="https://i.postimg.cc/K4hy2zDX/wu-biao-ti117-20260110142016.png" style="width:24px; height:24px;">`;
+            }
+        }
+        
+        if (countSpan) countSpan.innerText = post.likes;
+        
+        // 控制底部灰框显示
+        if (commentBox) {
+            if (post.likes > 0) commentBox.classList.add('show');
+            else commentBox.classList.remove('show');
+        }
+
+        //保存
+        localforage.setItem('Wx_Moments_Data', momentsData);
     }
 };
 
@@ -3913,3 +3978,168 @@ window.deleteMoment = function(id) {
         });
     }
 };
+
+// ====================
+// [24] 位置追踪系统 (Stalking Map)
+// ====================
+
+// 打开地图
+window.openLocationMap = function() {
+    if (!currentChatId) return;
+    const chat = chatsData.find(c => c.id === currentChatId);
+    if (!chat) return;
+
+    // 1. 设置头像
+    const contact = contactsData.find(c => c.id === chat.contactId);
+    const avatarEl = document.getElementById('map-corner-avatar');
+    if (avatarEl && contact) {
+        // 使用你的通用头像处理函数
+        avatarEl.style.backgroundImage = getAvatarStyle(contact.avatar).replace('background-image: ', '').replace(';', '');
+    }
+
+    // 2. 渲染历史记录
+    renderMapHistory(chat);
+
+    // 3. 打开页面
+    const page = document.getElementById('sub-page-map');
+    page.style.display = 'flex';
+    setTimeout(() => page.classList.add('active'), 10);
+};
+
+// 关闭地图
+window.closeLocationMap = function() {
+    const page = document.getElementById('sub-page-map');
+    page.classList.remove('active');
+    setTimeout(() => page.style.display = 'none', 300);
+};
+
+// 渲染行程单
+function renderMapHistory(chat) {
+    const list = document.getElementById('map-history-list');
+    const statusText = document.getElementById('map-current-status');
+    const countText = document.getElementById('map-total-count');
+    
+    list.innerHTML = '';
+    
+    const history = chat.locationHistory || [];
+    countText.innerText = history.length;
+
+    if (history.length === 0) {
+        statusText.innerText = "信号连接中...(𓐍ㅇㅂㅇ𓐍)";
+        list.innerHTML = `<div style="text-align:center; color:#ccc; font-size:12px; margin-top:20px;">暂无行踪数据...<br>去聊两句，套套TA的话^>៸៸៸៸<^？</div>`;
+        return;
+    }
+
+    // 更新顶部状态 (取最新的一条)
+    const latest = history[history.length - 1];
+    statusText.innerText = `当前: ${latest.place}`;
+
+    // 倒序渲染 (最新的在最上面)
+    // 过滤逻辑：如果连续两条地点一样，就不显示重复的，只显示最新的
+    let lastPlace = '';
+    
+    [...history].reverse().forEach((log, index) => {
+        // 简单的去重展示（可选）
+        // if (log.place === lastPlace) return; 
+        // lastPlace = log.place;
+
+        const item = document.createElement('div');
+        // 第一条加个 current 样式，变蓝
+        item.className = `map-log-item ${index === 0 ? 'current' : ''}`;
+        
+        // 格式化时间
+        const timeStr = formatTime(log.time);
+
+        item.innerHTML = `
+            <div class="map-log-dot"></div>
+            <div class="map-log-content">
+                <div class="map-log-place">${log.place}</div>
+                <div class="map-log-action">${log.action}</div>
+                <div class="map-log-time">${timeStr}</div>
+            </div>
+        `;
+        list.appendChild(item);
+    });
+}
+
+// ====================
+// [25] 地图交互增强 (Pro Max版)
+// ====================
+
+// 1. 视图切换 (逻辑不变，只是现在 CSS 配合得更好了)
+let mapViewState = 0; 
+window.toggleMapState = function() {
+    const sheet = document.querySelector('.map-bottom-sheet');
+    mapViewState = (mapViewState + 1) % 3;
+    sheet.classList.remove('view-list', 'view-map');
+    if (mapViewState === 1) sheet.classList.add('view-list');
+    else if (mapViewState === 2) sheet.classList.add('view-map');
+};
+
+// 2. 地点 ID 映射表 (关键词 -> HTML ID)
+const LOCATION_MAP = {
+    '家': 'loc-home-char',
+    '许时雨': 'loc-home-char',
+    '我': 'loc-home-user',
+    'User': 'loc-home-user',
+    '学校': 'loc-school',
+    '大学': 'loc-school',
+    '图书馆': 'loc-school',
+    '咖啡': 'loc-cafe',
+    '酒店': 'loc-hotel',
+    '旅馆': 'loc-hotel',
+    '开房': 'loc-hotel', // 咳咳
+    '医院': 'loc-hospital',
+    '公园': 'loc-park',
+    '散步': 'loc-park',
+    'default': 'loc-home-char' // 默认回家
+};
+
+// 3. 智能定位 + 自动卷动地图
+window.updateMapPin = function(placeName) {
+    const viewport = document.getElementById('virtual-map-viewport');
+    const pin = document.getElementById('my-map-pin');
+    if (!viewport || !pin) return;
+
+    // 1. 寻找目标地标
+    let targetId = LOCATION_MAP['default'];
+    
+    // 模糊匹配
+    if (placeName) {
+        for (let key in LOCATION_MAP) {
+            if (placeName.includes(key)) {
+                targetId = LOCATION_MAP[key];
+                break;
+            }
+        }
+    }
+
+    const targetEl = document.getElementById(targetId);
+    if (!targetEl) return;
+
+    // 2. 获取目标位置 (相对于大地图容器)
+    const targetLeft = targetEl.offsetLeft;
+    const targetTop = targetEl.offsetTop;
+
+    // 3. 移动蓝色光标
+    pin.style.left = targetLeft + 'px';
+    pin.style.top = targetTop + 'px';
+
+    // 4. ★核心★：滚动地图视口，让光标居中！
+    // 视口宽高
+    const vw = viewport.clientWidth;
+    const vh = viewport.clientHeight;
+
+    // 计算滚动位置：(目标坐标 - 视口一半)
+    const scrollX = targetLeft - vw / 2;
+    const scrollY = targetTop - vh / 2;
+
+    viewport.scrollTo({
+        left: scrollX,
+        top: scrollY,
+        behavior: 'smooth'
+    });
+};
+
+// 确保 renderMapHistory 调用新的 updateMapPin
+// (如果你之前的 renderMapHistory 已经是调用 updateMapPin 的版本，就不需要改 renderMapHistory 了)
