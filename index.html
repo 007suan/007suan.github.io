@@ -230,7 +230,7 @@
                             <div class="im-header-top">
                                 <div style="width: 30px;"></div> 
                                 <span class="im-header-title">Contacts</span>
-                                <div class="im-add-btn" onclick="openCreatorModeChoice()">
+                                <div class="im-add-btn-fix" onclick="openCreatorModeChoice()">
                                     <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                                 </div>
                             </div>
@@ -972,10 +972,17 @@
 </div>
 
 <div id="sub-page-post-creator" class="sub-page" style="background: #fff; z-index: 6000;">
-    <div class="wx-post-header">
-        <div class="wx-post-cancel" onclick="closeSubPage('sub-page-post-creator')">Cancel</div>
-        <div class="wx-post-publish" onclick="publishPost()">Post</div>
+<div class="wx-post-header">
+    <div class="wx-post-cancel" onclick="closeSubPage('sub-page-post-creator')" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: flex-start;">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="#333">
+            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+        </svg>
     </div>
+
+    <div class="wx-post-publish" onclick="publishPost()" style="padding: 6px 16px; border-radius: 4px; background: #07c160; color: #fff; font-weight: 600; margin-bottom: 4px;">
+        Post
+    </div>
+</div>
 
     <div class="wx-post-content">
         <textarea id="post-text-input" class="wx-post-input" placeholder="Say something..."></textarea>
@@ -1183,6 +1190,40 @@
     </div>
 </div>
 
+<div id="frame-lib-overlay" class="custom-alert-overlay" style="display: none; align-items: flex-end;">
+    <div class="selector-sheet" style="height: 70vh;">
+        <div class="sheet-header">
+            <span>装饰你的头像</span>
+            <span onclick="closeFrameLib()" style="color:#007aff; font-weight:600; cursor:pointer;">关闭</span>
+        </div>
+        
+        <div style="padding: 10px 16px; display: flex; gap: 10px; border-bottom: 1px solid #f5f5f5;">
+            <div onclick="triggerCustomFrameUpload()" style="flex: 1; background: #333; color: #fff; text-align: center; padding: 8px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;">
+                🔝 上传自定义框
+            </div>
+            <div onclick="removeFrame()" style="width: 80px; background: #f2f2f7; color: #ff3b30; text-align: center; padding: 8px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;">
+                🔙 移除
+            </div>
+        </div>
+
+<div id="frame-lib-grid" class="sheet-content" style="padding: 15px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; padding-bottom: 40px;">
+            </div>
+    </div>
+</div>
+
+     </div>
+
+        <div class="home-bar" onclick="closeAllApps()"></div>
+
+<div id="msg-pop-menu" class="msg-pop-menu" style="display:none;">
+    <div class="mpm-row">
+        <div class="mpm-item" onclick="menuAction('copy')">复制</div>
+        <div id="menu-btn-recall" class="mpm-item" onclick="menuAction('recall')">撤回</div>
+        <div class="mpm-item" onclick="menuAction('reply')">引用</div>
+        <div class="mpm-item" onclick="menuAction('delete')">删除</div>
+    </div>
+</div>
+
         <div id="preset-name-overlay" class="custom-alert-overlay" style="display: none;">
             <div class="custom-alert-box">
                 <div class="alert-title">New Preset</div>
@@ -1213,17 +1254,6 @@
                 <div class="alert-btn-group">
                     <div class="alert-btn cancel" onclick="closeDeleteAlert()">no</div>
                     <div class="alert-btn confirm" onclick="confirmDeleteAction()" style="background: #ff3b30;">yes</div>
-                </div>
-            </div>
-        </div>
-
-        <div id="custom-alert-overlay" class="custom-alert-overlay" style="display: none;">
-            <div class="custom-alert-box">
-                <div class="alert-title">Wait!</div>
-                <div class="alert-msg">还没保存呢(T_T)！<br>确定要退出嘛？</div>
-                <div class="alert-btn-group">
-                    <div class="alert-btn cancel" onclick="closeExitAlert()">No</div>
-                    <div class="alert-btn confirm" onclick="confirmExitAction()">Yes</div>
                 </div>
             </div>
         </div>
@@ -1261,6 +1291,17 @@
             </div>
         </div>
 
+        <div id="custom-alert-overlay" class="custom-alert-overlay" style="display: none;">
+            <div class="custom-alert-box">
+                <div class="alert-title">Wait!</div>
+                <div class="alert-msg">还没保存呢(T_T)！<br>确定要退出嘛？</div>
+                <div class="alert-btn-group">
+                    <div class="alert-btn cancel" onclick="closeExitAlert()">No</div>
+                    <div class="alert-btn confirm" onclick="confirmExitAction()">Yes</div>
+                </div>
+            </div>
+        </div>
+
         <div id="system-alert-overlay" class="custom-alert-overlay" style="display: none;">
             <div class="custom-alert-box">
                 <div class="alert-title">System Notice</div>
@@ -1291,40 +1332,6 @@
     </div>
     <div class="notif-time">just now</div>
 </div>
-</div>
-
-<div id="frame-lib-overlay" class="custom-alert-overlay" style="display: none; align-items: flex-end;">
-    <div class="selector-sheet" style="height: 70vh;">
-        <div class="sheet-header">
-            <span>装饰你的头像</span>
-            <span onclick="closeFrameLib()" style="color:#007aff; font-weight:600; cursor:pointer;">关闭</span>
-        </div>
-        
-        <div style="padding: 10px 16px; display: flex; gap: 10px; border-bottom: 1px solid #f5f5f5;">
-            <div onclick="triggerCustomFrameUpload()" style="flex: 1; background: #333; color: #fff; text-align: center; padding: 8px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;">
-                🔝 上传自定义框
-            </div>
-            <div onclick="removeFrame()" style="width: 80px; background: #f2f2f7; color: #ff3b30; text-align: center; padding: 8px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;">
-                🔙 移除
-            </div>
-        </div>
-
-<div id="frame-lib-grid" class="sheet-content" style="padding: 15px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; padding-bottom: 40px;">
-            </div>
-    </div>
-</div>
-
-     </div>
-
-        <div class="home-bar" onclick="closeAllApps()"></div>
-
-<div id="msg-pop-menu" class="msg-pop-menu" style="display:none;">
-    <div class="mpm-row">
-        <div class="mpm-item" onclick="menuAction('copy')">复制</div>
-        <div id="menu-btn-recall" class="mpm-item" onclick="menuAction('recall')">撤回</div>
-        <div class="mpm-item" onclick="menuAction('reply')">引用</div>
-        <div class="mpm-item" onclick="menuAction('delete')">删除</div>
-    </div>
 </div>
 
     </div> <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>

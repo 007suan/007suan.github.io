@@ -3857,7 +3857,7 @@ window.renderMomentsFeed = function() {
     container.innerHTML = '';
 
     if (momentsData.length === 0) {
-        container.innerHTML = `<div style="padding: 50px; text-align: center; color: #ccc; font-size: 12px;">还没有动态哦，点击上方的 + 发一条吧！</div>`;
+        container.innerHTML = `<div style="padding: 50px; text-align: center; color: #ccc; font-size: 12px;">还没有动态哦(𓐍ㅇㅂㅇ𓐍)，点击上方的 + 发一条吧！</div>`;
         return;
     }
 
@@ -3877,9 +3877,6 @@ window.renderMomentsFeed = function() {
         // 评论区显示逻辑
         const showCommentBox = post.isLiked || (post.likes > 0) ? 'show' : '';
 
-        // ★★★ 核心逻辑：判断显示实心黑心(SVG) 还是 空心图(IMG) ★★★
-        // 如果已点赞 -> 显示实心黑色 SVG
-        // 如果未点赞 -> 显示你提供的空心 PNG
         const likeIconHtml = post.isLiked 
             ? `<svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:#000;"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`
             : `<img src="https://i.postimg.cc/K4hy2zDX/wu-biao-ti117-20260110142016.png" style="width:24px; height:24px;">`;

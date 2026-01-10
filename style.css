@@ -303,9 +303,13 @@ body {
 .im-header-top { position: relative !important; height: auto !important; padding: 65px 20px 10px 20px !important; display: flex !important; justify-content: center !important; align-items: center !important; }
 .im-header-title { font-size: 17px; font-weight: 600; color: #000; margin-right: 30px; }
 
-/* 加号按钮 */
-.im-add-btn { width: 32px !important; height: 32px !important; background: #007aff !important; border-radius: 50% !important; box-shadow: 0 4px 10px rgba(0,122,255,0.3) !important; display: flex !important; justify-content: center !important; align-items: center !important; position: absolute !important; right: 20px !important; bottom: 10px !important; z-index: 99999 !important; pointer-events: auto !important; cursor: pointer !important; }
-.im-add-btn svg { fill: #fff !important; width: 18px !important; height: 18px !important; pointer-events: none !important; }
+/* =========================================
+   ★ 加号按钮修复版 
+   ========================================= */
+.im-add-btn-fix { width: 32px !important; height: 32px !important; background: #007aff !important; border-radius: 50% !important; box-shadow: 0 4px 10px rgba(0,122,255,0.3) !important; display: flex !important; justify-content: center !important; align-items: center !important; position: absolute !important; right: 20px !important; bottom: 10px !important; z-index: 99999 !important; pointer-events: auto !important; cursor: pointer !important; }
+.im-add-btn-fix svg { fill: #fff !important; width: 18px !important; height: 18px !important; pointer-events: none !important; }
+.im-add-btn-fix:active {
+    transform: scale(0.9);}
 .im-search-box { padding: 5px 16px 10px; }
 .im-search-inner { background: #e9e9eb; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; padding: 0 10px; }
 .im-search-icon { width: 16px; height: 16px; fill: #8e8e93; margin-right: 6px; }
@@ -661,10 +665,10 @@ body.menu-open #chat-msg-area { padding-bottom: 380px !important; transform: tra
    11. CHARACTER CREATOR (角色编辑）
    ========================================================================== */
 /* 1. 根容器：增加动画属性 */
-#sub-page-creator, .exp-theme-root { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #fff; z-index: 99999 !important; display: none; transform: translateY(100%); opacity: 0; transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease; display: flex; flex-direction: column; overflow: hidden; }
+#sub-page-creator, .exp-theme-root { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #fff; z-index: 2000 !important; display: none; transform: translateY(100%); opacity: 0; transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease; display: flex; flex-direction: column; overflow: hidden; }
 #sub-page-creator.active, .exp-theme-root.active { transform: translateY(0); opacity: 1; }
 .exp-browser-top { background: #e0e0e0; padding-top: 50px; flex-shrink: 0; }
-.exp-tab-bar { display: flex; align-items: flex-end; padding: 0 10px; height: 36px; background: #dee1e6; position: relative; }
+.exp-tab-bar { display: flex; align-items: flex-end; padding: 0 10px; height: 36px; background: #e0e0e0; position: relative; }
 .exp-tab { background: #fff; border-radius: 8px 8px 0 0; padding: 6px 15px; display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; color: #333; box-shadow: 0 -2px 5px rgba(0,0,0,0.05); margin-right: 5px; position: relative; z-index: 2; }
 .exp-tab.active::after { content: ''; position: absolute; bottom: -4px; left: 0; right: 0; height: 4px; background: #fff; }
 .exp-icon { font-size: 14px; }
@@ -861,7 +865,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 /* ==========================================================================
    13. ALERTS & OVERLAYS (弹窗系统 - iOS Q弹丝滑版)
    ========================================================================== */
-.custom-alert-overlay { position: fixed !important; top: 0; left: 0; right: 0; bottom: 0; width: 100vw !important; height: 100vh !important; background: rgba(0, 0, 0, 0); z-index: 99999 !important; display: none; justify-content: center; align-items: center; animation: fadeOverlayIn 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards; }
+.custom-alert-overlay { position: fixed !important; top: 0; left: 0; right: 0; bottom: 0; width: 100vw !important; height: 100vh !important; background: rgba(0, 0, 0, 0); z-index: 20000 !important; display: none; justify-content: center; align-items: center; animation: fadeOverlayIn 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards; }
 .custom-alert-overlay.closing-anim { animation: fadeOverlayOut 0.2s ease-in forwards; pointer-events: none;}
 #delete-alert-overlay { z-index: 100002 !important; }
 .custom-alert-box { width: 280px; background: rgba(255, 255, 255, 0.88); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border-radius: 20px; padding: 25px 20px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 10px 40px rgba(0,0,0,0.15); opacity: 1; transform: scale(1); animation: iosSpring 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
@@ -1150,10 +1154,18 @@ input:checked + .slider:before { transform: translateX(20px); }
 /* ==================== 
    ★ 新版微信风格发布器 (仿图4) 
    ==================== */
+/* ==================== 
+   ★ 新版微信风格发布器 - 修复版
+   ==================== */
 .wx-post-header {
-    height: 96px; display: flex; justify-content: space-between; align-items: center; padding-top: 10px; 
-    padding: 0 16px; background: #fff; border-bottom: 0.5px solid rgba(0,0,0,0.1);
-}
+    /* 关键布局属性 */
+    display: flex !important;
+    justify-content: space-between !important; /* ★★★ 这句让它俩分开！ ★★★ */
+    align-items: flex-end !important; /* 文字底部对齐更好看 */
+    
+    /* 尺寸和间距 */ padding: 0 16px 12px 16px !important; height: 100px !important; 
+    
+    /* 样式 */ background: #fff; border-bottom: 0.5px solid rgba(0,0,0,0.1); z-index: 100; }
 .wx-post-cancel { font-size: 16px; color: #000; cursor: pointer; }
 .wx-post-publish { 
     background: #07c160; color: #fff; padding: 6px 16px; 
