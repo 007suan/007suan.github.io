@@ -30,7 +30,9 @@
 <div class="desktop-wrapper" onscroll="updateDesktopDots(this)">
     
     <div class="desktop-page" id="page-1">
-        <div style="height: 5px;"></div> <div class="calendar-widget">
+        <div style="height: 5px;"></div> 
+        
+        <div class="calendar-widget">
             <div class="cal-header">
                 <div class="cal-date-area">
                     <div class="cal-date-big" id="widget_date_num">01/01</div>
@@ -41,29 +43,29 @@
                     <div class="edit-text cal-main-text" style="margin-top:4px; text-align:right;">𝗪𝗶𝗻𝘁𝗲𝗿.🌨</div>
                 </div>
             </div>
-
             <div class="cal-photo-grid">
-                <div class="cal-photo-item upload-img" id="cal_p_1">
-                    <div class="wave-box">
-                        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-                    </div>
-                </div>
-                <div class="cal-photo-item upload-img" id="cal_p_2">
-                    <div class="wave-box">
-                        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-                    </div>
-                </div>
-                <div class="cal-photo-item upload-img" id="cal_p_3">
-                    <div class="wave-box">
-                        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-                    </div>
-                </div>
-                <div class="cal-photo-item upload-img" id="cal_p_4">
-                    <div class="wave-box">
-                        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-                    </div>
-                </div>
+                <div class="cal-photo-item upload-img" id="cal_p_1"><div class="wave-box"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div></div>
+                <div class="cal-photo-item upload-img" id="cal_p_2"><div class="wave-box"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div></div>
+                <div class="cal-photo-item upload-img" id="cal_p_3"><div class="wave-box"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div></div>
+                <div class="cal-photo-item upload-img" id="cal_p_4"><div class="wave-box"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div></div>
             </div>
+        </div>
+
+        <div class="widget-dual-row">
+            <div class="ins-square-widget upload-img" id="widget_sq_1" style="background-image: url('https://i.postimg.cc/k4kM9S5z/cat-bw.jpg');"></div>
+            <div class="ins-square-widget upload-img" id="widget_sq_2" style="background-image: url('https://i.postimg.cc/cH0z0d00/city-bw.jpg');"></div>
+        </div>
+
+        <div class="app-grid">
+            <div class="app-item placeholder"><div class="app-icon"></div></div>
+            <div class="app-item placeholder"><div class="app-icon"></div></div>
+            <div class="app-item placeholder"><div class="app-icon"></div></div>
+            <div class="app-item placeholder"><div class="app-icon"></div></div>
+            
+            <div class="app-item placeholder"><div class="app-icon"></div></div>
+            <div class="app-item placeholder"><div class="app-icon"></div></div>
+            <div class="app-item placeholder"><div class="app-icon"></div></div>
+            <div class="app-item placeholder"><div class="app-icon"></div></div>
         </div>
     </div>
 
@@ -475,13 +477,75 @@
                     </div>
                 </div>
 
-                <div id="sub-icon" class="sub-page">
-                    <div class="sub-header"><div class="back-btn" onclick="closeSubPage('sub-icon')">‹</div>桌面美化</div>
-                    <div class="sub-content">
-                        <div style="font-size: 13px; color: #666; margin-bottom: 15px;">点击下方图标即可修改对应的 App 图标：</div>
-                        <div id="icon-setting-grid" style="display: flex; flex-wrap: wrap; justify-content: space-between;"></div>
-                    </div>
+<div id="sub-icon" class="sub-page">
+    <div class="sub-header" style="background:#FAFAFA; border:none;">
+        <div class="back-btn" onclick="closeSubPage('sub-icon')">‹</div>
+        <span style="color:#333; font-weight:800;">Themes & Icons</span>
+        <div onclick="applyIconChanges()" style="position: absolute; right: 20px; font-size: 14px; font-weight: 600; color: #007aff; cursor: pointer;">
+            Save
+        </div>
+    </div>
+    
+    <div class="sub-content" style="padding: 0;">
+        
+        <div class="theme-preset-area">
+            <div class="theme-header-row">
+                <div class="theme-title">My Themes</div>
+                <div class="theme-add-btn" onclick="saveCurrentTheme()">
+                    <span>+</span> Save As Preset
                 </div>
+            </div>
+            <div id="theme-preset-list" class="preset-scroll-view">
+                <div style="font-size:12px; color:#999; padding:20px;">暂无预设...</div>
+            </div>
+        </div>
+
+        <div style="padding: 0 20px 10px; font-size: 13px; color: #999; font-weight: 600;">APP CUSTOMIZATION</div>
+        <div id="icon-setting-grid" class="icon-edit-grid">
+            </div>
+
+        <div style="padding: 20px; margin-top: 10px; background: #fff; border-radius: 20px 20px 0 0; box-shadow: 0 -4px 10px rgba(0,0,0,0.02);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <span style="font-weight: 600; color: #333;">🍞 Icon Toast Border</span>
+                <label class="ios-switch">
+                    <input type="checkbox" id="toast-border-switch" onchange="toggleToastBorder(this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <div id="toast-color-picker" style="display: flex; gap: 10px; align-items: center; opacity: 0.5; pointer-events: none; transition: all 0.3s;">
+                <span style="font-size: 13px; color: #666;">Color:</span>
+                <input type="color" id="toast-color-input" value="#ffffff" onchange="updateToastColor(this.value)" style="border: none; background: none; width: 30px; height: 30px; cursor: pointer;">
+                <span style="font-size: 12px; color: #999;">(点击色块修改)</span>
+            </div>
+        </div>
+        
+        <div style="height: 80px;"></div>
+    </div>
+</div>
+
+<div id="sub-wallpaper" class="sub-page">
+    <div class="sub-header" style="background:#FAFAFA; border:none;">
+        <div class="back-btn" onclick="closeSubPage('sub-wallpaper')">‹</div>
+        <span style="color:#333; font-weight:800;">Wallpaper</span>
+    </div>
+    
+    <div class="sub-content" style="padding: 20px;">
+        <div class="wall-preview-card" id="wall-current-preview">
+            <div class="wall-tag">Current</div>
+        </div>
+
+        <div style="margin-top: 30px; font-size: 13px; color: #999; font-weight: 600; margin-bottom: 15px;">GALLERY</div>
+        
+        <div class="wall-grid">
+            <div class="wall-item add-btn" onclick="triggerBgUpload('desktop')">
+                <div class="wall-plus">+</div>
+                <span>Upload</span>
+            </div>
+            
+        </div>
+    </div>
+</div>
 
                 <div id="sub-general" class="sub-page">
                     <div class="sub-header"><div class="back-btn" onclick="closeSubPage('sub-general')">‹</div>通用</div>
@@ -506,7 +570,7 @@
 
                 <div id="sub-api-config" class="sub-page">
                     <div class="sub-header">
-                        <div class="back-btn" onclick="closeSubPage('sub-api-config')">‹ 设置</div>
+                        <div class="back-btn" onclick="closeSubPage('sub-api-config')">‹</div>
                         API配置
                         <div style="font-size: 12px; color: #ccc; margin-top: 1px;"> (≧∇≦) </div>
                     </div>
@@ -587,7 +651,7 @@
                 </div>
             </div> <div id="sub-backup" class="sub-page">
                 <div class="sub-header">
-                    <div class="back-btn" onclick="closeSubPage('sub-backup')">‹ 通用</div>
+                    <div class="back-btn" onclick="closeSubPage('sub-backup')">‹</div>
                     数据备份
                 </div>
                 <div class="sub-content" style="background: #FAFAFA; padding: 25px 20px;">                    

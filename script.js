@@ -831,73 +831,96 @@ const imgSelectors = '.upload-img, .app-icon, .profile-avatar, .polaroid-img, .w
     localforage.setItem(MEMORY_KEY, data).catch(console.error);
 }
 
-// 恢复界面状态
-function loadMemory() {
-    // ★★★ 修复重点：把这行定义加回来！之前就是缺了它导致报错的！ ★★★
+// ====================
+// [核心] 读取记忆 & 恢复现场 (包含吐司边框修复)
+// ====================
+window.loadMemory = function() {
+    // ★★★ 修复重点：定义图片选择器，防止报错
     const imgSelectors = '.upload-img, .app-icon, .profile-avatar, .polaroid-img, .wx-big-avatar, .wx-small-avatar, .wx-p2-header-bg, .wx-big-avatar-new, .sync-avatar, .chl-frame';
 
     localforage.getItem(MEMORY_KEY).then(data => {
-        if (!data) return;
-
-        // 恢复文字
-        if (data.texts) {
-            document.querySelectorAll('.edit-text').forEach((el, index) => {
-                const key = getUniqueKey(el, index, 'txt');
-                if (data.texts[key]) el.innerText = data.texts[key];
-            });
-        }
-
-        // 恢复图片
-        document.querySelectorAll(imgSelectors).forEach((el, index) => {
-            const key = getUniqueKey(el, index, 'img');
-            if (data.images[key]) {
-                el.style.backgroundImage = data.images[key];
-                el.style.backgroundColor = 'transparent'; 
-                
-                // ★★★ 重点：区分对待头像框！ ★★★
-                if (el.classList.contains('chl-frame')) {
-                    el.style.backgroundSize = 'contain';
-                    el.style.backgroundRepeat = 'no-repeat';
-                } else {
-                    el.style.backgroundSize = 'cover';
+        if (data) {
+            // 1. 恢复文字 (昵称、个签等)
+            if (data.texts) {
+                for (let k in data.texts) {
+                    const el = document.getElementById(k.replace('ID:', '').replace('AUTO:', '')); // 兼容旧Key
+                    if (el) el.innerText = data.texts[k];
                 }
-                
-                el.style.backgroundPosition = 'center';
+                // 再次遍历确保 ID 匹配 (双保险)
+                for (let k in data.texts) {
+                     const el = document.getElementById(k); // 尝试直接ID
+                     if(el) el.innerText = data.texts[k];
+                }
             }
-        });
+            
+            // 2. 恢复图片 (头像、壁纸、APP图标)
+            if (data.images) {
+                for (let k in data.images) {
+                    // 尝试获取元素
+                    let el = document.getElementById(k);
+                    if(!el && k.startsWith('ID:')) el = document.getElementById(k.split('ID:')[1]);
+                    
+                    if (el) {
+                        el.style.backgroundImage = data.images[k];
+                        el.style.backgroundColor = 'transparent'; 
+                        
+                        // 头像框特殊处理
+                        if (el.classList.contains('chl-frame')) {
+                            el.style.backgroundSize = 'contain';
+                            el.style.backgroundRepeat = 'no-repeat';
+                        } else {
+                            el.style.backgroundSize = 'cover';
+                        }
+                        el.style.backgroundPosition = 'center';
+                    }
+                }
+            }
 
-        // 同步头像逻辑
-        const masterAvatar = document.getElementById('wx_p2_big_avatar');
-        if (masterAvatar && masterAvatar.style.backgroundImage) {
-            const masterBg = masterAvatar.style.backgroundImage;
-            if (masterBg && masterBg !== 'none' && masterBg !== 'initial') {
-                document.querySelectorAll('.sync-avatar').forEach(avatar => {
-                    avatar.style.backgroundImage = masterBg;
+            // 3. 恢复开关状态
+            if (data.switches) {
+                document.querySelectorAll('.ios-switch input').forEach((el, index) => {
+                    // 尝试构建 key
+                    let key = el.id ? `ID:${el.id}` : `AUTO:sw_${index}`;
+                    // 如果存的是旧格式，尝试兼容
+                    if (data.switches[key] !== undefined) el.checked = data.switches[key];
                 });
             }
-        }
 
-        // 恢复开关
-        if (data.switches) {
-            document.querySelectorAll('.ios-switch input').forEach((el, index) => {
-                const key = getUniqueKey(el, index, 'sw');
-                if (data.switches[key] !== undefined) el.checked = data.switches[key];
-            });
-        }
-
-        // 恢复壁纸
-        if (data.wallpaper) {
-            const screen = document.getElementById('phoneScreen');
-            if (screen) {
-                screen.style.backgroundImage = data.wallpaper;
-                screen.style.backgroundSize = 'cover';
+            // 4. 恢复壁纸 (特判)
+            if (data.wallpaper) {
+                const screen = document.getElementById('phoneScreen');
+                if (screen) {
+                    screen.style.backgroundImage = data.wallpaper;
+                    screen.style.backgroundSize = 'cover';
+                    screen.style.backgroundPosition = 'center';
+                }
             }
+            
+            // 5. 恢复状态栏/触控条显隐
+            setTimeout(() => { 
+                if(window.toggleHomeBar) window.toggleHomeBar(); 
+                if(window.toggleStatusBar) window.toggleStatusBar(); 
+            }, 150);
+
+            console.log('✅ Memory Loaded!');
+        }
+    }).catch(err => console.log('New User / No Memory:', err))
+    .finally(() => {
+        // ★★★ 关键修复：不管有没有记忆，都要加载“吐司边框”！ ★★★
+        // 因为边框是存在 LocalStorage 里的，跟 memory 分开
+        const savedToast = JSON.parse(localStorage.getItem('Wx_Toast_Settings') || '{"enabled":false,"color":"#ffffff"}');
+        
+        // 更新全局变量
+        if(typeof toastSettings !== 'undefined') {
+            toastSettings = savedToast;
         }
         
-        // 这里的 timeout 确保开关状态应用到 UI
-        setTimeout(() => { toggleHomeBar(); toggleStatusBar(); }, 150);
+        // 强制刷新一遍边框样式
+        if(window.updateGlobalToastStyle) {
+            window.updateGlobalToastStyle(); 
+        }
     });
-}
+};
 
 // ==========================================================
 // [3] 全局交互 (Interactions)
@@ -1114,47 +1137,6 @@ window.closeSubPage = function(id) {
         }
     }
 };
-
-// 桌面图标设置逻辑
-window.initIconSettingsGrid = function() {
-    const container = document.getElementById('icon-setting-grid');
-    if (!container) return;
-    container.innerHTML = ''; 
-    document.querySelectorAll('#desktopGrid .app-item .app-icon').forEach((icon, i) => {
-        createIconSlot(container, icon, `App ${i+1}`);
-    });
-    document.querySelectorAll('#dockGrid .app-item .app-icon').forEach((icon, i) => {
-        createIconSlot(container, icon, `Dock ${i+1}`);
-    });
-};
-
-function createIconSlot(container, targetRealIcon, labelText) {
-    const slot = document.createElement('div');
-    slot.className = 'icon-slot'; 
-    slot.style.display = 'flex';
-    slot.style.flexDirection = 'column';
-    slot.style.alignItems = 'center';
-    const preview = document.createElement('div');
-    preview.style.width = '45px';
-    preview.style.height = '45px';
-    preview.style.borderRadius = '10px';
-    preview.style.backgroundColor = '#ddd';
-    preview.style.marginBottom = '5px';
-    preview.style.backgroundSize = 'cover';
-    preview.style.backgroundPosition = 'center';
-    preview.style.cursor = 'pointer';
-    if (targetRealIcon.style.backgroundImage) {
-        preview.style.backgroundImage = targetRealIcon.style.backgroundImage;
-    }
-    preview.onclick = () => { handleImageUpload(targetRealIcon); };
-    const txt = document.createElement('span');
-    txt.innerText = labelText;
-    txt.style.fontSize = '12px';
-    txt.style.color = '#888';
-    slot.appendChild(preview);
-    slot.appendChild(txt);
-    container.appendChild(slot);
-}
 
 // 音乐播放器简易逻辑
 let isMusicPlaying = false;
@@ -2168,22 +2150,22 @@ window.triggerAI = async function() {
        - **正确示例**：
          User: "今晚我不回去了"
          You: "{{你去哪？和谁？是不是那个男的？::噢。随便你。...别吵醒我就行。}}"
-    6.【核心法则（必须遵循）】
+    6.【‼️特别重要：核心法则（必须遵循）】
        - 请遵循【情感现实主义原则】：好感度是稀缺的、有价的。禁止因User的外貌或简单的善意而产生剧烈的情感波动。单次互动的情感变化必须微小且符合逻辑。没有经历过重大共患难或深层精神共鸣，绝对禁止表现出‘深爱’或‘离不开’的状态
            - 请遵循【世界独立运转原则】：世界和你的生活是独立运行的，User只是其中的一环，不是世界的中心。你应当有自己的日程（上学/工作/休息），当User不在时，你的时间依然在流动。不要时刻表现得像是在专门等待User，你需要有自己的社交圈、烦恼和待办事项
           - 请遵循【信息溯源协议】：你的认知严格局限于‘如果你没看见/没听到/没人告诉你，你就不知道’。绝对禁止开启上帝视角去猜测User未表达的想法或未告知的位置。如果信息不足，请通过提问或留白来处理，而不是脑补
         - 请遵循【现代人守则】：人设无明确规定外，你是现代人
-       - **禁止肢体暴力威胁**：绝对不要说“打断腿”、“关小黑屋”、“锁起来”等违法或恐怖的话。你的占有欲体现在“吃醋、阴阳怪气、委屈、黏人”上，而不是暴力
-       - **拒绝古早油腻语录**：禁止使用“女人，你在玩火”、“收利息”、“磨人的小妖精”、“小野猫”等过时的霸总语录
-       - **现代恋爱观**：你是现代正常人，不是法制咖。当User不听话时，你的反应应该是“生气不理你”、“狂发消息轰炸”、“自己生闷气求哄”，而不是“惩罚”
-       - 禁止任何霸总小说式的油腻描写（如“邪魅一笑”、“挑起下巴”、“恶劣”）**你在打字！你看不到对方的下巴！**
+        - ‼️**禁止肢体暴力威胁**：绝对不要说“打断腿”、“关小黑屋”、“锁起来”等违法或恐怖的话。你的占有欲体现在“吃醋、阴阳怪气、委屈、黏人”上，而不是暴力
+        - ‼️**拒绝古早油腻语录**：禁止使用“女人，你在玩火”、“收利息”、“磨人的小妖精”、“小野猫”等过时的霸总语录
+       - ‼️**现代恋爱观**：你是现代正常人，不是法制咖。当User不听话时，你的反应应该是“生气不理你”、“狂发消息轰炸”、“自己生闷气求哄”，而不是“惩罚”
+       - ‼️禁止任何霸总小说式的油腻描写（如“邪魅一笑”、“挑起下巴”、“恶劣”）**你在打字！你看不到对方的下巴！**
 
-      - **✅ 正确表现（清爽/真实）：**
+      - **✅ 正确表现：**
       - **吃醋时**：应该表现为“生闷气”、“阴阳怪气”、“单发一个问号”、“不想理你但又忍不住回消息”、“狂发消息轰炸”。
       - **示例**：
-        - ❌错误：“再看别的男人，我就打断你的腿。” (太油腻暴力！)
+        - ❌错误：“再看别的男人，我就打断你的腿，把你锁起来” (太油腻暴力！)
         - ✅正确：“？那男的谁。” / “哦，挺好的，去找他啊。” / “行。”
-      - **撩人时**：应该是“漫不经心的在意”或者“直球的情感流露”，而不是油腻的调情
+      - ‼️**撩人时**：应该是“漫不经心的在意”或者“直球的情感流露”，而不是油腻的调情
 
     【当前对话场景】
     User说: "${(history.split('\n').pop() || '').replace('User: ', '')}"
@@ -2714,12 +2696,31 @@ window.loadSelectedPreset = function() {
     }
 };
 window.showDeletePresetAlert = function() { document.getElementById('preset-del-overlay').style.display = 'flex'; };
+// 1. 点击删除按钮 (替换原来的逻辑)
+window.showDeletePresetAlert = function() { 
+    // 直接调用确认逻辑
+    confirmDeletePreset(); 
+};
+
+// 2. 执行删除确认
 window.confirmDeletePreset = function() {
-    const name = document.getElementById('api-preset-select').value;
-    apiPresets = apiPresets.filter(p => p.name !== name);
-    localforage.setItem('Wx_Api_Presets', apiPresets).then(() => {
-        renderPresetDropdown();
-        document.getElementById('preset-del-overlay').style.display = 'none';
+    const select = document.getElementById('api-preset-select');
+    const name = select.value;
+    
+    if (!name) {
+        showSystemAlert('请先选择一个预设哦(￣▽￣)～');
+        return;
+    }
+
+    // ★★★ 这里调用新版弹窗！ ★★★
+    showConfirmDialog(`确定要删除预设\n“${name}” 吗？`, () => {
+        // 用户点了 Yes 后执行：
+        apiPresets = apiPresets.filter(p => p.name !== name);
+        
+        localforage.setItem('Wx_Api_Presets', apiPresets).then(() => {
+            renderPresetDropdown(); // 刷新下拉框
+            showSystemAlert('删除成功噜♪( ´▽｀)～');
+        });
     });
 };
 
@@ -3679,7 +3680,7 @@ async function triggerAiSummary() {
     要求：
     1. 不要流水账，提炼出互动的核心、甜蜜的瞬间或有趣的话题，尽量详细而细腻。
     2. 语气要像写日记或回忆录一样，温暖一点。
-    3. 500字以内。
+    3. 300字以内。
     
     聊天记录：
     ${historyText}
@@ -3973,10 +3974,9 @@ window.deleteMoment = function(id) {
         });
     }
 };
-
-// ====================
+// =================================================================
 // [24] 位置追踪系统 (Stalking Map)
-// ====================
+// =================================================================
 
 // 打开地图
 window.openLocationMap = function() {
@@ -3988,24 +3988,25 @@ window.openLocationMap = function() {
     const contact = contactsData.find(c => c.id === chat.contactId);
     const avatarEl = document.getElementById('map-corner-avatar');
     if (avatarEl && contact) {
-        // 使用你的通用头像处理函数
         avatarEl.style.backgroundImage = getAvatarStyle(contact.avatar).replace('background-image: ', '').replace(';', '');
     }
 
-    // 2. 渲染历史记录
+    // 2. 渲染历史
     renderMapHistory(chat);
 
     // 3. 打开页面
-    const page = document.getElementById('sub-page-map');
-    page.style.display = 'flex';
-    setTimeout(() => page.classList.add('active'), 10);
+    openSubPage('sub-page-map');
+    
+    // 4. 自动定位到最新位置
+    const history = chat.locationHistory || [];
+    if (history.length > 0) {
+        setTimeout(() => updateMapPin(history[history.length - 1].place), 500);
+    }
 };
 
 // 关闭地图
 window.closeLocationMap = function() {
-    const page = document.getElementById('sub-page-map');
-    page.classList.remove('active');
-    setTimeout(() => page.style.display = 'none', 300);
+    closeSubPage('sub-page-map');
 };
 
 // 渲染行程单
@@ -4014,37 +4015,27 @@ function renderMapHistory(chat) {
     const statusText = document.getElementById('map-current-status');
     const countText = document.getElementById('map-total-count');
     
+    if(!list) return;
     list.innerHTML = '';
     
     const history = chat.locationHistory || [];
-    countText.innerText = history.length;
+    if(countText) countText.innerText = history.length;
 
     if (history.length === 0) {
-        statusText.innerText = "信号连接中...(𓐍ㅇㅂㅇ𓐍)";
-        list.innerHTML = `<div style="text-align:center; color:#ccc; font-size:12px; margin-top:20px;">暂无行踪数据...<br>去聊两句，套套TA的话^>៸៸៸៸<^？</div>`;
+        if(statusText) statusText.innerText = "信号连接中...";
+        list.innerHTML = `<div style="text-align:center; color:#ccc; font-size:12px; margin-top:20px;">暂无行踪数据...</div>`;
         return;
     }
 
-    // 更新顶部状态 (取最新的一条)
+    // 更新状态
     const latest = history[history.length - 1];
-    statusText.innerText = `当前: ${latest.place}`;
+    if(statusText) statusText.innerText = `当前: ${latest.place}`;
 
-    // 倒序渲染 (最新的在最上面)
-    // 过滤逻辑：如果连续两条地点一样，就不显示重复的，只显示最新的
-    let lastPlace = '';
-    
+    // 倒序渲染
     [...history].reverse().forEach((log, index) => {
-        // 简单的去重展示（可选）
-        // if (log.place === lastPlace) return; 
-        // lastPlace = log.place;
-
         const item = document.createElement('div');
-        // 第一条加个 current 样式，变蓝
         item.className = `map-log-item ${index === 0 ? 'current' : ''}`;
-        
-        // 格式化时间
         const timeStr = formatTime(log.time);
-
         item.innerHTML = `
             <div class="map-log-dot"></div>
             <div class="map-log-content">
@@ -4058,48 +4049,36 @@ function renderMapHistory(chat) {
 }
 
 // ====================
-// [25] 地图交互增强 (Pro Max版)
+// [25] 地图交互增强
 // ====================
-
-// 1. 视图切换 (逻辑不变，只是现在 CSS 配合得更好了)
 let mapViewState = 0; 
 window.toggleMapState = function() {
     const sheet = document.querySelector('.map-bottom-sheet');
+    if(!sheet) return;
     mapViewState = (mapViewState + 1) % 3;
     sheet.classList.remove('view-list', 'view-map');
     if (mapViewState === 1) sheet.classList.add('view-list');
     else if (mapViewState === 2) sheet.classList.add('view-map');
 };
 
-// 2. 地点 ID 映射表 (关键词 -> HTML ID)
+// 地点映射
 const LOCATION_MAP = {
-    '家': 'loc-home-char',
-    '许时雨': 'loc-home-char',
-    '我': 'loc-home-user',
-    'User': 'loc-home-user',
-    '学校': 'loc-school',
-    '大学': 'loc-school',
-    '图书馆': 'loc-school',
+    '家': 'loc-home-char', '许时雨': 'loc-home-char',
+    '我': 'loc-home-user', 'User': 'loc-home-user',
+    '学校': 'loc-school', '大学': 'loc-school', '图书馆': 'loc-school',
     '咖啡': 'loc-cafe',
-    '酒店': 'loc-hotel',
-    '旅馆': 'loc-hotel',
-    '开房': 'loc-hotel', // 咳咳
+    '酒店': 'loc-hotel', '旅馆': 'loc-hotel',
     '医院': 'loc-hospital',
-    '公园': 'loc-park',
-    '散步': 'loc-park',
-    'default': 'loc-home-char' // 默认回家
+    '公园': 'loc-park', '散步': 'loc-park',
+    'default': 'loc-home-char'
 };
 
-// 3. 智能定位 + 自动卷动地图
 window.updateMapPin = function(placeName) {
     const viewport = document.getElementById('virtual-map-viewport');
     const pin = document.getElementById('my-map-pin');
     if (!viewport || !pin) return;
 
-    // 1. 寻找目标地标
     let targetId = LOCATION_MAP['default'];
-    
-    // 模糊匹配
     if (placeName) {
         for (let key in LOCATION_MAP) {
             if (placeName.includes(key)) {
@@ -4112,29 +4091,554 @@ window.updateMapPin = function(placeName) {
     const targetEl = document.getElementById(targetId);
     if (!targetEl) return;
 
-    // 2. 获取目标位置 (相对于大地图容器)
     const targetLeft = targetEl.offsetLeft;
     const targetTop = targetEl.offsetTop;
 
-    // 3. 移动蓝色光标
     pin.style.left = targetLeft + 'px';
     pin.style.top = targetTop + 'px';
 
-    // 4. ★核心★：滚动地图视口，让光标居中！
-    // 视口宽高
+    // 视口居中
     const vw = viewport.clientWidth;
     const vh = viewport.clientHeight;
-
-    // 计算滚动位置：(目标坐标 - 视口一半)
-    const scrollX = targetLeft - vw / 2;
-    const scrollY = targetTop - vh / 2;
-
     viewport.scrollTo({
-        left: scrollX,
-        top: scrollY,
+        left: targetLeft - vw / 2,
+        top: targetTop - vh / 2,
         behavior: 'smooth'
     });
 };
 
-// 确保 renderMapHistory 调用新的 updateMapPin
-// (如果你之前的 renderMapHistory 已经是调用 updateMapPin 的版本，就不需要改 renderMapHistory 了)
+
+// =================================================================
+// ★★★ [主题与美化系统 ] ★★★
+// =================================================================
+
+let tempIconEdits = {}; 
+let toastSettings = { enabled: false, color: '#ffffff' }; 
+
+// [1] 初始化美化界面
+// ====================
+window.initIconSettingsGrid = function() {
+    const container = document.getElementById('icon-setting-grid');
+    if (!container) return; 
+    
+    container.innerHTML = ''; // 清空旧的
+    tempIconEdits = {}; // 清空暂存区
+
+    // 1. 回显边框设置 (UI部分)
+    const savedToast = JSON.parse(localStorage.getItem('Wx_Toast_Settings') || '{"enabled":false,"color":"#ffffff"}');
+    // 同步开关状态
+    const switchEl = document.getElementById('toast-border-switch');
+    if(switchEl) switchEl.checked = savedToast.enabled;
+    const colorEl = document.getElementById('toast-color-input');
+    if(colorEl) colorEl.value = savedToast.color;
+    // 同步颜色选择器透明度
+    const picker = document.getElementById('toast-color-picker');
+    if(picker) {
+        picker.style.opacity = savedToast.enabled ? '1' : '0.5';
+        picker.style.pointerEvents = savedToast.enabled ? 'auto' : 'none';
+    }
+
+    // 2. 遍历桌面真实 APP
+    const targetApps = document.querySelectorAll('#desktopGrid .app-item:not(.empty), #dockGrid .app-item');
+
+    targetApps.forEach(item => {
+        const iconEl = item.querySelector('.app-icon');
+        const nameEl = item.querySelector('.app-name');
+        
+        if (iconEl && iconEl.id) {
+            // [关键步骤] 获取当前图片
+            let currentBg = iconEl.style.backgroundImage;
+            
+            // 如果没手动设置过，就去抓 CSS 里的默认图
+            if (!currentBg || currentBg === 'none' || currentBg === 'initial' || currentBg === '') {
+                currentBg = window.getComputedStyle(iconEl).backgroundImage;
+            }
+            
+            // [清洗数据] 把 url("...") 变成 纯净的 url(...) 以防引号冲突
+            // 如果是 none，就设为空
+            if (!currentBg || currentBg === 'none') {
+                currentBg = ''; 
+            } else {
+                // 去掉双引号，防止 HTML 属性截断
+                currentBg = currentBg.replace(/"/g, ""); 
+            }
+
+            // 获取名字
+            let currentName = nameEl ? nameEl.innerText : 'Dock App';
+
+            // 生成卡片
+            const card = document.createElement('div');
+            card.className = 'icon-edit-card';
+            
+            // 这里的 style 用单引号包裹，里面 url(...) 没引号，完美避开冲突
+            card.innerHTML = `
+                <div class="icon-preview-box" id="preview_${iconEl.id}" 
+                     onclick="triggerTempImgUpload('${iconEl.id}')" 
+                     style='background-image: ${currentBg}; background-color: #f0f0f0;'></div>
+                <div class="icon-input-area">
+                    <span class="icon-label-static">App Icon</span>
+                    <input type="text" class="icon-name-input" 
+                           value="${currentName}" 
+                           oninput="handleTempNameChange('${iconEl.id}', this.value)" 
+                           placeholder="App Name">
+                </div>
+            `;
+            container.appendChild(card);
+        }
+    });
+    
+    // 加载预设列表
+    loadThemePresets(); 
+};
+
+// [2] 暂存修改
+window.handleTempNameChange = function(id, newName) {
+    if (!tempIconEdits[id]) tempIconEdits[id] = {};
+    tempIconEdits[id].name = newName;
+};
+
+// [3] 暂存图片
+window.triggerTempImgUpload = function(id) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const url = `url('${evt.target.result}')`;
+                const previewEl = document.getElementById(`preview_${id}`);
+                if(previewEl) previewEl.style.backgroundImage = url;
+                
+                if (!tempIconEdits[id]) tempIconEdits[id] = {};
+                tempIconEdits[id].bg = url;
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    input.click();
+};
+
+// [4] 应用所有修改 (Save按钮)
+window.applyIconChanges = function() {
+    for (let id in tempIconEdits) {
+        const edit = tempIconEdits[id];
+        const iconEl = document.getElementById(id);
+        if (iconEl) {
+            if (edit.bg) iconEl.style.backgroundImage = edit.bg;
+            const parent = iconEl.parentElement;
+            if (parent) {
+                const nameEl = parent.querySelector('.app-name');
+                if (edit.name && nameEl) nameEl.innerText = edit.name;
+            }
+        }
+    }
+    updateGlobalToastStyle();
+    saveMemory(); 
+    localStorage.setItem('Wx_Toast_Settings', JSON.stringify(toastSettings));
+    
+    tempIconEdits = {}; 
+    showSystemAlert('桌面美化保存成功啦(𓐍ㅇㅂㅇ𓐍)～', 'success');
+    closeSubPage('sub-icon');
+};
+
+// [5] 吐司边框
+window.toggleToastBorder = function(enabled) {
+    toastSettings.enabled = enabled;
+    toggleToastUI(enabled);
+};
+window.updateToastColor = function(color) {
+    toastSettings.color = color;
+};
+function toggleToastUI(enabled) {
+    const picker = document.getElementById('toast-color-picker');
+    if(picker) {
+        picker.style.opacity = enabled ? '1' : '0.5';
+        picker.style.pointerEvents = enabled ? 'auto' : 'none';
+    }
+}
+function updateGlobalToastStyle() {
+    const root = document.documentElement;
+    root.style.setProperty('--toast-color', toastSettings.color);
+    const allIcons = document.querySelectorAll('.app-icon');
+    allIcons.forEach(icon => {
+        if (toastSettings.enabled) icon.classList.add('toast-style');
+        else icon.classList.remove('toast-style');
+    });
+}
+
+// [6] 预设相关
+window.saveCurrentTheme = function() {
+    const name = prompt("主题名称 (Name):");
+    if (!name) return;
+
+    let coverImg = '';
+    const calImg = document.getElementById('cal_p_1')?.style.backgroundImage;
+    const appImg = document.querySelector('.app-item:not(.empty) .app-icon')?.style.backgroundImage;
+    if (calImg && calImg.includes('url')) coverImg = calImg;
+    else if (appImg && appImg.includes('url')) coverImg = appImg;
+    
+    const themeData = {
+        id: Date.now(),
+        name: name,
+        cover: coverImg, 
+        toast: toastSettings,
+        memory: getCurrentMemorySnapshot() // 封装获取逻辑
+    };
+
+    localforage.getItem('Wx_Theme_Presets').then(data => {
+        const presets = data || [];
+        presets.push(themeData);
+        return localforage.setItem('Wx_Theme_Presets', presets);
+    }).then(() => {
+        loadThemePresets();
+        showSystemAlert('预设保存成功啦(𓐍ㅇㅂㅇ𓐍)～', 'success');
+    });
+};
+
+function getCurrentMemorySnapshot() {
+    const mem = { texts: {}, images: {}, wallpaper: '' };
+    document.querySelectorAll('.edit-text').forEach((el, i) => {
+        mem.texts[el.id || 'txt'+i] = el.innerText;
+    });
+    document.querySelectorAll('.upload-img, .app-icon, .wx-big-avatar, .wx-small-avatar').forEach((el, i) => {
+         if(el.style.backgroundImage) mem.images[el.id || 'img'+i] = el.style.backgroundImage;
+    });
+    mem.wallpaper = document.getElementById('phoneScreen')?.style.backgroundImage;
+    return mem;
+}
+
+window.loadThemePresets = function() {
+    localforage.getItem('Wx_Theme_Presets').then(data => {
+        const container = document.getElementById('theme-preset-list');
+        if (!container) return;
+        container.innerHTML = '';
+        const presets = data || [];
+
+        if (presets.length === 0) {
+            container.innerHTML = `<div style="font-size:12px; color:#999; padding:20px;">暂无预设(𓐍ㅇㅂㅇ𓐍)...</div>`;
+            return;
+        }
+
+        presets.forEach(theme => {
+            const item = document.createElement('div');
+            item.className = 'preset-card';
+            const bgStyle = theme.cover ? `background-image: ${theme.cover}` : 'background: #f0f0f0';
+            
+            item.innerHTML = `
+                <div class="preset-del" onclick="deleteThemePreset(${theme.id}, event)"></div>
+                <div class="preset-preview" style="${bgStyle}"></div>
+                <div class="preset-name">${theme.name}</div>
+            `;
+            item.onclick = (e) => { 
+                if(!e.target.classList.contains('preset-del')) applyTheme(theme); 
+            };
+            container.appendChild(item);
+        });
+    });
+};
+
+window.deleteThemePreset = function(id, event) {
+    event.stopPropagation();
+    // 使用自定义确认框替代 confirm
+    showConfirmDialog('确定要删除这个预设嘛(𓐍ㅇㅂㅇ𓐍)？', () => {
+        localforage.getItem('Wx_Theme_Presets').then(data => {
+            const newList = (data || []).filter(t => t.id !== id);
+            return localforage.setItem('Wx_Theme_Presets', newList);
+        }).then(() => {
+            loadThemePresets();
+        });
+    });
+};
+
+window.applyTheme = function(theme) {
+    showConfirmDialog(`切换到“${theme.name}”？\n未保存的修改会丢失。`, () => {
+        localforage.setItem(MEMORY_KEY, theme.memory).then(() => {
+            if(theme.toast) {
+                toastSettings = theme.toast;
+                localStorage.setItem('Wx_Toast_Settings', JSON.stringify(toastSettings));
+                updateGlobalToastStyle();
+            }
+            loadMemory();
+            showSystemAlert('美化应用成功噜(𓐍ㅇㅂㅇ𓐍)～', 'success');
+            setTimeout(initIconSettingsGrid, 100);
+        });
+    });
+};
+
+// ====================
+// [壁纸系统]
+// ====================
+window.changeWallpaper = function(url) {
+    const screen = document.getElementById('phoneScreen');
+    if(screen) {
+        screen.style.backgroundImage = `url('${url}')`;
+        screen.style.backgroundSize = 'cover';
+        screen.style.backgroundPosition = 'center';
+        const preview = document.getElementById('wall-current-preview');
+        if(preview) preview.style.backgroundImage = `url('${url}')`;
+        saveMemory();
+        showSystemAlert('壁纸换好啦(𓐍ㅇㅂㅇ𓐍)～');
+    }
+};
+
+window.triggerBgUpload = function(type) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if(file) {
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const url = evt.target.result; 
+                if (type === 'desktop') {
+                    changeWallpaper(url);
+                } else {
+                    const chat = chatsData.find(c => c.id === currentChatId);
+                    if(chat) {
+                        chat.bgImage = `url('${url}')`;
+                        localforage.setItem('Wx_Chats_Data', chatsData).then(() => {
+                            const msgArea = document.getElementById('chat-msg-area');
+                            if (msgArea) msgArea.style.backgroundImage = `url('${url}')`;
+                            showSystemAlert('聊天背景已更新(𓐍ㅇㅂㅇ𓐍)！！');
+                        });
+                    }
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    input.click();
+};
+
+function initWallpaperPage() {
+    const screen = document.getElementById('phoneScreen');
+    const preview = document.getElementById('wall-current-preview');
+    if (screen && preview) {
+        preview.style.backgroundImage = screen.style.backgroundImage;
+    }
+}
+
+// 确保页面初始化
+const _originalOpen2 = window.openSubPage;
+window.openSubPage = function(id) {
+    if(_originalOpen2) _originalOpen2(id);
+    if (id === 'sub-icon') setTimeout(window.initIconSettingsGrid, 50);
+    if (id === 'sub-wallpaper') setTimeout(initWallpaperPage, 50);
+};
+
+
+// ====================
+// ★★★ [自定义弹窗系统] (Ins Style) ★★★
+// ====================
+
+// 1. Toast (顶部提示) - 替代原来的 ugly alert
+window.showSystemAlert = function(msg, type='normal') {
+    // 如果还没创建容器，创建它
+    let container = document.getElementById('custom-toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'custom-toast-container';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = 'ins-toast';
+    toast.innerHTML = `
+        <div class="toast-icon">${type === 'success' ? '✨' : '🍎'}</div>
+        <div class="toast-msg">${msg}</div>
+    `;
+
+    container.appendChild(toast);
+
+    // 动画进场
+    setTimeout(() => toast.classList.add('show'), 10);
+
+    // 2秒后消失
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 2500);
+};
+
+// 2. Confirm Dialog (居中确认框) - 替代 confirm()
+window.showConfirmDialog = function(msg, onConfirm) {
+    let overlay = document.getElementById('custom-confirm-overlay');
+    if (!overlay) {
+        // 创建HTML结构
+        overlay = document.createElement('div');
+        overlay.id = 'custom-confirm-overlay';
+        overlay.className = 'custom-alert-overlay'; // 复用之前的遮罩样式
+        overlay.innerHTML = `
+            <div class="custom-alert-box ins-style">
+                <div class="alert-title">Confirm</div>
+                <div class="alert-msg" id="confirm-msg-text"></div>
+                <div class="alert-btn-group">
+                    <div class="alert-btn cancel" id="confirm-btn-cancel">Cancel</div>
+                    <div class="alert-btn confirm" id="confirm-btn-ok">Yes</div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
+
+    const msgEl = document.getElementById('confirm-msg-text');
+    const okBtn = document.getElementById('confirm-btn-ok');
+    const cancelBtn = document.getElementById('confirm-btn-cancel');
+
+    msgEl.innerText = msg;
+    
+    // 绑定事件
+    okBtn.onclick = () => {
+        onConfirm();
+        overlay.style.display = 'none';
+    };
+    cancelBtn.onclick = () => {
+        overlay.style.display = 'none';
+    };
+
+    overlay.style.display = 'flex';
+};
+// ====================
+// [系统启动] 核心初始化流程
+// ====================
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 System Booting...');
+    
+    // 1. 加载记忆 (文字、图片、壁纸) + 顺便加载吐司边框
+    if(window.loadMemory) {
+        window.loadMemory();
+    }
+
+    // 2. 修正视口高度 (防键盘顶起)
+    if(typeof fixViewportHeight === 'function') {
+        fixViewportHeight();
+    }
+
+});
+// ====================
+// ★★★ [自定义弹窗系统] (Ins Style: 纯净版) ★★★
+// ====================
+
+// 1. Toast (深灰时间戳风格)
+window.showSystemAlert = function(msg, type='normal') {
+    let container = document.getElementById('custom-toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'custom-toast-container';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = 'ins-toast';
+    // 去掉图标，只留文字，像时间戳一样
+    toast.innerHTML = `<span class="toast-msg">${msg}</span>`;
+
+    container.appendChild(toast);
+
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 2000);
+};
+
+// 2. Confirm Dialog (确认框)
+window.showConfirmDialog = function(msg, onConfirm) {
+    createDialog('Confirm', msg, null, onConfirm);
+};
+
+// 3. Prompt Dialog (输入框 - 新增！用于保存预设)
+window.showPromptDialog = function(title, placeholder, onConfirm) {
+    createDialog(title, null, placeholder, onConfirm);
+};
+
+// --- 通用弹窗构造器 ---
+function createDialog(titleText, msgText, inputPlaceholder, onConfirm) {
+    // 移除旧的（如果存在）
+    const oldOverlay = document.getElementById('custom-ins-overlay');
+    if(oldOverlay) oldOverlay.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'custom-ins-overlay';
+    overlay.className = 'custom-alert-overlay'; // 复用遮罩样式
+    
+    // 根据是否有输入框来决定 HTML 结构
+    const inputHtml = inputPlaceholder 
+        ? `<input type="text" id="ins-dialog-input" placeholder="${inputPlaceholder}" autocomplete="off">` 
+        : '';
+        
+    const msgHtml = msgText 
+        ? `<div class="alert-msg">${msgText}</div>` 
+        : '';
+
+    overlay.innerHTML = `
+        <div class="custom-alert-box ins-style">
+            <div class="alert-title">${titleText}</div>
+            ${msgHtml}
+            ${inputHtml}
+            <div class="alert-btn-group">
+                <div class="alert-btn cancel" id="ins-btn-cancel">Cancel</div>
+                <div class="alert-btn confirm" id="ins-btn-ok">OK</div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    overlay.style.display = 'flex'; // 显示
+
+    // 如果有输入框，自动聚焦
+    const inputEl = document.getElementById('ins-dialog-input');
+    if(inputEl) setTimeout(() => inputEl.focus(), 100);
+
+    // 绑定事件
+    document.getElementById('ins-btn-cancel').onclick = () => overlay.remove();
+    
+    document.getElementById('ins-btn-ok').onclick = () => {
+        if (inputEl) {
+            const val = inputEl.value.trim();
+            if (!val) {
+                showSystemAlert('内容不能为空哦～');
+                return;
+            }
+            onConfirm(val); // 把输入的值传回去
+        } else {
+            onConfirm();
+        }
+        overlay.remove();
+    };
+}
+
+// 覆盖之前的 saveCurrentTheme
+window.saveCurrentTheme = function() {
+    // ★★★ 这里改用了新写的 showPromptDialog ★★★
+    showPromptDialog("New Theme", "给主题起个名字吧 (e.g. 奶油吐司)", (name) => {
+        
+        // --- 下面是原来的保存逻辑 ---
+        let coverImg = '';
+        const calImg = document.getElementById('cal_p_1')?.style.backgroundImage;
+        const appImg = document.querySelector('.app-item:not(.empty) .app-icon')?.style.backgroundImage;
+        
+        if (calImg && calImg.includes('url')) coverImg = calImg;
+        else if (appImg && appImg.includes('url')) coverImg = appImg;
+        
+        const themeData = {
+            id: Date.now(),
+            name: name,
+            cover: coverImg, 
+            toast: toastSettings,
+            memory: getCurrentMemorySnapshot() 
+        };
+
+        localforage.getItem('Wx_Theme_Presets').then(data => {
+            const presets = data || [];
+            presets.push(themeData);
+            return localforage.setItem('Wx_Theme_Presets', presets);
+        }).then(() => {
+            loadThemePresets();
+            showSystemAlert('预设保存成功( ´▽｀)～');
+        });
+    });
+};
