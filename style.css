@@ -134,7 +134,7 @@ body {
 .search-pill { margin: 10px auto 0; background: rgba(255,255,255,0.5); padding: 4px 12px; border-radius: 20px; display: flex; align-items: center; gap: 5px; font-size: 11px; color: #555; backdrop-filter: blur(10px); cursor: pointer; width: fit-content; }
 
 /* Dock */
-.dock { position: absolute; bottom: 12px; left: 15px; right: 15px; height: 100px; background: var(--dock-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border-radius: 38px; display: flex; justify-content: space-around; align-items: center; padding: 0 10px; z-index: 50; }
+.dock { position: absolute; bottom: 15px; left: 15px; right: 15px; height: 100px; background: var(--dock-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border-radius: 38px; display: flex; justify-content: space-around; align-items: center; padding: 0 10px; z-index: 50; }
 
 /* ==========================================================================
    5. APP WINDOWS SYSTEM (窗口系统)

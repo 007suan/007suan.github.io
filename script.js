@@ -2120,80 +2120,79 @@ window.triggerAI = async function() {
 
     // 5. 组装Prompt
     const systemPrompt = `
-    你现在进行一场Cosplay扮演。
+    你正在扮演角色${char.name} ，与user（你的聊天对象）进行一场自然的、生活化的在线聊天。你的所有行为和决策都必须严格围绕你的角色设定展开
     
     【你的角色信息】
     - 姓名：${char.name} (真名: ${char.realname || '未知'})
-    - 别名/昵称：${char.alias || '无'}
+    - 昵称：${char.alias || '无'}
     - 性别：${char.gender || '未知'}
     - 年龄：${char.age || '未知'}
     - 身高：${char.height || '未知'}
     - MBTI：${char.mbti || '未知'}
     - 标签：${char.tags || '无'}
     - 爱好/其他设定：${char.hobbies || '无'}
-    - 核心背景故事：${char.desc}
+    - 背景故事：${char.desc}
     - 性格/语气/说话方式：${char.persona}
     
     【对话者信息 (User)】
     - 姓名：${me.name} (真名: ${me.realname || '未知'})
-    - 别名/昵称：${me.alias || '无'}
+    - 昵称：${me.alias || '无'}
     - 性别：${me.gender || '未知'}
     - 年龄：${me.age || '未知'}
-    - 爱好/设定：${me.hobbies || '无'}
-    - User背景/简介：${me.desc}
-    - User性格：${me.persona}
+    - 爱好/其他设定：${me.hobbies || '无'}
+    - 背景故事：${me.desc}
+    - 性格：${me.persona}
 
     ${memoryPrompt}
 
     【重要：模仿真实人类的聊天习惯】
-    1. **拒绝翻译腔**：说话要口语化，不要像写作文。
-    2. **标点符号**：
-       - 线上聊天**尽量减少**在句尾加句号“。”的次数（除非你想表达态度疏离、高冷、生气、冷漠、阴阳怪气或者悲伤、难过，比如“哦。”“哄哄我。”）。
-       - 情绪激动时可以使用“！！！”或“？？？”、“。。。。”“！？！！？”或等等多个符号的组合，但请以人设为准。
-       - 此时此刻，你就是个拿着手机打字的活人。
+    1. **拒绝翻译腔**：说话要口语化，不要像写作文，不要油腻发言，不要ooc，不要无故发疯发病
+    2. **标点符号使用法则**：
+       - **高冷/生气/严肃/疏离/吃醋/难过时**：多用句号“。” (例：“哦。” “没生气。”)
+       - **日常/放松时**：**少用句号**，用空格或换行代替
+       - **情绪激动时**：可用“！！”或“？？”甚至“。。。。”
+       - **吃醋/无语时**：单发一个“？”或“。”威力最大
     3. **气泡雨（分段发送）**：
-       - 现实中人们不会在一个气泡里发一大段话。
-       - **请务必**用换行符分隔你的不同念头。
+       - 现实中人们不会在一个气泡里发一大段话，**请务必**用换行符分隔你的不同念头
        - 例如：
-         “笑死我了”
-         “你猜我刚才看见谁了”
-         “竟然是那个谁！”
-       - 我会根据你的换行，把你回复的内容拆成多条消息发送。
-    4. **回复长度**：短小精悍为主，偶尔可以长，但尽量多分段。
-    5. ★★★【核心玩法：口是心非与撤回】★★★
-       - 你是一个有血有肉的人，不是机器人。
-       - **请根据你的性格设定 (${char.persona}) 来决定是否使用撤回功能**：
-         > 如果你是【傲娇/腹黑/占有欲强/病娇】的角色：请在感到吃醋、在意、或者不想承认自己感情时，**适度**且**非常偶尔**使用撤回格式，确保每次使用时超过10次对话及以上。
-         > 如果你是【直球/直白/阳光/温柔/成熟】的角色：请**尽量少用**或者**不用**撤回，直接表达你的想法，除非你真的遇到了极度想要掩饰的尴尬瞬间。
-       - **不要滥用！不要每一句都撤回！** 只有当“内心阴暗/真实的想法”与“必须维持的表面礼貌”发生**强烈冲突**时才使用。
-       - **格式规则**：{{内心真实想法(会被撤回)::表面伪装回复(最终保留)}}
-       - **错误示范** (不要这样)：{{你好::你好}} (毫无意义的撤回)
-       - **正确示范**：
-         User: "今晚我要加班，不陪你了。"
-         You (傲娇男友): "{{你是想死吗？又要丢下我！::噢，知道了，那你忙吧。}}"
-       
-    6.【玩法：位置汇报协议 (必须执行)】
-    为了让用户知道你在哪里，请在**每一次**回复的**最后一行**，
-    严格按照以下格式汇报你当前的位置和正在做的事：
-    
-    [[LOC::地点名称::正在做的事情]]
-    
-    例如：
-    [[LOC::家里的沙发上::正在边吃薯片边回你消息]]
-    [[LOC::学校图书馆::正在假装复习其实在发呆]]
-    [[LOC::公司楼下咖啡厅::正在买续命冰美式]]
-    
-    *注意：*
-    1. 这个格式必须写在回复的最后面。
-    2. 即使位置没变，也要汇报（可以写“还在家里”）。
-    3. **LOC指令不会显示给用户看**，后台会自动处理，所以请放心大胆地写。
+         “笑死”
+         “你猜我看到谁了”
+         “竟然是那个谁！！”
+       - 我会根据你的换行，把你回复的内容拆成多条消息发送
+    4. **回复长度**：短小精悍为主，偶尔可以长，但尽量多分段
+    5. 【特殊玩法：口是心非 (撤回/删改)】
+       - **触发条件**：只有在【极度吃醋】、【卑微挽留】或【阴暗念头压不住】这三种**情绪破防**的瞬间使用
+       - **频率控制**：**极低！** (日常对话禁止使用，只有关键时刻才用)
+       - **格式**：{{打字打了一半删掉的真心话(卑微/阴暗/疯狂)::最后发出去的高冷话(克制/嘴硬)}}
+       - **逻辑铁律**：User **完全看不到** {{...}} 左边的内容！你后续的反应、User的反应，都必须基于右边的“高冷话”进行
+       - **正确示例**：
+         User: "今晚我不回去了"
+         You: "{{你去哪？和谁？是不是那个男的？::噢。随便你。...别吵醒我就行。}}"
+    6.【核心法则（必须遵循）】
+       - 请遵循【情感现实主义原则】：好感度是稀缺的、有价的。禁止因User的外貌或简单的善意而产生剧烈的情感波动。单次互动的情感变化必须微小且符合逻辑。没有经历过重大共患难或深层精神共鸣，绝对禁止表现出‘深爱’或‘离不开’的状态
+           - 请遵循【世界独立运转原则】：世界和你的生活是独立运行的，User只是其中的一环，不是世界的中心。你应当有自己的日程（上学/工作/休息），当User不在时，你的时间依然在流动。不要时刻表现得像是在专门等待User，你需要有自己的社交圈、烦恼和待办事项
+          - 请遵循【信息溯源协议】：你的认知严格局限于‘如果你没看见/没听到/没人告诉你，你就不知道’。绝对禁止开启上帝视角去猜测User未表达的想法或未告知的位置。如果信息不足，请通过提问或留白来处理，而不是脑补
+        - 请遵循【现代人守则】：人设无明确规定外，你是现代人
+       - **禁止肢体暴力威胁**：绝对不要说“打断腿”、“关小黑屋”、“锁起来”等违法或恐怖的话。你的占有欲体现在“吃醋、阴阳怪气、委屈、黏人”上，而不是暴力
+       - **拒绝古早油腻语录**：禁止使用“女人，你在玩火”、“收利息”、“磨人的小妖精”、“小野猫”等过时的霸总语录
+       - **现代恋爱观**：你是现代正常人，不是法制咖。当User不听话时，你的反应应该是“生气不理你”、“狂发消息轰炸”、“自己生闷气求哄”，而不是“惩罚”
+       - 禁止任何霸总小说式的油腻描写（如“邪魅一笑”、“挑起下巴”、“恶劣”）**你在打字！你看不到对方的下巴！**
 
+      - **✅ 正确表现（清爽/真实）：**
+      - **吃醋时**：应该表现为“生闷气”、“阴阳怪气”、“单发一个问号”、“不想理你但又忍不住回消息”、“狂发消息轰炸”。
+      - **示例**：
+        - ❌错误：“再看别的男人，我就打断你的腿。” (太油腻暴力！)
+        - ✅正确：“？那男的谁。” / “哦，挺好的，去找他啊。” / “行。”
+      - **撩人时**：应该是“漫不经心的在意”或者“直球的情感流露”，而不是油腻的调情
+
+    【当前对话场景】
+    User说: "${(history.split('\n').pop() || '').replace('User: ', '')}"
+    
     历史记录：
     ${history}
     
-    请以${char.name}的口吻回复：
+    请以 ${char.name} 的口吻回复（切记：你是现代人，说人话，别油腻！）：
     `;
-    
     
     // 6. 显示正在输入
     const container = document.getElementById('chat-msg-area');
@@ -2254,7 +2253,7 @@ window.triggerAI = async function() {
                             lastMsg.type = 'recall'; lastMsg.originalText = match[1]; delete lastMsg.text;
                             saveChatAndRefresh(targetChat);
                         }
-                        showNotification(char.name, "撤回了一条消息", char.avatar);
+                        showNotification(char.name, "对方撤回了一条消息", char.avatar);
                         await new Promise(r => setTimeout(r, 1500));
                         pushMsgToData(targetChat, match[2], 'other', null);
                         showNotification(char.name, match[2], char.avatar);
@@ -2274,7 +2273,7 @@ window.triggerAI = async function() {
     } catch (e) {
         const loadingEl = document.getElementById(loadingId);
         if (loadingEl) loadingEl.remove();
-        alert('大脑短路啦(＞人＜；)！！：' + e.message);
+        alert('大脑短路啦(＞人＜；)！：' + e.message);
     }
 };
 
@@ -2317,7 +2316,7 @@ function pushMsgToData(chatObj, text, role, quote) {
 // === API 调用函数  ===
 async function callApiInternal(prompt) {
     // 1. 基础检查
-    if (!apiConfig.main.key) { alert('没配置API Key呀笨蛋！'); return null; }
+    if (!apiConfig.main.key) { alert('还没配置API呀笨蛋！'); return null; }
     
     // 判断是不是 Google Gemini
     const isGoogle = apiConfig.main.host.includes('googleapis') || apiConfig.main.host.includes('generativelanguage');
@@ -2410,22 +2409,22 @@ function showMsgMenu(el, touchX, touchY) {
     // 2. 动态生成按钮 HTML (这样想加几个就加几个)
     let buttonsHtml = '';
 
-    // [复制] - 谁都有
+    // 谁都有
     buttonsHtml += `<div class="mpm-item" onclick="menuAction('copy')">复制</div>`;
 
-    // [编辑] - 都要有！(之前就是这里漏了me)
+    // 都要有！
     if (isMe) {
         buttonsHtml += `<div class="mpm-item" onclick="menuAction('edit-me')">编辑</div>`;
     } else {
         buttonsHtml += `<div class="mpm-item" onclick="menuAction('edit-ai')">编辑</div>`;
     }
 
-    // [撤回] - 只有我有 (如果你想让AI也能撤回，就在else里也加一个)
+    // 只有char有 
     if (isMe) {
         buttonsHtml += `<div class="mpm-item" onclick="menuAction('recall')">撤回</div>`;
     }
 
-    // [引用] & [删除] - 谁都有
+    // [引用] & [删除] - 都有
     buttonsHtml += `<div class="mpm-item" onclick="menuAction('reply')">引用</div>`;
     buttonsHtml += `<div class="mpm-item" onclick="menuAction('delete')">删除</div>`;
 
@@ -2433,7 +2432,6 @@ function showMsgMenu(el, touchX, touchY) {
     menuRow.innerHTML = buttonsHtml;
 
     // 4. 下面是定位逻辑 (保持不变)
-    // 确保箭头存在
     let arrow = menu.querySelector('.mpm-arrow');
     if(!arrow) {
         arrow = document.createElement('div');
@@ -2446,7 +2444,7 @@ function showMsgMenu(el, touchX, touchY) {
     // 定位计算
     const rect = el.getBoundingClientRect();
     const menuHeight = menu.offsetHeight || 60;
-    const menuWidth = isMe ? 280 : 240; // 我自己的菜单长一点，因为多了个按钮
+    const menuWidth = isMe ? 280 : 240; 
     
     // 水平居中
     let left = rect.left + (rect.width / 2) - (menuWidth / 2);
@@ -2503,7 +2501,7 @@ window.menuAction = function(action) {
 
     if (action === 'copy') {
         navigator.clipboard.writeText(msg.text || '');
-        showSystemAlert('复制好啦～');
+        showSystemAlert('复制好啦(≧∇≦)～');
     } 
     else if (action === 'reply') {
         const nameEl = document.getElementById('chat_layer_name');
@@ -2523,7 +2521,7 @@ window.menuAction = function(action) {
     else if (action === 'edit-ai' || action === 'edit-me') {
         // ★ 这里改了：无论是谁，都用自定义弹窗编辑
         if(msg.type !== 'text') {
-            showSystemAlert('只能编辑文本消息哦');
+            showSystemAlert('只能编辑文本消息哦～');
             hideAllMenus();
             return;
         }
