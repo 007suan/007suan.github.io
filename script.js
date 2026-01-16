@@ -743,15 +743,29 @@ localforage.config({
 
 // 启动引擎
 document.addEventListener('DOMContentLoaded', () => {
-    loadMemory();       // 载入视觉记忆 (壁纸、开关)
+    console.log('🚀 System Booting...');
+    
+    // 1. 基础修正
+    if(typeof fixViewportHeight === 'function') fixViewportHeight();
+    
+    // 2. 启动核心系统
+    if(window.loadMemory) window.loadMemory(); // 载入记忆
     startClock();       // 启动时钟
-    initInteractions(); // 启动全局交互
-    loadAllData();      // 载入核心数据
+    initInteractions(); // 启动交互
+    loadAllData();      // 载入数据
     
-    // 初始化设置页图标
-    if(document.getElementById('icon-setting-grid')) initIconSettingsGrid();
+    // 3. 启动子系统
+    if(window.initStickerSystem) initStickerSystem(); // 表情包
+    if(window.loadCustomFont) window.loadCustomFont(); // 字体
     
-    // 覆盖原生 Alert
+    // 4. 初始化UI
+    if(document.getElementById('icon-setting-grid')) {
+        setTimeout(() => {
+            if(window.initIconSettingsGrid) window.initIconSettingsGrid();
+        }, 100);
+    }
+    
+    // 5. 覆盖原生 Alert
     window.alert = window.showSystemAlert;
 });
 
@@ -4237,7 +4251,9 @@ window.updateMapPin = function(placeName) {
 let tempIconEdits = {}; 
 let toastSettings = { enabled: false, color: '#ffffff', width: 3 }; 
 
-// [1] 初始化美化界面 (修复：滑块刷新后卡死问题)
+// =================================================================
+// [1] 初始化美化界面 (包含：图标编辑、吐司边框、字体设置、主题预设)
+// =================================================================
 window.initIconSettingsGrid = function() {
     const container = document.getElementById('icon-setting-grid');
     if (!container) return;
@@ -4245,7 +4261,7 @@ window.initIconSettingsGrid = function() {
     container.innerHTML = ''; 
     tempIconEdits = {}; 
 
-    // 1. 回显边框设置
+    // --- Part 1: 回显面包边 (Toast) 设置 ---
     const savedToast = JSON.parse(localStorage.getItem('Wx_Toast_Settings') || '{"enabled":false,"color":"#ffffff","width":3}');
     toastSettings = savedToast;
 
@@ -4263,10 +4279,10 @@ window.initIconSettingsGrid = function() {
         if(widthVal) widthVal.innerText = (toastSettings.width || 3) + 'px';
     }
 
-    // ★ 强制解锁 UI 状态
+    // 强制刷新 UI 状态
     toggleToastUI(toastSettings.enabled);
 
-    // 2. 遍历桌面真实 APP
+    // --- Part 2: 生成图标编辑器 (遍历桌面真实APP) ---
     const targetApps = document.querySelectorAll('#desktopGrid .app-item:not(.empty), #dockGrid .app-item');
     targetApps.forEach(item => {
         const iconEl = item.querySelector('.app-icon');
@@ -4299,17 +4315,49 @@ window.initIconSettingsGrid = function() {
             container.appendChild(card);
         }
     });
+
+    // --- Part 3: ★ 全局字体设置 (这里是修复好的位置！) ---
+    const fontCard = document.createElement('div');
+    fontCard.className = 'font-setting-card';
+    fontCard.innerHTML = `
+        <div style="font-size:14px; font-weight:600; margin-bottom:15px; color:#333;">全局字体 (Global Font)</div>
+        
+        <div class="font-input-group">
+            <input type="text" id="font-url-input" class="font-url-input" placeholder="请输入 .ttf / .woff 链接...(𓐍ㅇㅂㅇ𓐍)">
+        </div>
+        
+        <div class="font-input-group">
+            <div class="font-btn apply" onclick="applyUserFont()">应用字体</div>
+            <div class="font-btn reset" onclick="resetUserFont()">恢复默认</div>
+        </div>
+
+        <div class="font-preview-box">
+            <div class="font-preview-text" id="font-preview-text">12:30 Hello 你好喔。</div>
+            <div class="font-preview-sub">预览效果 Preview</div>
+        </div>
+    `;
     
+    // 把字体卡片加到列表最下面
+    container.appendChild(fontCard);
+    
+    // 回显当前字体链接
+    localforage.getItem('Wx_Global_Font').then(url => {
+        if(url && document.getElementById('font-url-input')) {
+            document.getElementById('font-url-input').value = url;
+        }
+    });
+
+    // --- Part 4: 加载主题预设 ---
     loadThemePresets(); 
 };
 
-// [2] 暂存修改
+// [2] 暂存修改 (图标名字)
 window.handleTempNameChange = function(id, newName) {
     if (!tempIconEdits[id]) tempIconEdits[id] = {};
     tempIconEdits[id].name = newName;
 };
 
-// [3] 暂存图片
+// [3] 暂存图片 (点击预览图换图标)
 window.triggerTempImgUpload = function(id) {
     const input = document.createElement('input');
     input.type = 'file';
@@ -4332,7 +4380,7 @@ window.triggerTempImgUpload = function(id) {
     input.click();
 };
 
-// [4] 应用所有修改 (Save按钮)
+// [4] 应用所有修改 (点击 Save 按钮)
 window.applyIconChanges = function() {
     for (let id in tempIconEdits) {
         const edit = tempIconEdits[id];
@@ -4355,7 +4403,7 @@ window.applyIconChanges = function() {
     closeSubPage('sub-icon');
 };
 
-// [5] 吐司边框逻辑
+// [5] 吐司边框逻辑集合
 window.toggleToastBorder = function(enabled) {
     toastSettings.enabled = enabled;
     toggleToastUI(enabled);
@@ -4486,7 +4534,7 @@ window.loadThemePresets = function() {
             const previewEl = item.querySelector('.preset-preview');
             const nameEl = item.querySelector('.preset-name');
 
-            // --- A. 点击文字：直接应用 (最稳妥) ---
+            // --- A. 点击文字：直接应用 ---
             nameEl.onclick = (e) => {
                 e.stopPropagation(); 
                 applyTheme(theme);
@@ -4543,7 +4591,7 @@ window.loadThemePresets = function() {
     });
 };
 
-// [8] 换图执行函数 (强力防拦截)
+// [8] 换图执行函数
 window.triggerPresetCoverUpload = function(themeId) {
     showConfirmDialog('要更换这个预设的封面图嘛( ´▽｀)？', () => {
         const input = document.createElement('input');
@@ -5226,4 +5274,79 @@ window.saveNewStickers = () => {
         });
     });
     saveStickers(); renderStickers(); closeStickerUploader();
+};
+// ==========================================================
+// ★ 全局字体系统 (Global Font System)
+// ==========================================================
+
+// 1. 初始化/加载字体
+window.loadCustomFont = function() {
+    localforage.getItem('Wx_Global_Font').then(url => {
+        if (url) {
+            applyFontToDom(url);
+            // 更新输入框的回显 (如果设置页打开了)
+            const input = document.getElementById('font-url-input');
+            if(input) input.value = url;
+        }
+    });
+};
+
+// 2. 将字体注入到页面
+async function applyFontToDom(url) {
+    if (!url) {
+        document.documentElement.style.setProperty('--global-font', '-apple-system, BlinkMacSystemFont, sans-serif');
+        return;
+    }
+
+    try {
+        // 使用 FontFace API 加载
+        const fontName = 'MyCustomFont';
+        const fontFace = new FontFace(fontName, `url(${url})`);
+        
+        await fontFace.load();
+        document.fonts.add(fontFace);
+        
+        // 应用 CSS 变量
+        document.documentElement.style.setProperty('--global-font', `"${fontName}", sans-serif`);
+        console.log('字体加载成功噜:', url);
+        
+        // 更新预览文字的样式
+        const preview = document.getElementById('font-preview-text');
+        if(preview) preview.style.fontFamily = `"${fontName}", sans-serif`;
+
+    } catch (e) {
+        console.error('字体加载失败惹....:', e);
+        // showSystemAlert('字体加载失败惹，可能是链接跨域了(T_T)');
+    }
+}
+
+// 3. 用户点击应用
+window.applyUserFont = function() {
+    const input = document.getElementById('font-url-input');
+    const url = input.value.trim();
+    
+    if (!url) {
+        showSystemAlert('请输入字体链接哦～');
+        return;
+    }
+    
+    showSystemAlert('正在下载字体...(＞人＜;)');
+    
+    applyFontToDom(url).then(() => {
+        // 保存到数据库
+        localforage.setItem('Wx_Global_Font', url);
+        showSystemAlert('字体换好啦！(≧∇≦)');
+    }).catch(() => {
+        showSystemAlert('字体链接无效或禁止访问(T_T)');
+    });
+};
+
+// 4. 重置字体
+window.resetUserFont = function() {
+    showConfirmDialog('恢复默认字体嘛？', () => {
+        localforage.removeItem('Wx_Global_Font');
+        document.documentElement.style.setProperty('--global-font', '-apple-system, BlinkMacSystemFont, sans-serif');
+        document.getElementById('font-url-input').value = '';
+        showSystemAlert('已恢复默认(＞人＜;)');
+    });
 };

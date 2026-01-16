@@ -466,7 +466,7 @@ body {
     /* 【微调区 */
     width: 16px;   /* 你图片的宽度 */
     height: 16px;  /* 你图片的高度 */
-    bottom: -8px;  /* 稍微往下一点点*/
+    bottom: -9px;  /* 稍微往下一点点*/
     left: 1px;   /* 往左伸出去的距离 */
     
     /* 填入你的【左边尾巴】图片链接 */
@@ -482,7 +482,7 @@ body {
     /* 【微调区】*/
     width: 16px;  /* 你图片的宽度 */
     height: 16px; /* 你图片的高度 */
-    bottom: -8px; /* 稍微往下一点点 */
+    bottom: -9px; /* 稍微往下一点点 */
     right: 1px; /* 往右伸出去的距离 */
     
     /* 填入你的【右边尾巴】图片链接 */
@@ -1565,3 +1565,75 @@ input:checked + .slider:before { transform: translateX(20px); }
 .sticker-img-big{max-width:140px;max-height:140px;border-radius:8px;display:block;object-fit:contain}
 .msg-content.sticker-type{background:transparent!important;box-shadow:none!important;padding:0!important}
 .msg-row.has-tail .msg-content.sticker-type::before{display:none!important}
+/* =======================================================
+   ★ 26. 全局字体设置 (Global Font Settings)
+   ======================================================= */
+
+/* 1. 定义全局变量 (放在 :root 里生效最快) */
+:root {
+    /* 默认字体 */
+    --global-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* 2. 强制应用到所有元素 */
+body, button, input, textarea, select, .edit-text {
+    font-family: var(--global-font) !important;
+}
+
+/* 3. 设置面板样式 (Ins风 - 修复版) */
+.font-setting-card {
+    /* ★★★ 关键修复：让它横跨整个网格，不再挤格子！ ★★★ */
+    grid-column: 1 / -1 !important; 
+    
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px;
+    margin: 15px 0; /* 这里的左右 margin 改成 0，因为在网格里 */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    width: 100%; /* 确保占满 */
+}
+
+.font-input-group {
+    display: flex; gap: 10px; margin-bottom: 15px;
+}
+
+.font-url-input {
+    flex: 1;
+    background: #f5f5f5;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    outline: none;
+    transition: all 0.2s;
+}
+.font-url-input:focus { background: #fff; border-color: #007aff; }
+
+.font-btn {
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+}
+.font-btn.apply { background: #000; color: #fff; }
+.font-btn.reset { background: #f0f0f0; color: #ff3b30; }
+
+/* 4. 预览区域 */
+.font-preview-box {
+    background: #f9f9f9;
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    border: 1px dashed #ddd;
+    margin-top: 10px;
+}
+.font-preview-text {
+    font-size: 20px;
+    margin-bottom: 5px;
+    color: #333;
+    /* 这里必须单独应用变量，以防JS还没加载完 */
+    font-family: var(--global-font); 
+}
+.font-preview-sub { font-size: 12px; color: #999; }
