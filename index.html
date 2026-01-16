@@ -61,11 +61,6 @@
             <div class="app-item placeholder"><div class="app-icon"></div></div>
             <div class="app-item placeholder"><div class="app-icon"></div></div>
             <div class="app-item placeholder"><div class="app-icon"></div></div>
-            
-            <div class="app-item placeholder"><div class="app-icon"></div></div>
-            <div class="app-item placeholder"><div class="app-icon"></div></div>
-            <div class="app-item placeholder"><div class="app-icon"></div></div>
-            <div class="app-item placeholder"><div class="app-icon"></div></div>
         </div>
     </div>
 
@@ -159,7 +154,6 @@
             <div class="app-item" style="margin-bottom: 0;"><div class="app-icon" id="dock_icon_3"></div></div>
             <div class="app-item" style="margin-bottom: 0;"><div class="app-icon" id="dock_icon_4"></div></div>
         </div>
-
 
         <div id="app-window-wechat" class="app-window">
             <div id="wx-main-view" style="position: relative; height: 100%; display: flex; flex-direction: column;">
@@ -504,21 +498,32 @@
         <div id="icon-setting-grid" class="icon-edit-grid">
             </div>
 
-        <div style="padding: 20px; margin-top: 10px; background: #fff; border-radius: 20px 20px 0 0; box-shadow: 0 -4px 10px rgba(0,0,0,0.02);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <span style="font-weight: 600; color: #333;">🍞 Icon Toast Border</span>
-                <label class="ios-switch">
-                    <input type="checkbox" id="toast-border-switch" onchange="toggleToastBorder(this.checked)">
-                    <span class="slider"></span>
-                </label>
-            </div>
-            
-            <div id="toast-color-picker" style="display: flex; gap: 10px; align-items: center; opacity: 0.5; pointer-events: none; transition: all 0.3s;">
-                <span style="font-size: 13px; color: #666;">Color:</span>
-                <input type="color" id="toast-color-input" value="#ffffff" onchange="updateToastColor(this.value)" style="border: none; background: none; width: 30px; height: 30px; cursor: pointer;">
-                <span style="font-size: 12px; color: #999;">(点击色块修改)</span>
-            </div>
+<div style="padding: 20px; margin-top: 10px; background: #fff; border-radius: 20px 20px 0 0; box-shadow: 0 -4px 10px rgba(0,0,0,0.02);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <span style="font-weight: 600; color: #333;">🍞 Icon Toast Border</span>
+        <label class="ios-switch">
+            <input type="checkbox" id="toast-border-switch" onchange="toggleToastBorder(this.checked)">
+            <span class="slider"></span>
+        </label>
+    </div>
+    
+    <div id="toast-controls" style="opacity: 0.5; pointer-events: none; transition: all 0.3s;">
+        
+        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
+            <span style="font-size: 13px; color: #999; width: 60px;">Color</span>
+            <input type="color" id="toast-color-input" value="#ffffff" onchange="updateToastColor(this.value)" style="border: none; background: none; width: 30px; height: 30px; cursor: pointer;">
         </div>
+
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <span style="font-size: 13px; color: #999; width: 60px;">Width</span>
+            <input type="range" id="toast-width-slider" min="1" max="10" step="0.5" value="3" 
+                   style="flex: 1; accent-color: #333; height: 4px; background: #eee; border-radius: 2px;" 
+                   oninput="updateToastWidth(this.value)">
+            <span id="toast-width-val" style="font-size: 12px; color: #ccc; width: 25px;">3px</span>
+        </div>
+
+    </div>
+</div>
         
         <div style="height: 80px;"></div>
     </div>
@@ -568,87 +573,77 @@
                     </div>
                 </div>
 
-                <div id="sub-api-config" class="sub-page">
-                    <div class="sub-header">
-                        <div class="back-btn" onclick="closeSubPage('sub-api-config')">‹</div>
-                        API配置
-                        <div style="font-size: 12px; color: #ccc; margin-top: 1px;"> (≧∇≦) </div>
-                    </div>
-                    
-                    <div class="sub-content" style="padding-top: 10px; background: #fff;">
-                        <div style="font-size: 10px; color: #999; margin: 0 16px 5px;">连接模式</div>
-                        <div style="display: flex; align-items: center; margin: 0 16px 20px;">
-                            <div class="api-mode-group" style="flex: 1; margin: 0;">
-                                <div class="api-mode-btn active" id="btn-mode-direct" onclick="switchApiMode('direct', false)">官方直连</div>
-                                <div class="api-mode-btn" id="btn-mode-proxy" onclick="switchApiMode('proxy', false)">反向代理</div>
-                            </div>
-                            <div onclick="saveApiConfig(false)" style="width: 40px; height: 36px; background: #333; border-radius: 8px; margin-left: 10px; display: flex; justify-content: center; align-items: center; cursor: pointer;">
-                                <svg viewBox="0 0 24 24" width="20" height="20" fill="#fff"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
-                            </div>
-                        </div>
+<div id="sub-api-config" class="sub-page">
+    <div class="sub-header">
+        <div class="back-btn" onclick="closeSubPage('sub-api-config')">‹</div>
+        <span>API Settings</span>
+        <div onclick="saveApiConfig(true)">Done</div>
+    </div>
+    
+    <div class="sub-content ins-form-page">
+        
+        <div class="ins-segment-control">
+            <div class="ins-segment-btn active" id="btn-mode-direct" onclick="switchApiMode('direct')">★</div>
+            <div class="ins-segment-btn" id="btn-mode-proxy" onclick="switchApiMode('proxy')">(𓐍ㅇㅂㅇ𓐍)</div>
+        </div>
 
-                        <div class="ios-form-group" style="margin-bottom: 25px; background: #f9f9f9; padding: 10px; border: 1px dashed #ddd;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <label style="font-weight: 600; color: #333; width: 40px;">预设</label>
-                                <select id="api-preset-select" onchange="loadSelectedPreset()" style="flex: 1; height: 30px; border-radius: 6px; border: 1px solid #ddd; background: #fff; padding: 0 5px; outline: none;">
-                                    <option value="">-- 选择预设 --</option>
-                                </select>
-                                <div onclick="showSavePresetAlert()" style="width: 30px; height: 30px; background: #666; border-radius: 6px; display: flex; justify-content: center; align-items: center; cursor: pointer;">
-                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="#fff"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                                </div>
-                                <div onclick="showDeletePresetAlert()" style="width: 30px; height: 30px; background: #666; border-radius: 6px; display: flex; justify-content: center; align-items: center; cursor: pointer;">
-                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="#fff"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                                </div>
-                            </div>
-                        </div>
+        <div class="ins-settings-card">
+            <div class="ins-card-title">
+                <span>MAIN MODEL（主api）</span>
+                <span style="font-size:10px; color:#007aff; cursor:pointer;" onclick="fetchModels('main')">Fetch List</span>
+            </div>
+            
+            <div class="ins-input-group">
+                <span class="ins-input-label">API HOST（api地址）</span>
+                <input type="text" id="api-main-host" class="ins-input-field" placeholder="https://...">
+            </div>
+            <div class="ins-input-group">
+                <span class="ins-input-label">API KEY（api密钥）</span>
+                <input type="password" id="api-main-key" class="ins-input-field" placeholder="sk-...">
+            </div>
+            <div class="ins-input-group">
+                <span class="ins-input-label">MODEL NAME（模型）</span>
+                <select id="api-main-model" class="ins-input-field" style="appearance:none;">
+                    <option value="gpt-4o-mini">e.g. gpt-4o-mini</option>
+                </select>
+            </div>
+        </div>
 
-                        <div class="api-decorative-header">主API设置 <span>*✩‧₊♬•*¨*•.¸¸♪✧♫•*¨*•.¸¸♪</span></div>
-                        <div class="ios-form-group" style="background: #f2f2f7;">
-                            <div class="ios-input-row"><label>API地址</label><input type="text" id="api-main-host" placeholder="https://..." style="text-align: right;"></div>
-                            <div class="ios-input-row"><label>Key</label><input type="password" id="api-main-key" placeholder="sk-..." style="text-align: right;"></div>
-                            <div class="ios-input-row">
-                                <label>模型</label>
-                                <select id="api-main-model" style="flex: 1; text-align: right; background: transparent; border: none; outline: none; appearance: none; color: #007aff; direction: rtl;">
-                                    <option value="gpt-4o-mini">请选择你的模型...</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="api-btn-row">
-                            <div class="api-small-btn dark" onclick="fetchModels('main')">拉取模型</div>
-                            <div class="api-small-btn red" onclick="clearApiSection('main')">全部清空</div>
-                        </div>
+        <div class="ins-settings-card">
+            <div class="ins-card-title">SUB MODEL (Summary) （副api）</div>
+            <div class="ins-input-group">
+                <input type="text" id="api-sub-host" class="ins-input-field" placeholder="Host (Optional)">
+            </div>
+            <div class="ins-input-group">
+                <input type="password" id="api-sub-key" class="ins-input-field" placeholder="Key (Optional)">
+            </div>
+            <div class="ins-input-group">
+                <input type="text" id="api-sub-model" class="ins-input-field" placeholder="Model (e.g. gpt-3.5)">
+            </div>
+        </div>
 
-                        <div class="api-decorative-header" style="margin-top: 25px;">副API设置 <span>*✩‧₊♬•*¨*•.¸¸♪✧♫•*¨*•.¸¸♪</span></div>
-                        <div class="ios-form-group" style="background: #f2f2f7;">
-                            <div class="ios-input-row"><label>API地址</label><input type="text" id="api-sub-host" placeholder="备用地址..." style="text-align: right;"></div>
-                            <div class="ios-input-row"><label>Key</label><input type="password" id="api-sub-key" placeholder="sk-..." style="text-align: right;"></div>
-                            <div class="ios-input-row">
-                                <label>模型</label>
-                                <select id="api-sub-model" style="flex: 1; text-align: right; background: transparent; border: none; outline: none; appearance: none; color: #007aff; direction: rtl;">
-                                    <option value="gpt-3.5-turbo">请选择你的模型...</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="api-btn-row">
-                            <div class="api-small-btn dark" onclick="fetchModels('sub')">拉取模型</div>
-                            <div class="api-small-btn red" onclick="clearApiSection('sub')">全部清空</div>
-                        </div>
+        <div class="ins-settings-card">
+            <div class="ins-card-title">
+                <span> TEMPERATURE（温度）</span>
+                <span id="temp-display" style="color:#007aff;">1.0</span>
+            </div>
+            <input type="range" id="api-temp" min="0" max="2" step="0.1" style="width:100%; accent-color:#000;" oninput="document.getElementById('temp-display').innerText=this.value">
+        </div>
 
-                        <div class="api-decorative-header" style="margin-top: 25px;">其他参数 <span>*✩‧₊♬•*¨*•.¸¸♪✧♫•*¨*•.¸¸♪</span></div>
-                        <div class="ios-form-group" style="padding: 15px;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                <label style="font-weight: 600; color: #333;">温度 (Temperature)</label>
-                                <span id="temp-display" style="color: #007aff; font-weight: bold;">1.0</span>
-                            </div>
-                            <input type="range" id="api-temp" min="0" max="2" step="0.1" value="1.0" class="api-range-slider" oninput="document.getElementById('temp-display').innerText = this.value">
-                            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #999; margin-top: 4px;">
-                                <span>0 (严谨)</span>
-                                <span>2 (活泼)</span>
-                            </div>
-                        </div>
+        <div class="ins-settings-card">
+            <div class="ins-card-title">PRESETS（预设）</div>
+            <select id="api-preset-select" class="ins-input-field" onchange="loadSelectedPreset()" style="margin-bottom:10px;">
+                <option value="">-- Load Preset --</option>
+            </select>
+            <div style="display:flex; gap:10px;">
+                <div class="ins-btn-full" onclick="showSavePresetAlert()" style="background:#f0f0f0; color:#333;">Save New（添加）</div>
+                <div class="ins-btn-full" onclick="showDeletePresetAlert()" style="background:#f0f0f0; color:#ff3b30;">Delete（删除）</div>
+            </div>
+        </div>
 
-        <div style="text-align: center; color: #ccc; font-size: 12px; margin: 30px 0 50px;">—— END ——</div>
-                </div>
+        <div style="height:50px;"></div>
+    </div>
+</div>
             </div> <div id="sub-backup" class="sub-page">
                 <div class="sub-header">
                     <div class="back-btn" onclick="closeSubPage('sub-backup')">‹</div>
@@ -721,96 +716,6 @@
          </div>
             </div>
 
-        <div id="sub-page-creator" class="exp-theme-root" style="display: none;">
-            <div class="exp-browser-top">
-                <div class="exp-tab-bar">
-                    <div class="exp-tab active">
-                        <span class="exp-icon">📄</span><span class="exp-tab-text">Expansion Notice</span><span class="exp-close" onclick="showExitAlert()">×</span>
-                    </div>
-                    <div class="exp-win-ctrls"><span>─</span><span>□</span><span onclick="showExitAlert()">×</span></div>
-                </div>
-                <div class="exp-tool-bar">
-                    <div class="exp-tool-left"><span class="exp-grid-icon">⣿</span><span class="exp-label">LABEL</span></div>
-                    <div class="exp-url-box">
-                        <span class="exp-search-icon">🔍</span>
-                        <input type="text" class="exp-search-input" value="- 你的泪流淌 像决堤湖泊。" placeholder="Type your mood...">
-                    </div>
-                    <div class="exp-tool-right">
-                        <span class="exp-btn save-btn" onclick="saveCharacter()">🔝</span> 
-                        <span class="exp-btn delete-btn" onclick="showDeleteAlert()" style="font-size: 18px;">🔙</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="exp-content-scroll">
-                <div class="exp-header-layout">
-                    <div class="exp-avatar-area">
-                        <div class="exp-avatar-circle upload-img" id="creator-avatar"><div class="exp-avatar-tip">Click<br>Upload</div></div>
-                    </div>
-                    <div class="exp-info-area">
-                        <div class="exp-info-title">INFORMATION ⌄</div>
-                        <div class="exp-info-subtitle">The following is<br>About my basic information</div>
-                        <div class="exp-input-line">
-                            <span class="exp-prefix">: </span><input type="text" id="creator-name" class="exp-input" placeholder="Name (昵称)"><span class="exp-suffix">♪</span>
-                        </div>
-                        <div class="exp-input-line">
-                            <span class="exp-prefix"># </span><input type="text" id="creator-tags" class="exp-input" placeholder="INFP | 属性 | 标签"><span class="exp-suffix">♪</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="exp-body-section">
-                    <div class="exp-sec-header">
-                        <span class="exp-sec-icon">≡</span><span class="exp-sec-title">ABOUT Me</span>
-                        <div class="exp-pill-btn">★ 𝗪𝗶𝗻𝘁𝗲𝗿.</div>
-                    </div>
-<div class="exp-text-block">
-    <div class="exp-text-row">
-        <span class="exp-bold">基础:</span>
-        <input type="text" id="creator-realname" class="exp-inline-input" placeholder="名称 / Name">
-        <span class="exp-slash">/</span>
-        <input type="text" id="creator-alias" class="exp-inline-input" placeholder="Alias / 昵称" style="width: 100px;">
-        <span class="exp-divider">/</span>
-        <input type="text" id="creator-gender" class="exp-inline-input small" placeholder="性别" style="width: 40px;">
-    </div>
-    
-    <div class="exp-text-row">
-        <span class="exp-bold">其他:</span>
-        <span class="exp-label-small">Height:</span><input type="text" id="creator-height" class="exp-inline-input small" placeholder="178">
-        <span class="exp-divider">|</span>
-        <span class="exp-label-small">Age:</span><input type="text" id="creator-age" class="exp-inline-input small" placeholder="18">
-        <span class="exp-divider">|</span>
-        <span class="exp-label-small">MBTI:</span><input type="text" id="creator-mbti" class="exp-inline-input small" placeholder="INTJ">
-    </div>
-
-    <div class="exp-text-area-wrapper">
-        <div class="exp-row-label">@设定 「背景故事」</div>
-        <textarea id="creator-desc" class="exp-textarea" rows="3" oninput="autoResize(this)" placeholder="在这里输入背景故事、详细设定..."></textarea>
-    </div>
-
-    <div class="exp-text-area-wrapper">
-        <div class="exp-row-label">性格 | 语气 | 细节</div>
-        <textarea id="creator-persona" class="exp-textarea" rows="3" oninput="autoResize(this)" placeholder="在这里输入性格细节、说话语气..."></textarea>
-    </div>
-    
-    <div class="exp-text-area-wrapper">
-        <div class="exp-row-label">其他 | 爱好 (Hobbies)</div>
-        <textarea id="creator-hobbies" class="exp-textarea" rows="2" oninput="autoResize(this)" placeholder="TA的爱好、喜欢的东西..."></textarea>
-    </div>
-
-    <input type="hidden" id="creator-bday">
-    <input type="hidden" id="creator-note">
-    <div class="exp-footer-deco">漫画 | 听歌🎧 | 画画 | 发呆 | ★</div>
-                    </div>
-                    <div class="exp-sec-header" style="margin-top: 20px;">
-                        <span class="exp-sec-icon">≡</span><span class="exp-sec-title">INTRODUCTION</span>
-                    </div>
-                    <div class="exp-qr-area">
-                        <div class="exp-qr-text">幸福的秘诀是 拥有苹果时只在意苹果(๑＞＜)☆<br><span style="font-size:10px; color:#999;">I want to talk...💬</span></div>
-                    </div>
-                </div>
-                <div style="height: 100px;"></div>
-            </div>
-        </div>
 <div id="sub-page-chat-detail" class="sub-page" style="display: none; background: #f2f2f7; z-index: 2000;">
     
 <div class="chat-header-layer" id="chat_layer_header_bg">
@@ -860,8 +765,8 @@
         </div>
 
         <div class="cf-input-wrapper" style="margin-right: 5px;">
-            <input type="text" id="chat-input" placeholder="iMessage信息" onkeydown="if(event.keyCode==13) sendMsg('me')">
-            <div class="cf-emoji-icon" onclick="showSystemAlert('表情包库还在装修中...(≧∇≦)<br>敬请期待！')">
+<textarea id="chat-input" rows="1" placeholder="iMessage信息"></textarea>
+            <div class="cf-emoji-icon" onclick="toggleStickerMenu()">
                 <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
             </div>
         </div>
@@ -1085,70 +990,33 @@
     </div>
 </div>
 
-<div id="sub-page-summary" class="sub-page ticket-layout">
-    
-    <div class="ticket-header-stub">
-        <div class="ticket-back-btn" onclick="closeSubPage('sub-page-summary')">
-            <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-        </div>
+<div id="sub-page-summary" class="sub-page">
+    <div class="sub-header">
+        <div class="back-btn" onclick="closeSubPage('sub-page-summary')">‹</div>
+        <span>Stories</span>
+    </div>
+
+    <div class="sub-content" style="padding:0;">
         
-        <div class="ticket-info">
-            <div class="ticket-brand">MEMORY LOG</div>
-            <div class="ticket-meta">
-                <span>NO. 000001</span><span class="ticket-divider">|</span>
-                <span>ADMIT TWO</span><span class="ticket-divider">|</span>
-                <span>∞ INFINITY</span>
+        <div class="ins-memory-header">
+            <div class="ins-memory-title">Our Memories.</div>
+            <div class="ins-memory-subtitle">Every moment matters.</div>
+            
+            <div class="ins-action-row">
+                <div class="ins-action-pill ai" onclick="confirmAiSummary()">
+                    <span class="icon">✨</span>
+                    <span>AI Generate</span>
+                </div>
+                <div class="ins-action-pill write" onclick="openNoteEditor()">
+                    <span class="icon">✍️</span>
+                    <span>Record</span>
+                </div>
             </div>
         </div>
 
-        <div class="ticket-dashed-line"></div>
-        <div class="ticket-cutout left"></div>
-        <div class="ticket-cutout right"></div>
-    </div>
-
-    <div class="ticket-body-container">
+        <div id="summary-list-container" class="ins-memory-feed">
+            </div>
         
-        <div class="narrow-sidebar">
-             <div class="hanging-ribbon">
-                 <div class="ribbon-hole"></div>
-                 
-                 <div class="book-avatar-container compact">
-                      <div class="sum-bubble-wrapper">
-                          <div class="sum-bubble" id="sum-mood-bubble">(𓐍ㅇㅂㅇ𓐍)</div>
-                      </div>
-                      <div class="book-char-avatar sync-avatar-target" id="sum-sidebar-avatar" onclick="cycleSummaryMood()"></div>
-                      <div class="sum-online-dot"></div>
-                 </div>
-                 
-                 <div class="ribbon-text">OUR STORY</div>
-             </div>
-        </div>
-
-        <div class="wide-content-area" id="book-scroll-area">
-             <div id="summary-list-container">
-                 </div>
-             <div style="height: 100px;"></div>
-        </div>
-    </div>
-
-    <div class="fab-group">
-        <div class="fab-btn ai-fab" onclick="confirmAiSummary()">
-            <svg viewBox="0 0 24 24">
-                <defs>
-                    <linearGradient id="fabGold" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
-                        <stop offset="100%" style="stop-color:#FFA500;stop-opacity:1" />
-                    </linearGradient>
-                </defs>
-                <path fill="url(#fabGold)" d="M12 0l3.09 6.26L22 7.27l-5 4.87 1.18 6.88L12 15.77l-6.18 3.25L7 12.14 2 7.27l6.91-1.01L12 0z"/>
-            </svg>
-        </div>
-        
-        <div class="fab-btn write-fab" onclick="manualAddSummary()">
-            <svg viewBox="0 0 24 24" fill="#555">
-                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-            </svg>
-        </div>
     </div>
 </div>
 
@@ -1247,11 +1115,154 @@
             </div>
     </div>
 </div>
+  </div>
+
+        <div id="sub-page-creator" class="exp-theme-root" style="display: none;">
+            <div class="exp-browser-top">
+                <div class="exp-tab-bar">
+                    <div class="exp-tab active">
+                        <span class="exp-icon">📄</span><span class="exp-tab-text">Expansion Notice</span><span class="exp-close" onclick="showExitAlert()">×</span>
+                    </div>
+                    <div class="exp-win-ctrls"><span>─</span><span>□</span><span onclick="showExitAlert()">×</span></div>
+                </div>
+                <div class="exp-tool-bar">
+                    <div class="exp-tool-left"><span class="exp-grid-icon">⣿</span><span class="exp-label">LABEL</span></div>
+                    <div class="exp-url-box">
+                        <span class="exp-search-icon">🔍</span>
+                        <input type="text" class="exp-search-input" value="- 你的泪流淌 像决堤湖泊。" placeholder="Type your mood...">
+                    </div>
+                    <div class="exp-tool-right">
+                        <span class="exp-btn save-btn" onclick="saveCharacter()">🔝</span> 
+                        <span class="exp-btn delete-btn" onclick="showDeleteAlert()" style="font-size: 18px;">🔙</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="exp-content-scroll">
+                <div class="exp-header-layout">
+                    <div class="exp-avatar-area">
+                        <div class="exp-avatar-circle upload-img" id="creator-avatar"><div class="exp-avatar-tip">Click<br>Upload</div></div>
+                    </div>
+                    <div class="exp-info-area">
+                        <div class="exp-info-title">INFORMATION ⌄</div>
+                        <div class="exp-info-subtitle">The following is<br>About my basic information</div>
+                        <div class="exp-input-line">
+                            <span class="exp-prefix">: </span><input type="text" id="creator-name" class="exp-input" placeholder="Name (昵称)"><span class="exp-suffix">♪</span>
+                        </div>
+                        <div class="exp-input-line">
+                            <span class="exp-prefix"># </span><input type="text" id="creator-tags" class="exp-input" placeholder="INFP | 属性 | 标签"><span class="exp-suffix">♪</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="exp-body-section">
+                    <div class="exp-sec-header">
+                        <span class="exp-sec-icon">≡</span><span class="exp-sec-title">ABOUT Me</span>
+                        <div class="exp-pill-btn">★ 𝗪𝗶𝗻𝘁𝗲𝗿.</div>
+                    </div>
+<div class="exp-text-block">
+    <div class="exp-text-row">
+        <span class="exp-bold">基础:</span>
+        <input type="text" id="creator-realname" class="exp-inline-input" placeholder="名称 / Name">
+        <span class="exp-slash">/</span>
+        <input type="text" id="creator-alias" class="exp-inline-input" placeholder="Alias / 昵称" style="width: 100px;">
+        <span class="exp-divider">/</span>
+        <input type="text" id="creator-gender" class="exp-inline-input small" placeholder="性别" style="width: 40px;">
+    </div>
+    
+    <div class="exp-text-row">
+        <span class="exp-bold">其他:</span>
+        <span class="exp-label-small">Height:</span><input type="text" id="creator-height" class="exp-inline-input small" placeholder="178">
+        <span class="exp-divider">|</span>
+        <span class="exp-label-small">Age:</span><input type="text" id="creator-age" class="exp-inline-input small" placeholder="18">
+        <span class="exp-divider">|</span>
+        <span class="exp-label-small">MBTI:</span><input type="text" id="creator-mbti" class="exp-inline-input small" placeholder="INTJ">
+    </div>
+
+    <div class="exp-text-area-wrapper">
+        <div class="exp-row-label">@设定 「背景故事」</div>
+        <textarea id="creator-desc" class="exp-textarea" rows="3" oninput="autoResize(this)" placeholder="在这里输入背景故事、详细设定..."></textarea>
+    </div>
+
+    <div class="exp-text-area-wrapper">
+        <div class="exp-row-label">性格 | 语气 | 细节</div>
+        <textarea id="creator-persona" class="exp-textarea" rows="3" oninput="autoResize(this)" placeholder="在这里输入性格细节、说话语气..."></textarea>
+    </div>
+    
+    <div class="exp-text-area-wrapper">
+        <div class="exp-row-label">其他 | 爱好 (Hobbies)</div>
+        <textarea id="creator-hobbies" class="exp-textarea" rows="2" oninput="autoResize(this)" placeholder="TA的爱好、喜欢的东西..."></textarea>
+    </div>
+
+    <input type="hidden" id="creator-bday">
+    <input type="hidden" id="creator-note">
+    <div class="exp-footer-deco">漫画 | 听歌🎧 | 画画 | 发呆 | ★</div>
+                    </div>
+                    <div class="exp-sec-header" style="margin-top: 20px;">
+                        <span class="exp-sec-icon">≡</span><span class="exp-sec-title">INTRODUCTION</span>
+                    </div>
+                    <div class="exp-qr-area">
+                        <div class="exp-qr-text">幸福的秘诀是 拥有苹果时只在意苹果(๑＞＜)☆<br><span style="font-size:10px; color:#999;">I want to talk...💬</span></div>
+                    </div>
+                </div>
+                <div style="height: 100px;"></div>
+            </div>
+        </div>
+  </div>
+
+<div id="sticker-upload-overlay" class="custom-alert-overlay" style="display: none;">
+    <div class="custom-alert-box ins-style" style="width: 340px; max-height: 80vh; padding: 0;">
+        <div style="padding: 20px 20px 10px; width: 100%;">
+            <div class="alert-title">Add Stickers</div>
+            <div class="alert-msg">支持批量上传 · 记得取名字哦</div>
+        </div>
+
+        <div id="sticker-preview-list" style="width: 100%; overflow-y: auto; padding: 0 15px; max-height: 300px; display: flex; flex-direction: column; gap: 10px;">
+            </div>
+
+        <div style="padding: 15px 20px 20px; width: 100%; display: flex; flex-direction: column; gap: 10px;">
+            <input type="file" id="sticker-file-input" multiple accept="image/*" style="display:none;" onchange="handleStickerFiles(this)">
+            
+            <div class="alert-btn-group">
+                <div class="alert-btn" style="background: #f0f0f0;" onclick="document.getElementById('sticker-file-input').click()">
+                    📷 选图 (Image)
+                </div>
+                <div class="alert-btn" style="background: #f0f0f0;" onclick="addUrlInputRow()">
+                    🔗 链接 (URL)
+                </div>
+            </div>
+
+            <div class="alert-btn-group" style="margin-top: 5px;">
+                <div class="alert-btn cancel" onclick="closeStickerUploader()">Cancel</div>
+                <div class="alert-btn confirm" onclick="saveNewStickers()">Save All</div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="sticker-picker-overlay" class="sticker-picker-container">
+    <div class="sticker-glass-panel">
+        <div class="sticker-header">
+            <div class="sticker-tab active" onclick="switchStickerTab('fav')">♥ 收藏</div>
+            <div class="sticker-tab" onclick="switchStickerTab('ai')">★ AI专属</div>
+            <div class="sticker-tab" onclick="switchStickerTab('sys')">♪ 默认</div>
+            <div class="sticker-close" onclick="toggleStickerMenu()">×</div>
+        </div>
+
+        <div class="sticker-grid-scroll" id="sticker-grid-view">
+            </div>
+
+        <div class="sticker-footer">
+            <div class="sticker-add-btn" onclick="openStickerUploader()">
+                <span>+</span> Add Stickers
+            </div>
+            <div style="font-size:10px; color:#999;">长按表情包可删除 / Long press to delete</div>
+        </div>
+    </div>
+</div>
 
 <div id="frame-lib-overlay" class="custom-alert-overlay" style="display: none; align-items: flex-end;">
     <div class="selector-sheet" style="height: 70vh;">
         <div class="sheet-header">
-            <span>装饰你的头像</span>
+            <span>装饰TA的头像(𓐍ㅇㅂㅇ𓐍)</span>
             <span onclick="closeFrameLib()" style="color:#007aff; font-weight:600; cursor:pointer;">关闭</span>
         </div>
         
@@ -1390,6 +1401,21 @@
     </div>
     <div class="notif-time">just now</div>
 </div>
+</div>
+
+<div id="note-editor-overlay" class="custom-alert-overlay" style="display: none;">
+    <div class="custom-alert-box ins-style" style="width: 320px; align-items: stretch;">
+        <div class="alert-title" style="text-align: center;">New Memory</div>
+        
+        <textarea id="note-editor-input" 
+                  placeholder="记录下此刻的心情...(￣▽￣)" 
+                  style="width: 100%; height: 120px; background: #f9f9f9; border: none; border-radius: 12px; padding: 15px; font-size: 15px; line-height: 1.5; color: #333; resize: none; outline: none; margin-bottom: 20px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.03);"></textarea>
+        
+        <div class="alert-btn-group">
+            <div class="alert-btn cancel" onclick="closeNoteEditor()">Cancel</div>
+            <div class="alert-btn confirm" onclick="confirmNoteSave()">Save</div>
+        </div>
+    </div>
 </div>
 
     </div> <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>

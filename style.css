@@ -392,7 +392,40 @@ body {
 .cf-icon-btn.custom-img-btn { width: 34px; height: 34px; background: transparent !important; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.1s; flex-shrink: 0; }
 .cf-icon-btn.custom-img-btn:active { transform: scale(0.9); }
 .cf-icon-btn.custom-img-btn img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
-.cf-input-wrapper { flex: 1; min-width: 0; background: #fff; border: 1px solid #ddd; border-radius: 18px; height: 36px; display: flex; align-items: center; padding: 0 8px 0 12px; position: relative; }
+/* 输入框外壳：改为自适应高度 */
+.cf-input-wrapper {
+    flex: 1;
+    min-width: 0;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 18px;
+    min-height: 36px;  /* 最小高度 */
+    height: auto;      /* 允许随内容撑开 */
+    display: flex;
+    align-items: center; /* 垂直居中 */
+    padding: 5px 12px; /* 稍微给点内边距 */
+    position: relative;
+    transition: height 0.1s;
+}
+
+/* 输入框本体：去边框、自适应、滚动条控制 */
+#chat-input {
+    flex: 1;
+    width: 100%;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 16px;
+    color: #000;
+    margin-right: 26px; /* 避开表情按钮 */
+    resize: none;       /* 禁止手动拖拽 */
+    overflow-y: hidden; /* 平时隐藏滚动条 */
+    height: 24px;       /* 初始高度 */
+    max-height: 100px;  /* ★这里控制最大高度！超过100px就开始滚动 */
+    line-height: 24px;  /* 行高 */
+    font-family: inherit;
+    padding: 0;
+}
 .cf-input-wrapper input { flex: 1; border: none; background: transparent; outline: none; font-size: 16px; color: #000; height: 100%; margin-right: 26px; min-width: 0; }
 .cf-emoji-icon { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; cursor: pointer; }
 .cf-emoji-icon svg { width: 100%; height: 100%; fill: #8e8e93; }
@@ -665,7 +698,7 @@ body.menu-open #chat-msg-area { padding-bottom: 380px !important; transform: tra
    11. CHARACTER CREATOR (角色编辑）
    ========================================================================== */
 /* 1. 根容器：增加动画属性 */
-#sub-page-creator, .exp-theme-root { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #fff; z-index: 2000 !important; display: none; transform: translateY(100%); opacity: 0; transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease; display: flex; flex-direction: column; overflow: hidden; }
+#sub-page-creator, .exp-theme-root { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #fff; z-index: 500 !important; display: none; transform: translateY(100%); opacity: 0; transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease; display: flex; flex-direction: column; overflow: hidden; }
 #sub-page-creator.active, .exp-theme-root.active { transform: translateY(0); opacity: 1; }
 .exp-browser-top { background: #e0e0e0; padding-top: 50px; flex-shrink: 0; }
 .exp-tab-bar { display: flex; align-items: flex-end; padding: 0 10px; height: 36px; background: #e0e0e0; position: relative; }
@@ -758,109 +791,57 @@ input:checked + .slider:before { transform: translateX(20px); }
 .bg-gray { background-color: #8e8e93; }
 .bg-orange { background-color: #ff9500; }
 .bg-green { background-color: #34c759; }
+/* ==================== Ins风重构：API配置 & 聊天总结 & 全局顶栏 ==================== */
+/* 全局顶栏修正 */
+.sub-header{height:94px ;padding-top:46px; background-color:rgba(255,255,255,0.85); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px)!important;border-bottom:0.5px solid rgba(0,0,0,0.05)!important;display:flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;position:sticky!important;top:0;z-index:100}
+.sub-header .back-btn{position:absolute!important;left:10px!important;top:auto!important;bottom:0!important;height:50px!important;width:50px!important;color:#1c1c1e!important;font-size:28px!important;font-weight:300!important;display:flex;align-items:center;justify-content:flex-start}
+.sub-header span{color:#000!important;font-size:17px!important;font-weight:600!important;letter-spacing:-0.5px;margin-top:4px}
+.sub-header div[onclick*="save"],.sub-header div[onclick*="Save"],.sub-header div[onclick*="apply"],.sub-header div[onclick*="Done"]{position:absolute!important;right:15px!important;top:auto!important;bottom:10px!important;font-size:14px!important;font-weight:600!important;color:#000!important;background:rgba(0,0,0,0.05)!important;padding:6px 14px!important;border-radius:20px!important}
 
-/* API 设置专属 */
-.api-section-header { padding: 20px 16px 8px; font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
-.api-mode-group { background: #fff; margin: 0 16px; border-radius: 10px; overflow: hidden; display: flex; padding: 2px; background: #e9e9eb; }
-.api-mode-btn { flex: 1; text-align: center; padding: 8px 0; font-size: 14px; border-radius: 8px; color: #000; cursor: pointer; transition: all 0.2s; }
-.api-mode-btn.active { background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); font-weight: 600; }
-.ios-form-group { background: #fff; border-radius: 10px; overflow: hidden; margin: 0 16px; }
-.ios-input-row { min-height: 50px; display: flex; align-items: center; padding: 8px 16px; border-bottom: 0.5px solid #e5e5ea; }
-.ios-input-row label { min-width: 90px; font-weight: 600; white-space: nowrap; }
-.ios-input-row input { width: 100%; border: none; font-size: 16px; outline: none; background: #e5e5ea; border-radius: 8px; padding: 6px 10px; height: 36px; margin-left: 10px; color: #000; }
-.api-decorative-header { margin: 10px 16px 5px; font-size: 14px; font-weight: 700; color: #aaa; display: flex; justify-content: space-between; }
-.api-decorative-header span { font-weight: normal; font-size: 12px; letter-spacing: 1px; }
-.api-btn-row { display: flex; gap: 10px; padding: 10px 16px; }
-.api-small-btn { padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; color: #fff; cursor: pointer; }
-.api-small-btn.dark { background: #666; }
-.api-small-btn.red { background: #ff6b6b; }
-.api-range-slider { -webkit-appearance: none; width: 100%; height: 4px; background: #ddd; border-radius: 2px; outline: none; }
-.api-range-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #fff; border: 2px solid #333; border-radius: 50%; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+/* API 配置页 (设置卡片风格) */
+.ins-form-page{background-color:#FAFAFA!important;padding:20px;min-height:100%}
+.ins-settings-card{background:#fff;border-radius:20px;padding:20px;margin-bottom:15px;box-shadow:0 2px 10px rgba(0,0,0,0.02)}
+.ins-card-title{font-size:14px;font-weight:700;color:#333;margin-bottom:15px;display:flex;justify-content:space-between;align-items:center}
+.ins-input-group{margin-bottom:12px}
+.ins-input-label{font-size:11px;color:#999;font-weight:600;margin-bottom:6px;display:block;letter-spacing:0.5px}
+.ins-input-field{width:100%;background:#F5F5F7;border:none;border-radius:12px;padding:12px 15px;font-size:14px;color:#333;outline:none;transition:background 0.2s}
+.ins-input-field:focus{background:#EFEFF1}
+.ins-input-field::placeholder{color:#ccc}
+.ins-segment-control{display:flex;background:#F5F5F7;padding:4px;border-radius:14px;margin-bottom:20px}
+.ins-segment-btn{flex:1;text-align:center;padding:8px 0;font-size:13px;font-weight:600;color:#999;border-radius:10px;cursor:pointer;transition:all 0.3s}
+.ins-segment-btn.active{background:#fff;color:#000;box-shadow:0 2px 8px rgba(0,0,0,0.05)}
+.ins-btn-full{width:100%;background:#000;color:#fff;font-weight:600;font-size:14px;padding:14px 0;border-radius:14px;text-align:center;cursor:pointer;margin-top:10px}
+.ins-btn-full:active{opacity:0.8}
+.ins-btn-ghost{color:#FF3B30;font-size:13px;text-align:center;padding:15px;cursor:pointer;font-weight:500}
 
-/* ==================== 
-   Ins Style Backup Page 
-   ==================== */
-.ins-card {
-    background: #fff;
-    border-radius: 24px;
-    padding: 20px;
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.06);
-    cursor: pointer;
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    position: relative;
-    overflow: hidden;
-}
+/* 聊天总结页 (极简手账风格) */
+#sub-page-summary{background:#fff!important}
+.ins-memory-header{padding:30px 25px 20px;background:#fff;border-bottom:1px solid rgba(0,0,0,0.03);display:flex;flex-direction:column}
+.ins-memory-title{font-size:34px;font-weight:800;color:#000;letter-spacing:-1.5px;margin-bottom:5px;font-family:-apple-system,sans-serif}
+.ins-memory-subtitle{font-size:14px;color:#999;font-weight:400;margin-bottom:25px}
+.ins-action-row{display:flex;gap:12px}
+.ins-action-pill{flex:1;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s}
+.ins-action-pill.ai{background:#FFF8E1;color:#F5A623}
+.ins-action-pill.write{background:#F2F2F7;color:#333}
+.ins-action-pill:active{transform:scale(0.96)}
+.ins-memory-feed{padding:20px 25px 100px;background:#fff}
+.ins-memory-card{background:#fff;padding:0 0 35px 20px;margin-bottom:0;border-left:2px solid #f0f0f0;position:relative}
+.ins-memory-card::before{content:'';position:absolute;left:-5px;top:0;width:8px;height:8px;border-radius:50%;background:#e0e0e0;border:2px solid #fff}
+.ins-memory-card:first-child::before{background:#007aff}
+.ins-mem-top{margin-bottom:8px}
+.ins-mem-date{font-size:12px;color:#ccc;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;background:transparent;padding:0}
+.ins-mem-content{font-size:15px;color:#333;line-height:1.7;font-weight:400;text-align:justify;padding:0}
 
-.ins-card:active {
-    transform: scale(0.96);
-}
-
-/* 装饰性光泽 */
-.ins-card::after {
-    content: '';
-    position: absolute;
-    top: -50%; left: -50%;
-    width: 200%; height: 200%;
-    background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 60%);
-    opacity: 0;
-    transition: opacity 0.3s;
-    pointer-events: none;
-}
-
-.ins-card-icon-bg {
-    width: 56px;
-    height: 56px;
-    background: #FFF0F5; /* 默认淡粉 */
-    color: #FF69B4;
-    border-radius: 18px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-shrink: 0;
-    margin-right: 18px;
-}
-
-.ins-card-icon-bg svg {
-    width: 28px;
-    height: 28px;
-    fill: currentColor;
-}
-
-.ins-card-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.ins-card-title {
-    font-size: 17px;
-    font-weight: 700;
-    color: #333;
-    margin-bottom: 4px;
-}
-
-.ins-card-desc {
-    font-size: 12px;
-    color: #999;
-    line-height: 1.4;
-}
-
-.ins-card-arrow {
-    width: 30px;
-    height: 30px;
-    background: #F5F5F5;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 14px;
-    font-weight: bold;
-    color: #FF69B4;
-}
+/* 备份页卡片 (Ins Style Backup) */
+.ins-card{background:#fff;border-radius:24px;padding:20px;display:flex;align-items:center;margin-bottom:20px;box-shadow:0 10px 30px rgba(0,0,0,0.06);cursor:pointer;transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1);position:relative;overflow:hidden}
+.ins-card:active{transform:scale(0.96)}
+.ins-card::after{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle,rgba(255,255,255,0.8) 0%,rgba(255,255,255,0) 60%);opacity:0;transition:opacity 0.3s;pointer-events:none}
+.ins-card-icon-bg{width:56px;height:56px;background:#FFF0F5;color:#FF69B4;border-radius:18px;display:flex;justify-content:center;align-items:center;flex-shrink:0;margin-right:18px}
+.ins-card-icon-bg svg{width:28px;height:28px;fill:currentColor}
+.ins-card-info{flex:1;display:flex;flex-direction:column;justify-content:center}
+.ins-card-title{font-size:17px;font-weight:700;color:#333;margin-bottom:4px}
+.ins-card-desc{font-size:12px;color:#999;line-height:1.4}
+.ins-card-arrow{width:30px;height:30px;background:#F5F5F5;border-radius:50%;display:flex;justify-content:center;align-items:center;font-size:14px;font-weight:bold;color:#FF69B4}
 
 /* ==========================================================================
    13. ALERTS & OVERLAYS (弹窗系统 - iOS Q弹丝滑版)
@@ -1395,57 +1376,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 /* ==========================================================================
    17. 聊天总结页 (Ticket Layout)
    ========================================================================== */
-#sub-page-summary { display: flex !important; flex-direction: row !important; height: 100vh; background: #fff; }
-#sub-page-summary.ticket-layout { display: flex !important; flex-direction: column !important; height: 100vh; background: #f7f7f7; overflow: hidden; }
 
-/* 票根头部 */
-.ticket-header-stub { flex-shrink: 0; height: 135px; background: #fff; padding-top: 40px; position: relative; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.02); z-index: 50; border-bottom: 2px dashed #e0e0e0; }
-.ticket-cutout { position: absolute; bottom: -10px; width: 20px; height: 20px; background: #f4f4f4; border-radius: 50%; z-index: 51; box-shadow: inset 0 2px 5px rgba(0,0,0,0.05); }
-.ticket-cutout.left { left: -10px; }
-.ticket-cutout.right { right: -10px; }
-.ticket-back-btn { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: background 0.2s; }
-.ticket-back-btn:active { background: #f5f5f5; }
-.ticket-back-btn svg { width: 24px; height: 24px; fill: #333; }
-.ticket-info { text-align: center; }
-.ticket-brand { font-family: 'Times New Roman', serif; font-size: 20px; font-weight: 800; color: #333; letter-spacing: 1px; margin-bottom: 4px; }
-.ticket-meta { font-size: 10px; color: #999; font-family: monospace; display: flex; align-items: center; justify-content: center; gap: 8px; }
-
-/* 票身容器 */
-.ticket-body-container { flex: 1; display: flex; flex-direction: row; overflow: hidden; position: relative; }
-.narrow-sidebar { width: 16%; min-width: 75px; position: relative; z-index: 40; overflow: visible !important; background: #cdd5dc; }
-
-/* 丝带与装饰 */
-.hanging-ribbon { width: 50px; background: #b2b6bb; margin: 0 auto; padding: 20px 0 30px 0; border-radius: 0 0 25px 25px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 10px 20px rgba(0,0,0,0.15); position: relative; top: -2px; overflow: visible !important; }
-.ribbon-hole { width: 8px; height: 8px; border-radius: 50%; background: #f4f4f4; margin-bottom: 15px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); }
-.ribbon-text { writing-mode: vertical-rl; text-orientation: mixed; color: rgba(255,255,255,0.4); font-size: 10px; letter-spacing: 3px; margin-top: 15px; font-weight: 600; cursor: default; }
-
-/* 头像与气泡 */
-.book-avatar-container.compact { display: flex !important; justify-content: center; align-items: center; width: 100%; height: 50px; margin-bottom: 10px; position: relative; z-index: 100; overflow: visible !important; }
-.book-char-avatar { display: block !important; width: 44px !important; height: 44px !important; border-radius: 50% !important; background-color: #e0e0e0 !important; background-size: cover !important; background-position: center !important; border: 2px solid #fff !important; box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important; margin: 0 !important; }
-.sum-bubble-wrapper { position: absolute !important; top: -30px !important; left: 20px !important; width: max-content !important; z-index: 999 !important; pointer-events: none; animation: floatBubble 3s ease-in-out infinite; }
-.sum-bubble { background: #fff !important; color: #333 !important; border: 1px solid rgba(0,0,0,0.1) !important; box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important; font-size: 11px !important; padding: 5px 10px !important; border-radius: 10px !important; white-space: nowrap !important; position: relative; }
-.sum-bubble::after { content: ''; position: absolute; bottom: -5px; left: 10px; width: 8px; height: 8px; background: #fff; transform: rotate(45deg); border-bottom: 1px solid rgba(0,0,0,0.1); border-right: 1px solid rgba(0,0,0,0.1); }
-.sum-online-dot { display: block !important; position: absolute !important; bottom: 2px !important; right: 2px !important; width: 12px !important; height: 12px !important; background: #34c759 !important; border: 2px solid #fff !important; border-radius: 50% !important; z-index: 101 !important; animation: breathe 2s infinite ease-in-out; }
-
-/* 内容区 */
-.wide-content-area { flex: 1; height: 100%; overflow-y: auto; padding: 0; background: #f4f4f4; }
-#summary-list-container { border-left: 2px solid #e0e0e0; margin-left: 15px; padding: 30px 20px 100px 30px; min-height: 100%; }
-.chapter-card { position: relative; margin-bottom: 30px; max-width: 95%; animation: slideUp 0.4s ease; }
-.chapter-mini-avatar { position: absolute; left: -52px; top: 0; width: 40px; height: 40px; border-radius: 50%; background-color: #fff; background-size: cover; background-position: center; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.1); z-index: 2; }
-.chapter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-top: 6px; }
-.chapter-title { font-size: 15px; font-weight: 700; color: #000; font-family: 'Georgia', serif; }
-.chapter-date { font-size: 11px; color: #666; background: #F5F6F5; padding: 3px 8px; border-radius: 6px; font-family: monospace; font-weight: 500; border: 1px solid rgba(0,0,0,0.03); }
-.chapter-text { background: #fff; padding: 12px 15px; border-radius: 0 12px 12px 12px; font-size: 13px; color: #555; line-height: 1.6; border-left: 3px solid #ddd; position: relative; outline: none; }
-.chapter-text::before { content: '❝'; position: absolute; top: -6px; left: 6px; font-size: 24px; color: #e0e0e0; pointer-events: none; }
-.chapter-text:focus { background: #fff; border-left-color: #333; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-
-/* 悬浮按钮组 */
-.fab-group { position: absolute; bottom: 30px; right: 25px; display: flex; flex-direction: column-reverse; gap: 15px; z-index: 100; }
-.fab-btn { width: 48px; height: 48px; border-radius: 50%; background: #fff; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.25); cursor: pointer; transition: transform 0.2s; }
-.fab-btn:active { transform: scale(0.9); }
-.fab-btn svg { width: 24px; height: 24px; }
-.ai-fab svg { filter: drop-shadow(0 2px 3px rgba(255, 215, 0, 0.3)); }
-@keyframes floatBubble { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 
 /* ==========================================================================
    18. 地图系统 (真实虚拟地图 + 搜索 + 抽屉)
@@ -1540,7 +1471,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 .icon-name-input:focus { border-bottom-color: #333; }
 
 /* 吐司边框样式 */
-.app-icon.toast-style { box-shadow: 0 0 0 3px var(--toast-color, #fff), 0 4px 10px rgba(0,0,0,0.1); background-origin: border-box; transition: box-shadow 0.2s; }
+.app-icon.toast-style { box-shadow: 0 0 0 var(--toast-width, 4px) var(--toast-color, #fff), 0 4px 10px rgba(0,0,0,0.1); background-origin: border-box; transition: box-shadow 0.2s; }
 
 /* 组件与空APP */
 .widget-dual-row { display: flex; gap: 15px; padding: 0 5px; margin-top: 15px; width: 100%; }
@@ -1561,10 +1492,76 @@ input:checked + .slider:before { transform: translateX(20px); }
 .wall-plus { font-size: 32px; font-weight: 300; margin-bottom: 5px; }
 
 /* ==========================================================================
-   20. 全局组件 (顶栏 & 灵动岛适配)
+   20. 全局组件 (顶栏 & 灵动岛适配 & 动画)
    ========================================================================== */
-/* 灵动岛适配版顶栏 */
-.sub-header { height: 96px !important; padding-top: 46px !important; background-color: rgba(255, 255, 255, 0.85) !important; backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important; border-bottom: 0.5px solid rgba(0,0,0,0.05) !important; display: flex !important; align-items: center !important; justify-content: center !important; box-sizing: border-box !important; position: sticky !important; top: 0; z-index: 100; }
-.sub-header .back-btn { position: absolute !important; left: 10px !important; top: auto !important; bottom: 0 !important; transform: none !important; height: 50px !important; width: 50px !important; color: #1c1c1e !important; font-size: 28px !important; font-weight: 300 !important; display: flex; align-items: center; justify-content: flex-start; }
-.sub-header span { color: #000 !important; font-size: 17px !important; font-weight: 600 !important; letter-spacing: -0.5px; margin-top: 4px; }
-.sub-header div[onclick*="save"], .sub-header div[onclick*="Save"], .sub-header div[onclick*="apply"] { position: absolute !important; right: 15px !important; top: auto !important; bottom: 10px !important; transform: none !important; font-size: 14px !important; font-weight: 600 !important; color: #000 !important; background: rgba(0,0,0,0.05) !important; padding: 6px 14px !important; border-radius: 20px !important; }
+.sub-header{height:96px!important;padding-top:46px!important;background-color:rgba(255,255,255,0.85)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;border-bottom:0.5px solid rgba(0,0,0,0.05)!important;display:flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;position:sticky!important;top:0;z-index:100}
+.sub-header .back-btn{position:absolute!important;left:10px!important;bottom:0!important;height:50px!important;width:50px!important;color:#1c1c1e!important;font-size:28px!important;font-weight:300!important;display:flex;align-items:center;justify-content:flex-start}
+.sub-header span{color:#000!important;font-size:17px!important;font-weight:600!important;letter-spacing:-0.5px;margin-top:4px}
+.sub-header div[onclick*="save"],.sub-header div[onclick*="Save"],.sub-header div[onclick*="apply"]{position:absolute!important;right:15px!important;bottom:10px!important;font-size:14px!important;font-weight:600!important;color:#000!important;background:rgba(0,0,0,0.05)!important;padding:6px 14px!important;border-radius:20px!important}
+#sub-api-config .sub-header{padding-top:68px!important;height:96px!important}
+#sub-api-config .sub-header span{margin-top:10px!important}
+
+/* iOS 弹窗动画 */
+@keyframes iosAppOpen{0%{transform:scale(0.92);opacity:0;border-radius:50px}100%{transform:scale(1);opacity:1;border-radius:0}}
+@keyframes iosAppClose{0%{transform:scale(1);opacity:1;border-radius:0}100%{transform:scale(0.92);opacity:0;border-radius:50px}}
+.app-window{display:none;animation-duration:0.4s;animation-timing-function:cubic-bezier(0.32,0.72,0,1);animation-fill-mode:forwards}
+.app-window.active{display:flex;animation-name:iosAppOpen}
+.app-window.closing{animation-name:iosAppClose;pointer-events:none}
+
+/* 资料卡层级修复 */
+#sub-page-creator,.exp-theme-root{position:fixed!important;top:0;left:0;width:100%;height:100%;z-index:20000!important;background:#fff;transform:translateY(100%);transition:transform 0.4s cubic-bezier(0.32,0.72,0,1)}
+#sub-page-creator.active{transform:translateY(0)}
+
+/* ==========================================================================
+   23. 表情包系统 (Ins Style Ultimate)
+   ========================================================================== */
+/* 容器 & 层级控制 */
+.sticker-picker-container{position:fixed;bottom:0;left:0;width:100%;height:100%;z-index:20000!important;display:none;align-items:flex-end;pointer-events:none}
+.sticker-picker-container.active{display:flex;pointer-events:auto}
+/* 弹窗层级：必须比表情包高 */
+.custom-alert-overlay,#sticker-upload-overlay{z-index:20001!important}
+/* 菜单层级：全场最高 */
+.ins-context-menu{z-index:20002!important;position:fixed;background:rgba(255,255,255,0.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:16px;padding:8px;width:220px;box-shadow:0 10px 40px rgba(0,0,0,0.15);transform-origin:center;animation:menuPop 0.2s cubic-bezier(0.2,0.8,0.2,1)}
+@keyframes menuPop{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
+
+/* 面板样式 */
+.sticker-glass-panel{width:100%;height:45vh;background:rgba(255,255,255,0.92);backdrop-filter:blur(25px);-webkit-backdrop-filter:blur(25px);border-radius:24px 24px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,0.1);display:flex;flex-direction:column;animation:slideUpSticker 0.3s cubic-bezier(0.2,0.8,0.2,1)}
+@keyframes slideUpSticker{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+/* 导航栏 */
+.sticker-header{display:flex;align-items:center;padding:15px 20px;border-bottom:1px solid rgba(0,0,0,0.05)}
+.sticker-tab{padding:6px 14px;margin-right:10px;font-size:13px;font-weight:600;color:#999;border-radius:12px;cursor:pointer;transition:all 0.2s}
+.sticker-tab.active{background:#333;color:#fff}
+.sticker-close{margin-left:auto;width:30px;height:30px;background:#f0f0f0;border-radius:50%;display:flex;justify-content:center;align-items:center;color:#666;font-size:18px;cursor:pointer}
+
+/* 分组子导航 */
+.sticker-sub-nav{display:flex;gap:10px;overflow-x:auto;padding:10px 15px;background:rgba(255,255,255,0.6);backdrop-filter:blur(10px);border-bottom:1px solid rgba(0,0,0,0.05);scrollbar-width:none}
+.sticker-sub-nav::-webkit-scrollbar{display:none}
+.sticker-group-pill{flex-shrink:0;padding:6px 14px;font-size:12px;font-weight:600;color:#999;background:#f2f2f7;border-radius:16px;transition:all 0.2s}
+.sticker-group-pill.active{background:#000;color:#fff;transform:scale(1.05)}
+
+/* 内容网格 */
+.sticker-grid-scroll{flex:1;overflow-y:auto;padding:20px;display:grid;grid-template-columns:repeat(4,1fr);gap:15px;align-content:start}
+.sticker-item{aspect-ratio:1/1;border-radius:12px;background-size:cover;background-position:center;cursor:pointer;transition:transform 0.1s;background-color:transparent;position:relative}
+.sticker-item:active{transform:scale(0.9)}
+.sticker-name-tag{position:absolute;bottom:0;left:0;width:100%;font-size:9px;color:rgba(0,0,0,0.4);text-align:center;pointer-events:none;opacity:0;transition:opacity 0.2s}
+.sticker-item:hover .sticker-name-tag{opacity:1}
+
+/* 底部与上传 */
+.sticker-footer{padding:10px 20px 30px;border-top:1px solid rgba(0,0,0,0.05);display:flex;justify-content:space-between;align-items:center}
+.sticker-add-btn{background:#f0f0f0;color:#333;padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer}
+.upload-preview-item{display:flex;align-items:center;gap:10px;background:#f9f9f9;padding:8px;border-radius:10px}
+.up-thumb{width:50px;height:50px;border-radius:8px;background-size:cover;background-position:center;flex-shrink:0}
+.up-input{flex:1;border:none;background:transparent;font-size:13px;outline:none}
+.up-del{color:#ff3b30;font-size:18px;padding:5px;cursor:pointer}
+
+/* 菜单项 */
+.ins-menu-item{padding:12px 16px;font-size:14px;color:#333;font-weight:500;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid rgba(0,0,0,0.1)}
+.ins-menu-item:last-child{border-bottom:none}
+.ins-menu-item:active{background:rgba(0,0,0,0.05);border-radius:8px}
+.ins-menu-item.danger{color:#ff3b30}
+
+/* 消息气泡修复 */
+.sticker-img-big{max-width:140px;max-height:140px;border-radius:8px;display:block;object-fit:contain}
+.msg-content.sticker-type{background:transparent!important;box-shadow:none!important;padding:0!important}
+.msg-row.has-tail .msg-content.sticker-type::before{display:none!important}

@@ -19,6 +19,7 @@ let currentQuoteMsg = null; // 当前正在引用的消息对象
 let currentEditMsgIndex = -1; // 记录当前正在编辑哪条消息
 let currentEditChatId = null; // 记录当前在哪个聊天里编辑
 let currentRenderLimit = 40; // 默认只加载40条
+let stickersData = []; 
 
 // === API 配置默认值 ===
 let apiConfig = {
@@ -1108,32 +1109,68 @@ function startClock() {
     update();
 }
 
-window.openApp = function(appName) {
-    const win = document.getElementById('app-window-' + appName);
-    if (win) {
-        win.style.display = 'flex';
-        if (appName === 'settings') initIconSettingsGrid();
-    }
-};
+// === 新版打开 App：带动画 ===
+function openApp(appId) {
+    const appWindow = document.getElementById(`app-window-${appId}`);
+    if (!appWindow) return;
 
-window.closeAllApps = function() {
-    document.querySelectorAll('.app-window, .sub-page-root').forEach(win => win.style.display = 'none');
-    if (document.getElementById('wx-profile-view')) {
-        document.getElementById('wx-profile-view').style.display = 'none';
-    }
-    document.querySelectorAll('.sub-page').forEach(p => p.classList.remove('active'));
-};
+    // 1. 先清除之前的关闭动画类（如果有）
+    appWindow.classList.remove('closing');
+    
+    // 2. 显示出来，并加上激活类
+    appWindow.style.display = 'flex';
+    // 稍微延迟一点点加 active，确保浏览器捕捉到 display 变化，触发动画
+    setTimeout(() => {
+        appWindow.classList.add('active');
+    }, 10);
+}
+
+// === 新版关闭 App：带退场动画 ===
+function closeAllApps() {
+    // 找到所有打开的窗口
+    const apps = document.querySelectorAll('.app-window.active');
+    
+    apps.forEach(app => {
+        // 1. 移除激活状态，加上关闭动画类
+        app.classList.remove('active');
+        app.classList.add('closing');
+        
+        // 2. 等动画播完 (400ms) 再真正隐藏
+        setTimeout(() => {
+            app.style.display = 'none';
+            app.classList.remove('closing');
+        }, 400); // 这里的 400 对应 CSS 里的 0.4s
+    });
+}
+
+// ====================
+// [页面导航] 打开子页面 (增强版：自动刷新数据)
+// ====================
+const _originalOpen = window.openSubPage; // 防止循环引用（如果你之前没定义过这个变量）
 
 window.openSubPage = function(id) {
-    const p = document.getElementById(id);
-    if(p) p.classList.add('active');
-};
-window.closeSubPage = function(id) {
-    const p = document.getElementById(id);
-    if(p) {
-        p.classList.remove('active');
-        if(p.classList.contains('sub-page-root')) {
-            p.style.display = 'none';
+    const page = document.getElementById(id);
+    if(page) {
+        page.style.display = 'flex'; // 先显示
+        setTimeout(() => page.classList.add('active'), 10);
+        
+        // ★★★ 修复1：进入 API 页时，强制刷新预设下拉框 ★★★
+        if (id === 'sub-api-config') {
+            if(window.renderPresetDropdown) window.renderPresetDropdown();
+            if(window.renderApiUI) window.renderApiUI();
+        }
+        
+        // ★★★ 修复2：进入美化页/墙纸页的刷新逻辑 (保持不变) ★★★
+        if (id === 'sub-icon') {
+            setTimeout(window.initIconSettingsGrid, 50);
+        }
+        if (id === 'sub-wallpaper') {
+            if(typeof initWallpaperPage === 'function') setTimeout(initWallpaperPage, 50);
+        }
+        
+        // ★★★ 新增：进入总结页时，刷新一下列表 ★★★
+        if (id === 'sub-page-summary') {
+            if(window.renderSummaries) window.renderSummaries();
         }
     }
 };
@@ -1215,7 +1252,7 @@ document.addEventListener('click', (e) => {
 });
 
 // ==========================================================
-// [6] 角色创建器 (Character Creator)
+// [6] 角色创建器 (Character Creator) - 修复版
 // ==========================================================
 
 // 自动调整文本框高度
@@ -1224,11 +1261,13 @@ window.autoResize = function(el) {
     el.style.height = el.scrollHeight + 'px';
 };
 
-// 打开角色/面具编辑页
+// 打开角色/面具编辑页 (★ 修复：强制置顶，盖住聊天窗口)
 window.openCreatorPage = function(id = null) {
     const page = document.getElementById('sub-page-creator');
     if (!page) return;
 
+    // ★★★ 核心修复1：加个超级高的层级，防止露馅 ★★★
+    page.style.zIndex = '6000'; 
     page.style.display = 'flex';
     setTimeout(() => page.classList.add('active'), 10);
 
@@ -1272,9 +1311,9 @@ window.openCreatorPage = function(id = null) {
         
         if (c) {
             document.getElementById('creator-realname').value = c.realname || '';
-            document.getElementById('creator-name').value = c.name || ''; // 如果HTML里是 creator-name
+            document.getElementById('creator-name').value = c.name || ''; 
             document.getElementById('creator-alias').value = c.alias || '';
-            document.getElementById('creator-gender').value = c.gender || ''; // ★ 新增性别回填
+            document.getElementById('creator-gender').value = c.gender || ''; 
             document.getElementById('creator-height').value = c.height || '';
             document.getElementById('creator-age').value = c.age || '';
             document.getElementById('creator-mbti').value = c.mbti || '';
@@ -1293,7 +1332,6 @@ window.openCreatorPage = function(id = null) {
 };
 
 // 保存角色/面具
-// === 逻辑修正：彻底解绑，独立保存 ===
 window.saveCharacter = function() {
     const elRealName = document.getElementById('creator-realname');
     const elNickName = document.getElementById('creator-name');
@@ -1302,13 +1340,12 @@ window.saveCharacter = function() {
     const realname = elRealName ? elRealName.value.trim() : "";
     const nickname = elNickName ? elNickName.value.trim() : "";
     
-    // 没名字可不行，我会生气的
+    // 没名字可不行
     if (!realname && !nickname) { 
         alert('至少给个名字嘛> ˄ ˂̥̥....'); 
         return; 
     }
 
-    // 获取头像 URL (只取当前捏人界面的图)
     const avatarUrl = elAvatar ? elAvatar.style.backgroundImage : "";
     
     const newChar = {
@@ -1316,55 +1353,54 @@ window.saveCharacter = function() {
         realname: realname,
         name: nickname || realname, // 优先用昵称
         alias: document.getElementById('creator-alias')?.value || "",
-        gender: document.getElementById('creator-gender')?.value || "", // ★ 新增性别保存
+        gender: document.getElementById('creator-gender')?.value || "", 
         height: document.getElementById('creator-height')?.value || "",
         age: document.getElementById('creator-age')?.value || "",
         mbti: document.getElementById('creator-mbti')?.value || "",
         tags: document.getElementById('creator-tags')?.value || "",
-        hobbies: document.getElementById('creator-hobbies')?.value || "", // 变成 textarea 了也能取到 value，不用改
+        hobbies: document.getElementById('creator-hobbies')?.value || "", 
         desc: document.getElementById('creator-desc')?.value || "",
         persona: document.getElementById('creator-persona')?.value || "",
         avatar: (avatarUrl && avatarUrl !== 'none' && avatarUrl !== 'initial') ? avatarUrl : ''
     };
 
-
     if (creatorMode === 'persona') {
-        // === 如果你在编辑“我” (ME) 的面具 ===
-        // 只保存数据到 personasData，绝对不去碰设置页的头像！
         updateList(personasData, newChar);
-        
         localforage.setItem('Wx_Personas_Data', personasData).then(() => {
             alert('ME的面具保存成功啦(๑＞ ＜)☆！！');
-            // 刷新聊天列表，确保消息框里的头像更新
             if(window.renderChatList) window.renderChatList(); 
-            // 如果当前正好在聊天的详情页，且用的是这个面具，也顺手刷新一下消息记录
             if(currentChatId && window.renderMessages) window.renderMessages(currentChatId);
-            
             finishCreatorAction('me');
         });
-
     } else {
-        // === 如果你在编辑“TA” (Character) ===
         updateList(contactsData, newChar);
-        
         localforage.setItem('Wx_Contacts_Data', contactsData).then(() => {
             alert('角色保存成功啦<br>（๑＞ ＜)☆～');
-            // 刷新列表，让那个方框头像变过来
             if(window.renderChatList) window.renderChatList();
-            // 刷新消息详情页的头像
             if(currentChatId && window.renderMessages) window.renderMessages(currentChatId);
-            
             finishCreatorAction('all');
         });
     }
 };
 
+// 结束编辑/关闭资料卡 (★ 修复：自动回城逻辑)
 function finishCreatorAction(tabToRefresh) {
     if (window.switchContactTab) switchContactTab(tabToRefresh);
     const page = document.getElementById('sub-page-creator');
     if (page) {
         page.classList.remove('active');
-        setTimeout(() => { page.style.display = 'none'; }, 300);
+        setTimeout(() => { 
+            page.style.display = 'none'; 
+            page.style.zIndex = ''; // ★★★ 核心修复2：用完还原层级，不挡别的页面 ★★★
+        }, 300);
+    }
+
+    // ★★★ 核心修复3：如果有回城标记，自动重新打开详细设定 ★★★
+    if (window._isReturningToControl) {
+        setTimeout(() => {
+            if(window.openChatControl) window.openChatControl(); 
+            window._isReturningToControl = false; // 撕掉标记
+        }, 350); 
     }
 }
 
@@ -1384,7 +1420,8 @@ window.showDeleteAlert = function() {
 };
 
 window.closeDeleteAlert = function() {
-    closeAlertWithAnim('delete-alert-overlay');
+    if(window.closeAlertWithAnim) closeAlertWithAnim('delete-alert-overlay');
+    else document.getElementById('delete-alert-overlay').style.display = 'none';
 };
 
 window.confirmDeleteAction = function() {
@@ -1838,7 +1875,7 @@ function formatMiniTime(ts) {
     return `${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}`;
 }
 
-// === 渲染消息  ===
+// === 渲染消息 (修复版：支持表情包) ===
 function renderMessages(chatId, autoScroll = true) {
     const container = document.getElementById('chat-msg-area');
     container.innerHTML = ''; 
@@ -1875,7 +1912,7 @@ function renderMessages(chatId, autoScroll = true) {
             timeDiv.innerText = formatChatSystemTime(msg.timestamp);
             container.appendChild(timeDiv);
             lastTime = msg.timestamp;
-            lastRole = null; // 时间断层后，强制重新显示头像
+            lastRole = null; 
         }
 
         // 2. 撤回消息处理
@@ -1886,25 +1923,24 @@ function renderMessages(chatId, autoScroll = true) {
             const contentToPeek = msg.originalText || "未知内容";
             recallDiv.innerHTML = `${who} 撤回了一条消息 <span class="recall-link" onclick="alert('偷看内容：\\n${contentToPeek.replace(/'/g, "")}')">点击偷看</span>`;
             container.appendChild(recallDiv);
-            lastRole = null; // 撤回打断连续性
+            lastRole = null; 
             return; 
         }
 
-        // 3. 决定是否显示头像 (头部逻辑)
+        // 3. 决定是否显示头像
         let showAvatar = false;
         if (msg.role !== lastRole || (msg.timestamp - (msgsToRender[i-1]?.timestamp || 0) > 2 * 60 * 1000)) {
             showAvatar = true;
         }
 
-        // ★★★ 核心修复：计算是否要有尾巴 (尾部逻辑) ★★★
-        // 规则：如果下一条消息不是我发的，或者下一条间隔太久，或者没有下一条了，那我就是最后一条，要有尾巴！
+        // 计算是否有尾巴
         let hasTail = false;
         const nextMsg = msgsToRender[i + 1];
         if (!nextMsg || nextMsg.role !== msg.role || (nextMsg.timestamp - msg.timestamp > 2 * 60 * 1000)) {
             hasTail = true;
         }
 
-        // 4. 构建气泡行 (把 hasTail 加上去了！！)
+        // 4. 构建气泡行
         const row = document.createElement('div');
         row.className = `msg-row ${isMe ? 'me' : 'other'} ${hasTail ? 'has-tail' : ''}`;
         row.dataset.msgIndex = realIndex;
@@ -1932,8 +1968,22 @@ function renderMessages(chatId, autoScroll = true) {
             avatarHtml = `<div class="msg-avatar-placeholder"></div>`;
         }
 
-        // 内容气泡
-        const mainBubble = `<div class="msg-content">${msg.text}</div>`;
+        // ★★★ 核心修复：处理表情包显示 ★★★
+        let contentHtml = '';
+        let extraClass = '';
+
+        if (msg.type === 'sticker') {
+            // 如果是表情包，显示图片 (优先取 content, 没有取 text 兜底)
+            const imgSrc = msg.content || msg.text; 
+            contentHtml = `<img src="${imgSrc}" class="sticker-img-big">`;
+            extraClass = 'sticker-type'; // 加上这个类，让背景透明
+        } else {
+            // 普通文本
+            contentHtml = msg.text || '';
+        }
+
+        // 组装内容气泡
+        const mainBubble = `<div class="msg-content ${extraClass}">${contentHtml}</div>`;
         
         // 引用
         let quoteHtml = '';
@@ -1945,7 +1995,6 @@ function renderMessages(chatId, autoScroll = true) {
 
         // 组合 HTML
         if (isMe) {
-            // 我发的消息：内容 + 头像列
             row.innerHTML = `
                 <div class="msg-container-col">
                     ${mainBubble}
@@ -1954,7 +2003,6 @@ function renderMessages(chatId, autoScroll = true) {
                 ${avatarHtml}
             `;
         } else {
-            // 对方消息：头像列 + 内容
             row.innerHTML = `
                 ${avatarHtml}
                 <div class="msg-container-col">
@@ -1964,12 +2012,12 @@ function renderMessages(chatId, autoScroll = true) {
             `;
         }
         
+        // 绑定长按菜单
         const bubbleContent = row.querySelector('.msg-content');
         if(bubbleContent) bindLongPress(bubbleContent);
         
         container.appendChild(row);
 
-        // 更新 lastRole
         lastRole = msg.role;
     });
 
@@ -1995,7 +2043,6 @@ function renderMessages(chatId, autoScroll = true) {
         container.scrollTop = container.scrollHeight;
     }
 }
-
 
 window.sendMsg = function(role, text = null, type = 'text', customQuote = null) {
     if (!currentChatId) return;
@@ -2084,10 +2131,15 @@ window.triggerAI = async function() {
     // 3. 构建历史消息
     const history = (chat.messages || []).slice(-15).map(m => {
         let content = m.text;
+        
+        // ★ 新增：如果是撤回消息
         if (m.type === 'recall') content = m.originalText || "（撤回内容）";
+        
+        // ★★★ 新增：如果是表情包，告诉 AI 图片名字 ★★★
+        if (m.type === 'sticker') content = `[发送了表情包: ${m.desc || '图片'}]`;
+
         return `${m.role === 'me' ? 'User' : 'You'}: ${content}`;
     }).join('\n');
-
     // 4. 构建总结记忆 (这里之前断掉了，现在修好了！)
     const summaryList = chat.summaries || [];
     let memoryPrompt = "";
@@ -2099,6 +2151,28 @@ window.triggerAI = async function() {
     (请记住这些发生过的事情，保持剧情连贯)
     `;
     }
+    // =======================================================
+    // ★ 插入 1：准备表情包菜单
+    // =======================================================
+    let stickerNote = "";
+    // 1. 找出所有 AI 专属的表情包
+    const aiStickers = stickersDB.filter(s => s.type === 'ai');
+    
+    if (aiStickers.length > 0) {
+        // 2. 把名字拼起来
+        const names = aiStickers.map(s => s.name).join(', ');
+        // 3. 生成给 AI 看的说明书
+        stickerNote = `
+        \n【表情包功能已启用】
+        你拥有一个专属表情包库，包含以下表情：[${names}]。
+        当你觉得适合用表情包表达情绪时（例如开心、撒娇、哭哭），请在回复的末尾加上标签：[sticker:表情名字]。
+        例如：
+        "宝宝我好想你！[sticker:抱抱]"
+        "不要不理我嘛...[sticker:哭哭]"
+        (注意：不要滥用，只在情绪到位时使用。每次回复最多发一个。)
+        `;
+    }
+    // =======================================================
 
     // 5. 组装Prompt
     const systemPrompt = `
@@ -2189,11 +2263,22 @@ window.triggerAI = async function() {
     }
 
     try {
-        const reply = await callApiInternal(systemPrompt);
+    const reply = await callApiInternal(systemPrompt + stickerNote);
         const loadingEl = document.getElementById(loadingId);
         if (loadingEl) loadingEl.remove();
 
         if (reply) {
+        let targetSticker = null;
+        // 1. 抓取 [sticker:xxx] 标签
+        const stickerMatch = reply.match(/\[sticker:(.*?)\]/);
+        
+        if (stickerMatch) {
+            const sName = stickerMatch[1].trim();
+            // 2. 在数据库里找对应的图
+            targetSticker = stickersDB.find(s => s.type === 'ai' && s.name === sName);
+            // 3. 把标签从文字里删掉 (不让用户看到奇怪的代码)
+            reply = reply.replace(stickerMatch[0], '').trim();
+        }
             // ★★★ 第一步：处理位置信息 ★★★
             let cleanReply = reply;
             const locMatch = reply.match(/\[\[LOC::(.+?)::(.+?)\]\]/);
@@ -2257,6 +2342,22 @@ window.triggerAI = async function() {
         if (loadingEl) loadingEl.remove();
         alert('大脑短路啦(＞人＜；)！：' + e.message);
     }
+            if (targetSticker) {
+                // 延迟 1 秒发送，显得更像真人手速
+                setTimeout(() => {
+                    const chat = chatsData.find(c => c.id === currentChatId);
+                    if (chat) {
+                        pushMsgToData(chat, targetSticker.url, 'other', null); // 发送图片
+
+                        const lastMsg = chat.messages[chat.messages.length - 1];
+                        if (lastMsg) {
+                            lastMsg.type = 'sticker'; 
+                            lastMsg.desc = targetSticker.name;
+                            saveChatAndRefresh(chat);
+                        }
+                    }
+                }, 1000);
+            }
 };
 
 // === 后台消息助手 ===
@@ -3382,22 +3483,50 @@ window.saveChatSettings = function() {
     }
 };
 
-// 跳转编辑
+// 1. 跳转到编辑页 (带“回城”标记)
 window.jumpToEditor = function(type) {
     if (!currentChatId) return;
     const chat = chatsData.find(c => c.id === currentChatId);
     
-    // 暂时关闭控制面板，体验更好
-    closeChatControl();
+    // ★ 标记：我是从详细设定跳过来的！
+    window._isReturningToControl = true;
+
     
     if (type === 'char') {
-        creatorMode = 'character'; // 关键！标记当前模式
+        creatorMode = 'character'; 
         openCreatorPage(chat.contactId);
     } else {
-        creatorMode = 'persona'; // 关键！标记当前模式
+        creatorMode = 'persona'; 
         openCreatorPage(chat.personaId);
     }
 };
+
+// 2. 结束编辑/关闭资料卡 (平滑回城)
+function finishCreatorAction(tabToRefresh) {
+
+    if (!window._isReturningToControl) {
+        if (window.switchContactTab) switchContactTab(tabToRefresh);
+    }
+    
+    // 关闭资料卡页面
+    const page = document.getElementById('sub-page-creator');
+    if (page) {
+        page.classList.remove('active');
+        setTimeout(() => { 
+            page.style.display = 'none'; 
+            page.style.zIndex = ''; // 还原层级
+        }, 300);
+    }
+
+    // ★ 关键修改：如果是回城模式，刷新一下底下的详细设定面板
+    if (window._isReturningToControl) {
+        // 重新调用一下 openChatControl 相当于刷新数据（因为你可能刚改了头像名字）
+        if(window.openChatControl) window.openChatControl(); 
+        
+        // 撕掉标记，下次就是正常模式了
+        window._isReturningToControl = false; 
+    }
+}
 
 // ====================
 // [18] 聊天背景上传 (Wallpaper Upload)
@@ -3567,71 +3696,64 @@ window.openSummaryPage = function() {
     setTimeout(() => page.classList.add('active'), 10);
 };
 
-// === 渲染总结列表 (头像时间轴版) ===
+// === 渲染总结列表 (Ins风卡片版) ===
 function renderSummaries() {
     const container = document.getElementById('summary-list-container');
-    if (!container) return; // 防止找不到容器报错
+    if (!container) return;
     container.innerHTML = ''; 
     
     const chat = chatsData.find(c => c.id === currentChatId);
     if(!chat) return;
     
     const summaries = chat.summaries || [];
-    
-    // 获取Char头像 (用于左侧时间轴的串串)
-    const contact = contactsData.find(c => c.id === chat.contactId);
-    const charAvatarStyle = getAvatarStyle(contact ? contact.avatar : '');
 
-    // 空状态提示
+    // 空状态
     if(summaries.length === 0) {
         container.innerHTML = `
-            <div style="text-align:center; padding-top:60px; color:#bbb; font-size:12px; line-height:1.6;">
-                还没有生成过回忆...<br>
-                点击右下角的 <span style="color:#FFD700;">★</span> 按钮试试吧！
+            <div style="text-align:center; padding-top:60px; color:#ccc; font-size:13px; line-height:1.6;">
+                <div style="font-size:40px; margin-bottom:10px;">🎐</div>
+                还没有回忆碎片...<br>点右下角记录一下吧
             </div>`;
         return;
     }
 
-    // 倒序遍历 (最新的在上面)
+    // 倒序遍历
     [...summaries].reverse().forEach((sum, index) => {
-        // 计算在原始数组里的真实索引 (用于编辑/删除)
         const realIndex = summaries.length - 1 - index; 
         
         const card = document.createElement('div');
-        card.className = 'chapter-card';
+        card.className = 'ins-memory-card'; // 使用新样式类
         
-        // ★ 核心改动：使用 formatSummaryTime 显示详细时间 ★
+        // 格式化时间
+        const timeStr = formatSummaryTime(sum.time); 
+
         card.innerHTML = `
-            <div class="chapter-mini-avatar" style="${charAvatarStyle}"></div>
-            <div class="chapter-content">
-                <div class="chapter-header">
-                    <span class="chapter-title">Chapter ${summaries.length - index}</span>
-                    <span class="chapter-date">${formatSummaryTime(sum.time)}</span>
-                </div>
-                <div class="chapter-text edit-text" contenteditable="true" data-idx="${realIndex}">${sum.text}</div>
+            <div class="ins-mem-top">
+                <div class="ins-mem-date">${timeStr}</div>
+                <div class="ins-mem-icon">🔖</div>
             </div>
+            <div class="ins-mem-content edit-text" contenteditable="true" data-idx="${realIndex}">${sum.text}</div>
         `;
 
-        // === 绑定事件：编辑保存 ===
-        const textBlock = card.querySelector('.chapter-text');
+        // 绑定编辑保存
+        const textBlock = card.querySelector('.ins-mem-content');
         textBlock.addEventListener('blur', function() {
-            // 只有内容变了才保存
             if(this.innerText !== sum.text) {
                 chat.summaries[realIndex].text = this.innerText;
                 saveChatAndRefresh(chat);
             }
         });
         
-        // === 绑定事件：长按删除 ===
+        // 绑定长按删除
         let pressTimer;
         textBlock.addEventListener('touchstart', () => {
              pressTimer = setTimeout(() => {
-                 if(confirm('要删除这条回忆吗？')) {
+                 if(confirm('要抹去这段回忆吗？')) {
                      chat.summaries.splice(realIndex, 1);
                      saveChatAndRefresh(chat);
-                     renderSummaries(); // 重新渲染列表
+                     renderSummaries(); 
                  }
-             }, 800); // 长按800毫秒触发
+             }, 800);
         });
         textBlock.addEventListener('touchend', () => clearTimeout(pressTimer));
 
@@ -3667,7 +3789,7 @@ async function triggerAiSummary() {
     const newMsgs = (chat.messages || []).filter(m => m.timestamp > lastSumTime && m.type === 'text');
     
     if(newMsgs.length < 5) {
-        showSystemAlert('最近聊得有点少，攒攒再总结吧！(＞﹏＜)');
+        showSystemAlert('最近聊得有点少哦，攒攒再总结吧！(＞﹏＜)');
         return;
     }
 
@@ -3839,7 +3961,7 @@ window.publishPost = function() {
 
     momentsData.unshift(newPost); // 加到最前面
     localforage.setItem('Wx_Moments_Data', momentsData).then(() => {
-        showSystemAlert('发布成功！✨');
+        showSystemAlert('发布成功啦～');
         closeSubPage('sub-page-post-creator');
         renderMomentsFeed();
         
@@ -4109,85 +4231,75 @@ window.updateMapPin = function(placeName) {
 
 
 // =================================================================
-// ★★★ [主题与美化系统 ] ★★★
+// ★★★ [主题与美化系统 - 终极整合版] ★★★
 // =================================================================
 
 let tempIconEdits = {}; 
-let toastSettings = { enabled: false, color: '#ffffff' }; 
+let toastSettings = { enabled: false, color: '#ffffff', width: 3 }; 
 
-// [1] 初始化美化界面
-// ====================
+// [1] 初始化美化界面 (修复：滑块刷新后卡死问题)
 window.initIconSettingsGrid = function() {
     const container = document.getElementById('icon-setting-grid');
-    if (!container) return; 
+    if (!container) return;
     
-    container.innerHTML = ''; // 清空旧的
-    tempIconEdits = {}; // 清空暂存区
+    container.innerHTML = ''; 
+    tempIconEdits = {}; 
 
-    // 1. 回显边框设置 (UI部分)
-    const savedToast = JSON.parse(localStorage.getItem('Wx_Toast_Settings') || '{"enabled":false,"color":"#ffffff"}');
-    // 同步开关状态
+    // 1. 回显边框设置
+    const savedToast = JSON.parse(localStorage.getItem('Wx_Toast_Settings') || '{"enabled":false,"color":"#ffffff","width":3}');
+    toastSettings = savedToast;
+
+    // 同步UI组件
     const switchEl = document.getElementById('toast-border-switch');
-    if(switchEl) switchEl.checked = savedToast.enabled;
+    if(switchEl) switchEl.checked = toastSettings.enabled;
+    
     const colorEl = document.getElementById('toast-color-input');
-    if(colorEl) colorEl.value = savedToast.color;
-    // 同步颜色选择器透明度
-    const picker = document.getElementById('toast-color-picker');
-    if(picker) {
-        picker.style.opacity = savedToast.enabled ? '1' : '0.5';
-        picker.style.pointerEvents = savedToast.enabled ? 'auto' : 'none';
+    if(colorEl) colorEl.value = toastSettings.color;
+    
+    const widthSlider = document.getElementById('toast-width-slider');
+    const widthVal = document.getElementById('toast-width-val');
+    if(widthSlider) {
+        widthSlider.value = toastSettings.width || 3;
+        if(widthVal) widthVal.innerText = (toastSettings.width || 3) + 'px';
     }
+
+    // ★ 强制解锁 UI 状态
+    toggleToastUI(toastSettings.enabled);
 
     // 2. 遍历桌面真实 APP
     const targetApps = document.querySelectorAll('#desktopGrid .app-item:not(.empty), #dockGrid .app-item');
-
     targetApps.forEach(item => {
         const iconEl = item.querySelector('.app-icon');
         const nameEl = item.querySelector('.app-name');
         
         if (iconEl && iconEl.id) {
-            // [关键步骤] 获取当前图片
             let currentBg = iconEl.style.backgroundImage;
-            
-            // 如果没手动设置过，就去抓 CSS 里的默认图
             if (!currentBg || currentBg === 'none' || currentBg === 'initial' || currentBg === '') {
                 currentBg = window.getComputedStyle(iconEl).backgroundImage;
             }
-            
-            // [清洗数据] 把 url("...") 变成 纯净的 url(...) 以防引号冲突
-            // 如果是 none，就设为空
-            if (!currentBg || currentBg === 'none') {
-                currentBg = ''; 
-            } else {
-                // 去掉双引号，防止 HTML 属性截断
-                currentBg = currentBg.replace(/"/g, ""); 
-            }
+            if (!currentBg || currentBg === 'none') currentBg = ''; 
+            else currentBg = currentBg.replace(/"/g, "'"); 
 
-            // 获取名字
             let currentName = nameEl ? nameEl.innerText : 'Dock App';
 
-            // 生成卡片
             const card = document.createElement('div');
             card.className = 'icon-edit-card';
-            
-            // 这里的 style 用单引号包裹，里面 url(...) 没引号，完美避开冲突
             card.innerHTML = `
                 <div class="icon-preview-box" id="preview_${iconEl.id}" 
                      onclick="triggerTempImgUpload('${iconEl.id}')" 
-                     style='background-image: ${currentBg}; background-color: #f0f0f0;'></div>
+                     style="background-image: ${currentBg}; background-color: #f0f0f0;"></div>
                 <div class="icon-input-area">
                     <span class="icon-label-static">App Icon</span>
                     <input type="text" class="icon-name-input" 
                            value="${currentName}" 
                            oninput="handleTempNameChange('${iconEl.id}', this.value)" 
-                           placeholder="App Name">
+                           placeholder="Name">
                 </div>
             `;
             container.appendChild(card);
         }
     });
     
-    // 加载预设列表
     loadThemePresets(); 
 };
 
@@ -4243,24 +4355,40 @@ window.applyIconChanges = function() {
     closeSubPage('sub-icon');
 };
 
-// [5] 吐司边框
+// [5] 吐司边框逻辑
 window.toggleToastBorder = function(enabled) {
     toastSettings.enabled = enabled;
     toggleToastUI(enabled);
+    updateGlobalToastStyle();
+    localStorage.setItem('Wx_Toast_Settings', JSON.stringify(toastSettings));
 };
+
 window.updateToastColor = function(color) {
     toastSettings.color = color;
+    updateGlobalToastStyle();
+    localStorage.setItem('Wx_Toast_Settings', JSON.stringify(toastSettings));
 };
+
+window.updateToastWidth = function(val) {
+    toastSettings.width = val;
+    document.getElementById('toast-width-val').innerText = val + 'px';
+    updateGlobalToastStyle();
+    localStorage.setItem('Wx_Toast_Settings', JSON.stringify(toastSettings));
+};
+
 function toggleToastUI(enabled) {
-    const picker = document.getElementById('toast-color-picker');
-    if(picker) {
-        picker.style.opacity = enabled ? '1' : '0.5';
-        picker.style.pointerEvents = enabled ? 'auto' : 'none';
+    const controls = document.getElementById('toast-controls');
+    if(controls) {
+        controls.style.opacity = enabled ? '1' : '0.5';
+        controls.style.pointerEvents = enabled ? 'auto' : 'none';
     }
 }
+
 function updateGlobalToastStyle() {
     const root = document.documentElement;
-    root.style.setProperty('--toast-color', toastSettings.color);
+    root.style.setProperty('--toast-color', toastSettings.color || '#fff');
+    root.style.setProperty('--toast-width', (toastSettings.width || 3) + 'px');
+    
     const allIcons = document.querySelectorAll('.app-icon');
     allIcons.forEach(icon => {
         if (toastSettings.enabled) icon.classList.add('toast-style');
@@ -4268,47 +4396,67 @@ function updateGlobalToastStyle() {
     });
 }
 
-// [6] 预设相关
+// [辅助] 获取当前界面快照
+function getCurrentMemorySnapshot() {
+    const data = { texts: {}, images: {}, switches: {}, wallpaper: '' };
+    data.wallpaper = document.getElementById('phoneScreen')?.style.backgroundImage || '';
+
+    // 文字
+    document.querySelectorAll('.edit-text').forEach((el, index) => {
+        let key = el.id ? `ID:${el.id}` : `AUTO:txt_${index}`;
+        data.texts[key] = el.innerText;
+    });
+
+    // 图片
+    const imgSelectors = '.upload-img, .app-icon, .profile-avatar, .polaroid-img, .wx-big-avatar, .wx-small-avatar, .wx-p2-header-bg, .wx-big-avatar-new, .sync-avatar, .chl-frame';
+    document.querySelectorAll(imgSelectors).forEach((el, index) => {
+        const bg = el.style.backgroundImage;
+        if (bg && bg !== 'initial' && bg !== '' && bg !== 'none') {
+            let key = el.id ? `ID:${el.id}` : `AUTO:img_${index}`;
+            data.images[key] = bg;
+        }
+    });
+
+    // 开关
+    document.querySelectorAll('.ios-switch input').forEach((el, index) => {
+        let key = el.id ? `ID:${el.id}` : `AUTO:sw_${index}`;
+        data.switches[key] = el.checked;
+    });
+
+    return data;
+}
+
+// [6] 保存当前主题预设
 window.saveCurrentTheme = function() {
-    const name = prompt("主题名称 (Name):");
-    if (!name) return;
+    showPromptDialog("New Theme", "给主题起个名字吧～ (e.g. 黑白灰风)", (name) => {
+        if (!name) return;
 
-    let coverImg = '';
-    const calImg = document.getElementById('cal_p_1')?.style.backgroundImage;
-    const appImg = document.querySelector('.app-item:not(.empty) .app-icon')?.style.backgroundImage;
-    if (calImg && calImg.includes('url')) coverImg = calImg;
-    else if (appImg && appImg.includes('url')) coverImg = appImg;
-    
-    const themeData = {
-        id: Date.now(),
-        name: name,
-        cover: coverImg, 
-        toast: toastSettings,
-        memory: getCurrentMemorySnapshot() // 封装获取逻辑
-    };
+        let coverImg = '';
+        const calImg = document.getElementById('cal_p_1')?.style.backgroundImage;
+        const appImg = document.querySelector('.app-item:not(.empty) .app-icon')?.style.backgroundImage;
+        if (calImg && calImg.includes('url')) coverImg = calImg;
+        else if (appImg && appImg.includes('url')) coverImg = appImg;
+        
+        const themeData = {
+            id: Date.now(),
+            name: name,
+            cover: coverImg, 
+            toast: toastSettings,
+            memory: getCurrentMemorySnapshot() 
+        };
 
-    localforage.getItem('Wx_Theme_Presets').then(data => {
-        const presets = data || [];
-        presets.push(themeData);
-        return localforage.setItem('Wx_Theme_Presets', presets);
-    }).then(() => {
-        loadThemePresets();
-        showSystemAlert('预设保存成功啦(𓐍ㅇㅂㅇ𓐍)～', 'success');
+        localforage.getItem('Wx_Theme_Presets').then(data => {
+            const presets = data || [];
+            presets.push(themeData);
+            return localforage.setItem('Wx_Theme_Presets', presets);
+        }).then(() => {
+            loadThemePresets(); 
+            showSystemAlert('主题保存成功啦(￣▽￣)！');
+        });
     });
 };
 
-function getCurrentMemorySnapshot() {
-    const mem = { texts: {}, images: {}, wallpaper: '' };
-    document.querySelectorAll('.edit-text').forEach((el, i) => {
-        mem.texts[el.id || 'txt'+i] = el.innerText;
-    });
-    document.querySelectorAll('.upload-img, .app-icon, .wx-big-avatar, .wx-small-avatar').forEach((el, i) => {
-         if(el.style.backgroundImage) mem.images[el.id || 'img'+i] = el.style.backgroundImage;
-    });
-    mem.wallpaper = document.getElementById('phoneScreen')?.style.backgroundImage;
-    return mem;
-}
-
+// [7] 加载预设列表 (含：点击应用 + 长按换图 + 鼠标兼容)
 window.loadThemePresets = function() {
     localforage.getItem('Wx_Theme_Presets').then(data => {
         const container = document.getElementById('theme-preset-list');
@@ -4317,32 +4465,129 @@ window.loadThemePresets = function() {
         const presets = data || [];
 
         if (presets.length === 0) {
-            container.innerHTML = `<div style="font-size:12px; color:#999; padding:20px;">暂无预设(𓐍ㅇㅂㅇ𓐍)...</div>`;
+            container.innerHTML = `<div style="font-size:12px; color:#999; padding:20px;">暂无预设欸...(𓐍ㅇㅂㅇ𓐍)</div>`;
             return;
         }
 
         presets.forEach(theme => {
             const item = document.createElement('div');
             item.className = 'preset-card';
+            const previewId = `preset-img-${theme.id}`;
             const bgStyle = theme.cover ? `background-image: ${theme.cover}` : 'background: #f0f0f0';
             
+            // 构建HTML，强制CSS裁切
             item.innerHTML = `
                 <div class="preset-del" onclick="deleteThemePreset(${theme.id}, event)"></div>
-                <div class="preset-preview" style="${bgStyle}"></div>
+                <div id="${previewId}" class="preset-preview" style="${bgStyle}; background-size: cover; background-position: center;"></div>
                 <div class="preset-name">${theme.name}</div>
             `;
-            item.onclick = (e) => { 
-                if(!e.target.classList.contains('preset-del')) applyTheme(theme); 
+            
+            // 获取元素
+            const previewEl = item.querySelector('.preset-preview');
+            const nameEl = item.querySelector('.preset-name');
+
+            // --- A. 点击文字：直接应用 (最稳妥) ---
+            nameEl.onclick = (e) => {
+                e.stopPropagation(); 
+                applyTheme(theme);
             };
+
+            // --- B. 点击图片：区分短按与长按 ---
+            let startTime = 0;
+            let isMoving = false;
+            let pressTimer = null;
+
+            const handleStart = () => {
+                startTime = Date.now();
+                isMoving = false;
+                // 600ms 后触发长按
+                pressTimer = setTimeout(() => {
+                    if (!isMoving) {
+                        if(navigator.vibrate) navigator.vibrate(50);
+                        triggerPresetCoverUpload(theme.id);
+                        startTime = 0; // 标记为已触发长按
+                    }
+                }, 600);
+            };
+
+            const handleMove = () => {
+                isMoving = true;
+                if (pressTimer) clearTimeout(pressTimer);
+            };
+
+            const handleEnd = () => {
+                if (pressTimer) clearTimeout(pressTimer);
+                if (isMoving) return; 
+                
+                // 如果 startTime 还是非0，说明没触发长按，视为短按点击
+                if (startTime !== 0) {
+                    const duration = Date.now() - startTime;
+                    if (duration < 600) {
+                        applyTheme(theme); // 短按图片也应用！
+                    }
+                }
+            };
+
+            // 绑定事件
+            previewEl.addEventListener('touchstart', handleStart);
+            previewEl.addEventListener('touchmove', handleMove);
+            previewEl.addEventListener('touchend', handleEnd);
+            
+            // 兼容电脑鼠标
+            previewEl.addEventListener('mousedown', handleStart);
+            previewEl.addEventListener('mouseup', handleEnd);
+            previewEl.addEventListener('mouseleave', () => { if(pressTimer) clearTimeout(pressTimer); });
+
             container.appendChild(item);
         });
     });
 };
 
+// [8] 换图执行函数 (强力防拦截)
+window.triggerPresetCoverUpload = function(themeId) {
+    showConfirmDialog('要更换这个预设的封面图嘛( ´▽｀)？', () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.style.display = 'none';
+        document.body.appendChild(input);
+
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    const url = `url('${evt.target.result}')`;
+                    
+                    // 立即更新界面
+                    const previewEl = document.getElementById(`preset-img-${themeId}`);
+                    if (previewEl) previewEl.style.backgroundImage = url;
+
+                    // 更新数据库
+                    localforage.getItem('Wx_Theme_Presets').then(data => {
+                        const presets = data || [];
+                        const target = presets.find(p => p.id === themeId);
+                        if(target) {
+                            target.cover = url; 
+                            return localforage.setItem('Wx_Theme_Presets', presets);
+                        }
+                    }).then(() => {
+                        showSystemAlert('封面更新噜(￣▽￣)');
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+            document.body.removeChild(input);
+        };
+
+        setTimeout(() => { input.click(); }, 100);
+    });
+};
+
+// [9] 删除预设
 window.deleteThemePreset = function(id, event) {
-    event.stopPropagation();
-    // 使用自定义确认框替代 confirm
-    showConfirmDialog('确定要删除这个预设嘛(𓐍ㅇㅂㅇ𓐍)？', () => {
+    event.stopPropagation(); 
+    showConfirmDialog('确定删除这个预设嘛(￣▽￣)？', () => {
         localforage.getItem('Wx_Theme_Presets').then(data => {
             const newList = (data || []).filter(t => t.id !== id);
             return localforage.setItem('Wx_Theme_Presets', newList);
@@ -4352,17 +4597,29 @@ window.deleteThemePreset = function(id, event) {
     });
 };
 
+// [10] 应用主题
 window.applyTheme = function(theme) {
-    showConfirmDialog(`切换到“${theme.name}”？\n未保存的修改会丢失。`, () => {
+    showConfirmDialog(`确定要切换到“${theme.name}”嘛？\n当前未保存的修改会丢失哦(￣▽￣)！`, () => {
+        // 恢复记忆
         localforage.setItem(MEMORY_KEY, theme.memory).then(() => {
+            // 恢复边框设置
             if(theme.toast) {
                 toastSettings = theme.toast;
                 localStorage.setItem('Wx_Toast_Settings', JSON.stringify(toastSettings));
-                updateGlobalToastStyle();
+                if(window.updateGlobalToastStyle) window.updateGlobalToastStyle();
+                
+                const widthSlider = document.getElementById('toast-width-slider');
+                const switchEl = document.getElementById('toast-border-switch');
+                if(widthSlider) widthSlider.value = toastSettings.width || 3;
+                if(switchEl) switchEl.checked = toastSettings.enabled;
             }
-            loadMemory();
-            showSystemAlert('美化应用成功噜(𓐍ㅇㅂㅇ𓐍)～', 'success');
-            setTimeout(initIconSettingsGrid, 100);
+            
+            // 刷新界面
+            if(window.loadMemory) window.loadMemory();
+            showSystemAlert('主题应用成功噜(≧∇≦)～');
+            
+            // 刷新美化页预览
+            if(window.initIconSettingsGrid) setTimeout(window.initIconSettingsGrid, 100);
         });
     });
 };
@@ -4501,28 +4758,18 @@ window.showConfirmDialog = function(msg, onConfirm) {
 
     overlay.style.display = 'flex';
 };
-// ====================
-// [系统启动] 核心初始化流程
-// ====================
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 System Booting...');
-    
-    // 1. 加载记忆 (文字、图片、壁纸) + 顺便加载吐司边框
-    if(window.loadMemory) {
-        window.loadMemory();
-    }
-
-    // 2. 修正视口高度 (防键盘顶起)
-    if(typeof fixViewportHeight === 'function') {
-        fixViewportHeight();
-    }
-
+    if(window.loadMemory) window.loadMemory();
+    if(typeof fixViewportHeight === 'function') fixViewportHeight();
+    initStickerSystem(); // 启动表情包系统
 });
+
 // ====================
-// ★★★ [自定义弹窗系统] (Ins Style: 纯净版) ★★★
+// [自定义弹窗系统] (Ins Style Pure)
 // ====================
 
-// 1. Toast (深灰时间戳风格)
+// 1. Toast 提示
 window.showSystemAlert = function(msg, type='normal') {
     let container = document.getElementById('custom-toast-container');
     if (!container) {
@@ -4530,14 +4777,10 @@ window.showSystemAlert = function(msg, type='normal') {
         container.id = 'custom-toast-container';
         document.body.appendChild(container);
     }
-
     const toast = document.createElement('div');
     toast.className = 'ins-toast';
-    // 去掉图标，只留文字，像时间戳一样
     toast.innerHTML = `<span class="toast-msg">${msg}</span>`;
-
     container.appendChild(toast);
-
     setTimeout(() => toast.classList.add('show'), 10);
     setTimeout(() => {
         toast.classList.remove('show');
@@ -4545,34 +4788,20 @@ window.showSystemAlert = function(msg, type='normal') {
     }, 2000);
 };
 
-// 2. Confirm Dialog (确认框)
-window.showConfirmDialog = function(msg, onConfirm) {
-    createDialog('Confirm', msg, null, onConfirm);
-};
+// 2. 确认框 & 输入框
+window.showConfirmDialog = (msg, onConfirm) => createDialog('Confirm', msg, null, onConfirm);
+window.showPromptDialog = (title, placeholder, onConfirm) => createDialog(title, null, placeholder, onConfirm);
 
-// 3. Prompt Dialog (输入框 - 新增！用于保存预设)
-window.showPromptDialog = function(title, placeholder, onConfirm) {
-    createDialog(title, null, placeholder, onConfirm);
-};
-
-// --- 通用弹窗构造器 ---
 function createDialog(titleText, msgText, inputPlaceholder, onConfirm) {
-    // 移除旧的（如果存在）
-    const oldOverlay = document.getElementById('custom-ins-overlay');
-    if(oldOverlay) oldOverlay.remove();
+    const old = document.getElementById('custom-ins-overlay');
+    if(old) old.remove();
 
     const overlay = document.createElement('div');
     overlay.id = 'custom-ins-overlay';
-    overlay.className = 'custom-alert-overlay'; // 复用遮罩样式
+    overlay.className = 'custom-alert-overlay';
     
-    // 根据是否有输入框来决定 HTML 结构
-    const inputHtml = inputPlaceholder 
-        ? `<input type="text" id="ins-dialog-input" placeholder="${inputPlaceholder}" autocomplete="off">` 
-        : '';
-        
-    const msgHtml = msgText 
-        ? `<div class="alert-msg">${msgText}</div>` 
-        : '';
+    const inputHtml = inputPlaceholder ? `<input type="text" id="ins-dialog-input" placeholder="${inputPlaceholder}" autocomplete="off">` : '';
+    const msgHtml = msgText ? `<div class="alert-msg">${msgText}</div>` : '';
 
     overlay.innerHTML = `
         <div class="custom-alert-box ins-style">
@@ -4583,27 +4812,19 @@ function createDialog(titleText, msgText, inputPlaceholder, onConfirm) {
                 <div class="alert-btn cancel" id="ins-btn-cancel">Cancel</div>
                 <div class="alert-btn confirm" id="ins-btn-ok">OK</div>
             </div>
-        </div>
-    `;
+        </div>`;
     
     document.body.appendChild(overlay);
-    overlay.style.display = 'flex'; // 显示
-
-    // 如果有输入框，自动聚焦
+    overlay.style.display = 'flex';
     const inputEl = document.getElementById('ins-dialog-input');
     if(inputEl) setTimeout(() => inputEl.focus(), 100);
 
-    // 绑定事件
     document.getElementById('ins-btn-cancel').onclick = () => overlay.remove();
-    
     document.getElementById('ins-btn-ok').onclick = () => {
         if (inputEl) {
             const val = inputEl.value.trim();
-            if (!val) {
-                showSystemAlert('内容不能为空哦～');
-                return;
-            }
-            onConfirm(val); // 把输入的值传回去
+            if (!val) return showSystemAlert('内容不能为空哦～');
+            onConfirm(val);
         } else {
             onConfirm();
         }
@@ -4611,34 +4832,398 @@ function createDialog(titleText, msgText, inputPlaceholder, onConfirm) {
     };
 }
 
-// 覆盖之前的 saveCurrentTheme
+// 主题保存逻辑
 window.saveCurrentTheme = function() {
-    // ★★★ 这里改用了新写的 showPromptDialog ★★★
     showPromptDialog("New Theme", "给主题起个名字吧 (e.g. 奶油吐司)", (name) => {
-        
-        // --- 下面是原来的保存逻辑 ---
         let coverImg = '';
         const calImg = document.getElementById('cal_p_1')?.style.backgroundImage;
         const appImg = document.querySelector('.app-item:not(.empty) .app-icon')?.style.backgroundImage;
-        
         if (calImg && calImg.includes('url')) coverImg = calImg;
         else if (appImg && appImg.includes('url')) coverImg = appImg;
         
         const themeData = {
-            id: Date.now(),
-            name: name,
-            cover: coverImg, 
-            toast: toastSettings,
-            memory: getCurrentMemorySnapshot() 
+            id: Date.now(), name: name, cover: coverImg, 
+            toast: toastSettings, memory: getCurrentMemorySnapshot() 
         };
-
         localforage.getItem('Wx_Theme_Presets').then(data => {
             const presets = data || [];
             presets.push(themeData);
             return localforage.setItem('Wx_Theme_Presets', presets);
         }).then(() => {
-            loadThemePresets();
+            if(window.loadThemePresets) window.loadThemePresets();
             showSystemAlert('预设保存成功( ´▽｀)～');
         });
     });
+};
+
+window.closeSubPage = function(id) {
+    const p = document.getElementById(id);
+    if(p) {
+        p.classList.remove('active');
+        setTimeout(() => p.style.display = 'none', 300);
+        if (id === 'sub-page-chat-detail') {
+            currentChatId = null;
+            if(window.renderChatList) window.renderChatList();
+        }
+    }
+};
+
+// 手账/总结相关
+window.openNoteEditor = () => {
+    const overlay = document.getElementById('note-editor-overlay');
+    const ta = document.getElementById('note-editor-input');
+    if(overlay && ta) { ta.value = ""; overlay.style.display = 'flex'; setTimeout(() => ta.focus(), 100); }
+};
+window.closeNoteEditor = () => document.getElementById('note-editor-overlay').style.display = 'none';
+window.confirmNoteSave = () => {
+    const text = document.getElementById('note-editor-input').value.trim();
+    if(!text) return showSystemAlert('写点什么吧(・ω・)ノ');
+    if(typeof saveSummaryToChat === 'function') saveSummaryToChat(text);
+    closeNoteEditor();
+};
+
+window.renderSummaries = function() {
+    const container = document.getElementById('summary-list-container');
+    if (!container) return;
+    container.innerHTML = ''; 
+    const chat = chatsData.find(c => c.id === currentChatId);
+    if(!chat) return;
+    
+    const summaries = chat.summaries || [];
+    if(summaries.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding-top:60px; color:#ccc; font-size:13px; line-height:1.6;"><div style="font-size:40px; margin-bottom:10px;">🎐</div>还没有回忆碎片...<br>点击上方 Record 记录一下吧</div>`;
+        return;
+    }
+    [...summaries].reverse().forEach((sum, index) => {
+        const realIndex = summaries.length - 1 - index; 
+        const card = document.createElement('div');
+        card.className = 'ins-memory-card';
+        const timeStr = typeof formatSummaryTime === 'function' ? formatSummaryTime(sum.time) : 'Unknown'; 
+        card.innerHTML = `<div class="ins-mem-top"><div class="ins-mem-date">${timeStr}</div></div><div class="ins-mem-content edit-text" contenteditable="true">${sum.text}</div>`;
+        
+        card.querySelector('.ins-mem-content').addEventListener('blur', function() {
+            if(this.innerText !== sum.text) {
+                chat.summaries[realIndex].text = this.innerText;
+                saveChatAndRefresh(chat);
+            }
+        });
+        let pressTimer;
+        card.addEventListener('touchstart', () => {
+             pressTimer = setTimeout(() => { if(confirm('要抹去这段回忆吗？')) { chat.summaries.splice(realIndex, 1); saveChatAndRefresh(chat); renderSummaries(); } }, 800);
+        });
+        card.addEventListener('touchend', () => clearTimeout(pressTimer));
+        container.appendChild(card);
+    });
+};
+
+// 键盘修复
+const chatInput = document.getElementById('chat-input');
+if (chatInput) {
+    chatInput.addEventListener('input', function() {
+        this.style.height = '24px';
+        this.style.height = (this.scrollHeight) + 'px';
+        this.style.overflowY = (this.scrollHeight > 100) ? 'auto' : 'hidden';
+    });
+}
+document.body.addEventListener('keydown', function(e) {
+    if ((e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+        e.stopPropagation();
+        if (e.key === 'Enter' && e.target.id === 'chat-input' && !e.shiftKey) {
+            e.preventDefault(); sendMsg('me');
+            e.target.style.height = '24px'; e.target.style.overflowY = 'hidden';
+        }
+    }
+});
+
+// ==========================================================
+// ★ 强力表情包系统 (Sticker System V2.0)
+// ==========================================================
+
+let stickersDB = [
+    { id: 's1', url: 'https://i.postimg.cc/jjTJY1qT/kuku1.gif', name: '哭哭', type: 'ai' },
+    { id: 's2', url: 'https://i.postimg.cc/dVrTXFYn/kuku10.gif', name: '抱抱', type: 'fav', group: '默认' }
+];
+let stickerGroups = ['默认', '开心', '难过', '沙雕']; // 默认分组
+let currentStickerTab = 'fav';
+let currentSubGroup = '默认';
+
+function initStickerSystem() {
+    localforage.getItem('stickersData').then(val => { if (val) stickersDB = val; });
+    localforage.getItem('stickerGroups').then(val => { if (val) stickerGroups = val; });
+}
+
+// 1. 打开菜单 (强制置顶修复)
+window.toggleStickerMenu = function() {
+    const picker = document.getElementById('sticker-picker-overlay');
+    if (!picker) return;
+    
+    // 强制提升层级，解决退出聊天才显示的bug
+    picker.style.zIndex = '99999'; 
+    
+    if (picker.classList.contains('active')) {
+        picker.classList.remove('active');
+    } else {
+        document.body.classList.remove('menu-open'); 
+        picker.classList.add('active');
+        switchStickerTab('fav'); // 默认打开收藏
+    }
+}
+
+// 2. 切换主 Tab (收藏/AI/默认)
+window.switchStickerTab = function(type) {
+    currentStickerTab = type;
+    document.querySelectorAll('.sticker-tab').forEach(el => el.classList.remove('active'));
+    // 修正onclick匹配
+    const btn = document.querySelector(`.sticker-tab[onclick*="'${type}'"]`) || 
+                document.querySelector(`.sticker-tab[onclick*='"${type}"']`);
+    if(btn) btn.classList.add('active');
+
+    // 如果选了“默认”(即分组库)，显示分组栏
+    const subNav = document.getElementById('sticker-sub-nav-container');
+    if (type === 'sys' || type === 'fav') { // 假设 fav 也开启分组功能
+        if(!subNav) createSubNav();
+        renderSubGroups();
+        subNav.style.display = 'flex';
+    } else {
+        if(subNav) subNav.style.display = 'none';
+    }
+    renderStickers();
+}
+
+// 3. 创建分组栏 UI
+function createSubNav() {
+    const glassPanel = document.querySelector('.sticker-glass-panel');
+    const header = document.querySelector('.sticker-header');
+    if(!glassPanel || !header) return;
+
+    const nav = document.createElement('div');
+    nav.id = 'sticker-sub-nav-container';
+    nav.className = 'sticker-sub-nav';
+    // 插入到 header 下面
+    header.after(nav);
+}
+
+// 4. 渲染分组 (左右滑动)
+function renderSubGroups() {
+    const nav = document.getElementById('sticker-sub-nav-container');
+    if(!nav) return;
+    nav.innerHTML = '';
+
+    // "全部" 按钮
+    nav.appendChild(createGroupPill('全部', currentSubGroup === 'all'));
+
+    // 自定义分组
+    stickerGroups.forEach(g => {
+        nav.appendChild(createGroupPill(g, currentSubGroup === g));
+    });
+
+    // "+" 添加分组按钮
+    const addBtn = document.createElement('div');
+    addBtn.className = 'sticker-group-pill';
+    addBtn.innerText = '+';
+    addBtn.onclick = () => {
+        showPromptDialog("New Group", "新建分组名称", (name) => {
+            if(stickerGroups.includes(name)) return showSystemAlert('分组已存在');
+            stickerGroups.push(name);
+            saveGroups();
+            renderSubGroups();
+        });
+    }
+    nav.appendChild(addBtn);
+}
+
+function createGroupPill(name, isActive) {
+    const el = document.createElement('div');
+    el.className = `sticker-group-pill ${isActive ? 'active' : ''}`;
+    el.innerText = name;
+    el.onclick = () => {
+        currentSubGroup = (name === '全部') ? 'all' : name;
+        renderSubGroups();
+        renderStickers();
+    };
+    return el;
+}
+
+// 5. 渲染表情 (带筛选)
+function renderStickers() {
+    const grid = document.getElementById('sticker-grid-view');
+    grid.innerHTML = '';
+    
+    let list = stickersDB.filter(s => s.type === currentStickerTab);
+    
+    // 如果不是 AI Tab，且选择了特定分组，进行筛选
+    if (currentStickerTab !== 'ai' && currentSubGroup !== 'all') {
+        list = list.filter(s => s.group === currentSubGroup || (!s.group && currentSubGroup === '默认'));
+    }
+    
+    if (list.length === 0) {
+        grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#ccc; font-size:12px; margin-top:20px;">这里空空如也...</div>`;
+        return;
+    }
+
+    list.forEach(s => {
+        const item = document.createElement('div');
+        item.className = 'sticker-item';
+        item.style.backgroundImage = `url('${s.url}')`;
+        item.innerHTML = `<div class="sticker-name-tag">${s.name}</div>`;
+        
+        item.onclick = () => sendSticker(s);
+        
+        // 绑定长按菜单
+        bindStickerLongPress(item, s);
+        
+        grid.appendChild(item);
+    });
+}
+
+// 6. Ins风长按菜单逻辑
+function bindStickerLongPress(el, sticker) {
+    let timer;
+    const start = (e) => {
+        timer = setTimeout(() => {
+            if(navigator.vibrate) navigator.vibrate(50);
+            showStickerContextMenu(e.touches[0].clientX, e.touches[0].clientY, sticker);
+        }, 600);
+    };
+    const end = () => clearTimeout(timer);
+    el.addEventListener('touchstart', start);
+    el.addEventListener('touchend', end);
+    el.addEventListener('touchmove', end);
+}
+
+function showStickerContextMenu(x, y, sticker) {
+    // 移除旧菜单
+    const old = document.getElementById('ins-sticker-menu');
+    if(old) old.remove();
+
+    const menu = document.createElement('div');
+    menu.id = 'ins-sticker-menu';
+    menu.className = 'ins-context-menu';
+    
+    // 动态生成分组移动选项
+    let moveOptions = '';
+    stickerGroups.forEach(g => {
+        if(g !== sticker.group) {
+            moveOptions += `<div class="ins-menu-item" onclick="moveStickerTo('${sticker.id}', '${g}')">移至: ${g}</div>`;
+        }
+    });
+
+    menu.innerHTML = `
+        <div class="ins-menu-item" onclick="copyStickerUrl('${sticker.url}')">复制链接 <span>🔗</span></div>
+        ${moveOptions}
+        <div class="ins-menu-item danger" onclick="deleteSticker('${sticker.id}')">删除 <span>🗑️</span></div>
+    `;
+
+    document.body.appendChild(menu);
+    
+    // 智能定位防止溢出
+    const rect = menu.getBoundingClientRect();
+    let top = y + 10;
+    let left = x - rect.width / 2;
+    if(left < 10) left = 10;
+    if(left + rect.width > window.innerWidth) left = window.innerWidth - rect.width - 10;
+    if(top + rect.height > window.innerHeight) top = y - rect.height - 10;
+
+    menu.style.top = top + 'px';
+    menu.style.left = left + 'px';
+
+    // 点击外部关闭
+    setTimeout(() => {
+        document.addEventListener('click', closeStickerMenu, { once: true });
+    }, 100);
+}
+
+function closeStickerMenu() {
+    const menu = document.getElementById('ins-sticker-menu');
+    if(menu) menu.remove();
+}
+
+// 菜单动作
+window.moveStickerTo = (id, group) => {
+    const s = stickersDB.find(x => x.id === id);
+    if(s) {
+        s.group = group;
+        saveStickers();
+        renderStickers();
+        showSystemAlert(`已移动到 ${group}`);
+    }
+};
+window.copyStickerUrl = (url) => {
+    navigator.clipboard.writeText(url);
+    showSystemAlert('链接已复制');
+};
+window.deleteSticker = (id) => {
+    if(confirm('确定删除这个表情吗？')) {
+        stickersDB = stickersDB.filter(s => s.id !== id);
+        saveStickers();
+        renderStickers();
+    }
+};
+
+// 数据持久化
+function saveGroups() { localforage.setItem('stickerGroups', stickerGroups); }
+function saveStickers() { localforage.setItem('stickersData', stickersDB); }
+
+// 发送逻辑
+function sendSticker(stickerObj) {
+    if (!currentChatId) return;
+    const chat = chatsData.find(c => c.id === currentChatId);
+    
+    // 构建消息对象
+    const msg = {
+        id: Date.now(),
+        role: 'me',
+        type: 'sticker',
+        content: stickerObj.url, 
+        desc: stickerObj.name,   
+        time: new Date()
+    };
+    
+    chat.messages.push(msg);
+    saveChatAndRefresh(chat);
+    toggleStickerMenu(); 
+}
+
+// 批量上传 (兼容分组)
+window.openStickerUploader = () => {
+    tempStickerList = [];
+    document.getElementById('sticker-preview-list').innerHTML = '';
+    document.getElementById('sticker-upload-overlay').style.display = 'flex';
+};
+window.closeStickerUploader = () => document.getElementById('sticker-upload-overlay').style.display = 'none';
+
+window.handleStickerFiles = (input) => {
+    Array.from(input.files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => addPreviewItem(e.target.result, file.name.replace(/\.[^/.]+$/, ""));
+        reader.readAsDataURL(file);
+    });
+};
+
+function addPreviewItem(url, name) {
+    tempStickerList.push({ url, name });
+    const idx = tempStickerList.length - 1;
+    const div = document.createElement('div');
+    div.className = 'upload-preview-item';
+    div.innerHTML = `
+        <div class="up-thumb" style="background-image: url('${url}')"></div>
+        <input type="text" class="up-input" value="${name}" onchange="updateTempSticker(${idx}, this.value)">
+        <div class="up-del" onclick="removeTempSticker(this, ${idx})">×</div>
+    `;
+    document.getElementById('sticker-preview-list').appendChild(div);
+}
+
+window.updateTempSticker = (idx, val) => { if(tempStickerList[idx]) tempStickerList[idx].name = val; }
+window.removeTempSticker = (el, idx) => { el.parentElement.remove(); delete tempStickerList[idx]; }
+
+window.saveNewStickers = () => {
+    const valid = tempStickerList.filter(s => s);
+    if (valid.length === 0) return closeStickerUploader();
+    valid.forEach(s => {
+        stickersDB.push({
+            id: 's_' + Date.now() + Math.random().toString(36).substr(2, 5),
+            url: s.url, name: s.name, type: 'fav', group: currentSubGroup === 'all' ? '默认' : currentSubGroup
+        });
+    });
+    saveStickers(); renderStickers(); closeStickerUploader();
 };
