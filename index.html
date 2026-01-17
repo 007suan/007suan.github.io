@@ -106,7 +106,7 @@
             </div>
         </div>
 
-        <div class="app-grid" style="margin-top: 15px;">
+        <div class="app-grid" style="margin-top: -1px;">
             <div class="app-item" onclick="openApp('settings')">
                 <div id="app-icon-settings-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/85YCzNr0/wu-biao-ti119-20260117101553.png');"></div>
                 <div class="app-name">设置</div>
@@ -1217,35 +1217,6 @@
         </div>
   </div>
 
-<div id="sticker-upload-overlay" class="custom-alert-overlay" style="display: none;">
-    <div class="custom-alert-box ins-style" style="width: 340px; max-height: 80vh; padding: 0;">
-        <div style="padding: 20px 20px 10px; width: 100%;">
-            <div class="alert-title">Add Stickers</div>
-            <div class="alert-msg">支持批量上传 · 记得取名字哦</div>
-        </div>
-
-        <div id="sticker-preview-list" style="width: 100%; overflow-y: auto; padding: 0 15px; max-height: 300px; display: flex; flex-direction: column; gap: 10px;">
-            </div>
-
-        <div style="padding: 15px 20px 20px; width: 100%; display: flex; flex-direction: column; gap: 10px;">
-            <input type="file" id="sticker-file-input" multiple accept="image/*" style="display:none;" onchange="handleStickerFiles(this)">
-            
-            <div class="alert-btn-group">
-                <div class="alert-btn" style="background: #f0f0f0;" onclick="document.getElementById('sticker-file-input').click()">
-                    📷 选图 (Image)
-                </div>
-                <div class="alert-btn" style="background: #f0f0f0;" onclick="addUrlInputRow()">
-                    🔗 链接 (URL)
-                </div>
-            </div>
-
-            <div class="alert-btn-group" style="margin-top: 5px;">
-                <div class="alert-btn cancel" onclick="closeStickerUploader()">Cancel</div>
-                <div class="alert-btn confirm" onclick="saveNewStickers()">Save All</div>
-            </div>
-        </div>
-    </div>
-</div>
 <div id="sticker-picker-overlay" class="sticker-picker-container">
     <div class="sticker-glass-panel">
         <div class="sticker-header">
@@ -1255,11 +1226,10 @@
             <div class="sticker-close" onclick="toggleStickerMenu()">×</div>
         </div>
 
-        <div class="sticker-grid-scroll" id="sticker-grid-view">
-            </div>
+        <div class="sticker-grid-scroll" id="sticker-grid-view"></div>
 
         <div class="sticker-footer">
-            <div class="sticker-add-btn" onclick="openStickerUploader()">
+            <div class="sticker-add-btn" onclick="showAddChoiceMenu(event)">
                 <span>+</span> Add Stickers
             </div>
             <div style="font-size:10px; color:#999;">长按表情包可删除 / Long press to delete</div>
@@ -1425,6 +1395,7 @@
         </div>
     </div>
 </div>
+  </div>
 
     </div> <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
     <script src="script.js"></script>

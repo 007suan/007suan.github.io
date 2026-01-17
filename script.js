@@ -830,7 +830,7 @@ function saveMemory() {
     });
 
     // 存图片
-const imgSelectors = '.upload-img, .app-icon, .profile-avatar, .polaroid-img, .wx-big-avatar, .wx-small-avatar, .wx-p2-header-bg, .wx-big-avatar-new, .sync-avatar, .chl-frame';
+const imgSelectors = '.upload-img, .app-icon, .profile-avatar, .polaroid-img, .wx-big-avatar, .wx-small-avatar, .wx-p2-header-bg, .wx-big-avatar-new, .sync-avatar, .chl-frame, .w-mini-cover, .w-thumb-item, .big-photo-widget, .ins-square-widget';
     document.querySelectorAll(imgSelectors).forEach((el, index) => {
         const bg = el.style.backgroundImage;
         if (bg && bg !== 'initial' && bg !== '' && bg !== 'none') {
@@ -851,7 +851,7 @@ const imgSelectors = '.upload-img, .app-icon, .profile-avatar, .polaroid-img, .w
 // ====================
 window.loadMemory = function() {
     // ★★★ 修复重点：定义图片选择器，防止报错
-    const imgSelectors = '.upload-img, .app-icon, .profile-avatar, .polaroid-img, .wx-big-avatar, .wx-small-avatar, .wx-p2-header-bg, .wx-big-avatar-new, .sync-avatar, .chl-frame';
+    const imgSelectors = '.upload-img, .app-icon, .profile-avatar, .polaroid-img, .wx-big-avatar, .wx-small-avatar, .wx-p2-header-bg, .wx-big-avatar-new, .sync-avatar, .chl-frame, .w-mini-cover, .w-thumb-item, .big-photo-widget, .ins-square-widget';
 
     localforage.getItem(MEMORY_KEY).then(data => {
         if (data) {
@@ -870,16 +870,21 @@ window.loadMemory = function() {
             
             // 2. 恢复图片 (头像、壁纸、APP图标)
             if (data.images) {
-                for (let k in data.images) {
-                    // 尝试获取元素
-                    let el = document.getElementById(k);
-                    if(!el && k.startsWith('ID:')) el = document.getElementById(k.split('ID:')[1]);
+                // ★★★ 修复版：通过遍历页面元素来找回记忆 (不管是 ID 还是 AUTO 都能对上！)
+                const elements = document.querySelectorAll(imgSelectors);
+                
+                elements.forEach((el, index) => {
+                    // 1. 重新算出它的 Key (和你存的时候一模一样)
+                    const key = getUniqueKey(el, index, 'img');
                     
-                    if (el) {
-                        el.style.backgroundImage = data.images[k];
+                    // 2. 去数据库里查有没有这个 Key 的图片
+                    const savedBg = data.images[key];
+
+                    if (savedBg) {
+                        el.style.backgroundImage = savedBg;
                         el.style.backgroundColor = 'transparent'; 
                         
-                        // 头像框特殊处理
+                        // 样式细节处理
                         if (el.classList.contains('chl-frame')) {
                             el.style.backgroundSize = 'contain';
                             el.style.backgroundRepeat = 'no-repeat';
@@ -888,7 +893,7 @@ window.loadMemory = function() {
                         }
                         el.style.backgroundPosition = 'center';
                     }
-                }
+                });
             }
 
             // 3. 恢复开关状态
@@ -4270,7 +4275,7 @@ window.initIconSettingsGrid = function() {
     toggleToastUI(toastSettings.enabled);
 
     // --- Part 2: 生成图标编辑器 (遍历桌面真实APP) ---
-    const targetApps = document.querySelectorAll('#desktopGrid .app-item:not(.empty), #dockGrid .app-item');
+    const targetApps = document.querySelectorAll('.desktop-page .app-item:not(.empty), #dockGrid .app-item');
     targetApps.forEach(item => {
         const iconEl = item.querySelector('.app-icon');
         const nameEl = item.querySelector('.app-name');
@@ -4443,7 +4448,7 @@ function getCurrentMemorySnapshot() {
     });
 
     // 图片
-    const imgSelectors = '.upload-img, .app-icon, .profile-avatar, .polaroid-img, .wx-big-avatar, .wx-small-avatar, .wx-p2-header-bg, .wx-big-avatar-new, .sync-avatar, .chl-frame';
+    const imgSelectors = '.upload-img, .app-icon, .profile-avatar, .polaroid-img, .wx-big-avatar, .wx-small-avatar, .wx-p2-header-bg, .wx-big-avatar-new, .sync-avatar, .chl-frame, .w-mini-cover, .w-thumb-item, .big-photo-widget, .ins-square-widget';
     document.querySelectorAll(imgSelectors).forEach((el, index) => {
         const bg = el.style.backgroundImage;
         if (bg && bg !== 'initial' && bg !== '' && bg !== 'none') {
@@ -4969,165 +4974,266 @@ document.body.addEventListener('keydown', function(e) {
         }
     }
 });
-
 // ==========================================================
-// ★ 强力表情包系统 (Sticker System V2.0)
+// ★ 26. 强力表情包系统 V5.0 (经典回归 & 长按修复版)
 // ==========================================================
 
 let stickersDB = [
     { id: 's1', url: 'https://i.postimg.cc/jjTJY1qT/kuku1.gif', name: '哭哭', type: 'ai' },
     { id: 's2', url: 'https://i.postimg.cc/dVrTXFYn/kuku10.gif', name: '抱抱', type: 'fav', group: '默认' }
 ];
-let stickerGroups = ['默认', '开心', '难过', '沙雕']; // 默认分组
+let stickerGroups = ['默认', '开心', '难过', '生气']; 
 let currentStickerTab = 'fav';
 let currentSubGroup = '默认';
+let isMultiSelectMode = false; 
+let selectedStickerIds = [];
+let tempStickerList = []; 
 
+// 初始化
 function initStickerSystem() {
     localforage.getItem('stickersData').then(val => { if (val) stickersDB = val; });
     localforage.getItem('stickerGroups').then(val => { if (val) stickerGroups = val; });
 }
 
-// 1. 打开菜单 (强制置顶修复)
+// 菜单开关
 window.toggleStickerMenu = function() {
     const picker = document.getElementById('sticker-picker-overlay');
     if (!picker) return;
     
-    // 强制提升层级，解决退出聊天才显示的bug
+    if(isMultiSelectMode && window.exitMultiSelect) exitMultiSelect();
+
     picker.style.zIndex = '99999'; 
-    
     if (picker.classList.contains('active')) {
         picker.classList.remove('active');
+        document.body.classList.remove('menu-open');
     } else {
         document.body.classList.remove('menu-open'); 
         picker.classList.add('active');
-        switchStickerTab('fav'); // 默认打开收藏
+        
+        // 强制刷新
+        if (currentStickerTab === 'fav' || currentStickerTab === 'sys') {
+            createSubNav(); renderSubGroups();
+            const nav = document.getElementById('sticker-sub-nav-container');
+            if(nav) nav.style.display = 'flex';
+        }
+        renderStickers();
     }
 }
 
-// 2. 切换主 Tab (收藏/AI/默认)
+// 切换 Tab
 window.switchStickerTab = function(type) {
     currentStickerTab = type;
     document.querySelectorAll('.sticker-tab').forEach(el => el.classList.remove('active'));
-    // 修正onclick匹配
+    
     const btn = document.querySelector(`.sticker-tab[onclick*="'${type}'"]`) || 
                 document.querySelector(`.sticker-tab[onclick*='"${type}"']`);
     if(btn) btn.classList.add('active');
 
-    // 如果选了“默认”(即分组库)，显示分组栏
     const subNav = document.getElementById('sticker-sub-nav-container');
-    if (type === 'sys' || type === 'fav') { // 假设 fav 也开启分组功能
+    if (type === 'sys' || type === 'fav') { 
         if(!subNav) createSubNav();
         renderSubGroups();
-        subNav.style.display = 'flex';
+        if(subNav) subNav.style.display = 'flex';
     } else {
         if(subNav) subNav.style.display = 'none';
     }
     renderStickers();
 }
 
-// 3. 创建分组栏 UI
+// ====================
+// 分组逻辑
+// ====================
 function createSubNav() {
-    const glassPanel = document.querySelector('.sticker-glass-panel');
     const header = document.querySelector('.sticker-header');
-    if(!glassPanel || !header) return;
-
-    const nav = document.createElement('div');
+    if(!header) return;
+    let nav = document.getElementById('sticker-sub-nav-container');
+    if(nav) return;
+    nav = document.createElement('div');
     nav.id = 'sticker-sub-nav-container';
     nav.className = 'sticker-sub-nav';
-    // 插入到 header 下面
     header.after(nav);
 }
 
-// 4. 渲染分组 (左右滑动)
 function renderSubGroups() {
     const nav = document.getElementById('sticker-sub-nav-container');
     if(!nav) return;
     nav.innerHTML = '';
 
-    // "全部" 按钮
-    nav.appendChild(createGroupPill('全部', currentSubGroup === 'all'));
-
-    // 自定义分组
+    nav.appendChild(createGroupPill('全部', currentSubGroup === 'all', false));
     stickerGroups.forEach(g => {
-        nav.appendChild(createGroupPill(g, currentSubGroup === g));
+        nav.appendChild(createGroupPill(g, currentSubGroup === g, true));
     });
 
-    // "+" 添加分组按钮
     const addBtn = document.createElement('div');
     addBtn.className = 'sticker-group-pill';
     addBtn.innerText = '+';
     addBtn.onclick = () => {
         showPromptDialog("New Group", "新建分组名称", (name) => {
+            if(!name) return;
             if(stickerGroups.includes(name)) return showSystemAlert('分组已存在');
             stickerGroups.push(name);
-            saveGroups();
-            renderSubGroups();
+            saveGroups(); renderSubGroups();
         });
     }
     nav.appendChild(addBtn);
 }
 
-function createGroupPill(name, isActive) {
+function createGroupPill(name, isActive, canEdit) {
     const el = document.createElement('div');
     el.className = `sticker-group-pill ${isActive ? 'active' : ''}`;
     el.innerText = name;
     el.onclick = () => {
         currentSubGroup = (name === '全部') ? 'all' : name;
-        renderSubGroups();
-        renderStickers();
+        renderSubGroups(); renderStickers();
     };
+    // 分组长按逻辑
+    if (canEdit) {
+        let timer = null;
+        let startX, startY;
+        const startPress = (e) => {
+            if(e.touches) { startX = e.touches[0].clientX; startY = e.touches[0].clientY; }
+            timer = setTimeout(() => {
+                if(navigator.vibrate) navigator.vibrate(50);
+                showConfirmDialog(`删除“${name}”分组吗？`, () => {
+                    stickersDB = stickersDB.filter(s => s.group !== name);
+                    stickerGroups = stickerGroups.filter(g => g !== name);
+                    currentSubGroup = 'all';
+                    saveGroups(); saveStickers();
+                    renderSubGroups(); renderStickers();
+                    showSystemAlert('分组已删除');
+                });
+            }, 600);
+        };
+        const movePress = (e) => {
+            if(!timer) return;
+            if(e.touches) {
+                // ★ 防抖：移动超过 10px 才算取消
+                if(Math.abs(e.touches[0].clientX - startX) > 10 || Math.abs(e.touches[0].clientY - startY) > 10) {
+                    clearTimeout(timer); timer = null;
+                }
+            }
+        };
+        const cancelPress = () => { if(timer) { clearTimeout(timer); timer = null; } };
+        
+        el.addEventListener('touchstart', startPress, {passive: true});
+        el.addEventListener('touchmove', movePress, {passive: true});
+        el.addEventListener('touchend', cancelPress);
+        el.addEventListener('mousedown', startPress);
+        el.addEventListener('mouseup', cancelPress);
+        el.addEventListener('mouseleave', cancelPress);
+    }
     return el;
 }
 
-// 5. 渲染表情 (带筛选)
+// ====================
+// 表情渲染 (Add按钮在格子里)
+// ====================
 function renderStickers() {
     const grid = document.getElementById('sticker-grid-view');
     grid.innerHTML = '';
     
+    // 多选栏
+    let multiBar = document.getElementById('multi-select-bar');
+    if (!multiBar) {
+        multiBar = document.createElement('div');
+        multiBar.id = 'multi-select-bar';
+        multiBar.className = 'multi-select-bar';
+        multiBar.innerHTML = `
+            <div class="multi-btn cancel" onclick="exitMultiSelect()">退出多选</div>
+            <div style="font-size:12px; color:#999;">已选 <span id="multi-count">0</span> 项</div>
+            <div class="multi-btn del" onclick="deleteSelectedStickers()">删除</div>
+        `;
+        const panel = document.querySelector('.sticker-glass-panel');
+        if(panel) panel.appendChild(multiBar);
+    }
+    multiBar.style.display = isMultiSelectMode ? 'flex' : 'none';
+
+    // ★★★ 重点：Add 按钮作为第一个格子回归！ ★★★
+    if (!isMultiSelectMode && (currentStickerTab === 'fav' || currentStickerTab === 'ai')) {
+        const addBtn = document.createElement('div');
+        addBtn.className = 'sticker-item add-item'; 
+        addBtn.style.border = '2px dashed #e0e0e0';
+        addBtn.style.backgroundColor = '#f9f9f9';
+        addBtn.style.display = 'flex';
+        addBtn.style.alignItems = 'center';
+        addBtn.style.justifyContent = 'center';
+        addBtn.innerHTML = `<span style="font-size: 28px; color: #ccc;">+</span>`;
+        // 点击弹出选择菜单
+        addBtn.onclick = (e) => showAddChoiceMenu(e);
+        grid.appendChild(addBtn);
+    }
+
     let list = stickersDB.filter(s => s.type === currentStickerTab);
-    
-    // 如果不是 AI Tab，且选择了特定分组，进行筛选
     if (currentStickerTab !== 'ai' && currentSubGroup !== 'all') {
         list = list.filter(s => s.group === currentSubGroup || (!s.group && currentSubGroup === '默认'));
-    }
-    
-    if (list.length === 0) {
-        grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#ccc; font-size:12px; margin-top:20px;">这里空空如也...</div>`;
-        return;
     }
 
     list.forEach(s => {
         const item = document.createElement('div');
-        item.className = 'sticker-item';
+        const isSel = selectedStickerIds.includes(s.id);
+        item.className = `sticker-item ${isMultiSelectMode && isSel ? 'selected' : ''}`;
         item.style.backgroundImage = `url('${s.url}')`;
         item.innerHTML = `<div class="sticker-name-tag">${s.name}</div>`;
         
-        item.onclick = () => sendSticker(s);
+        // 阻止默认菜单，防止冲突
+        item.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); return false; };
+
+        item.onclick = () => {
+            if (isMultiSelectMode) { toggleSelection(s.id); } else { sendSticker(s); }
+        };
         
-        // 绑定长按菜单
         bindStickerLongPress(item, s);
-        
         grid.appendChild(item);
     });
 }
 
-// 6. Ins风长按菜单逻辑
-function bindStickerLongPress(el, sticker) {
+// ★★★ 核心修复：长按防抖逻辑 ★★★
+function bindStickerLongPress(element, sticker) {
     let timer;
+    let startX, startY;
+
     const start = (e) => {
+        if(e.touches) {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        }
         timer = setTimeout(() => {
+            const x = e.touches ? e.touches[0].clientX : e.clientX;
+            const y = e.touches ? e.touches[0].clientY : e.clientY;
+            showStickerContextMenu(x, y, sticker);
             if(navigator.vibrate) navigator.vibrate(50);
-            showStickerContextMenu(e.touches[0].clientX, e.touches[0].clientY, sticker);
-        }, 600);
+        }, 500); // 500ms 长按
     };
-    const end = () => clearTimeout(timer);
-    el.addEventListener('touchstart', start);
-    el.addEventListener('touchend', end);
-    el.addEventListener('touchmove', end);
+
+    const move = (e) => {
+        if(!timer) return;
+        // 如果移动距离超过 10px，才取消长按
+        if(e.touches) {
+            const moveX = e.touches[0].clientX;
+            const moveY = e.touches[0].clientY;
+            if(Math.abs(moveX - startX) > 10 || Math.abs(moveY - startY) > 10) {
+                clearTimeout(timer);
+                timer = null;
+            }
+        }
+    };
+
+    const end = () => { if(timer) { clearTimeout(timer); timer = null; } };
+
+    element.addEventListener('touchstart', start, {passive: true});
+    element.addEventListener('touchmove', move, {passive: true}); // 这里不直接end，而是check move
+    element.addEventListener('touchend', end);
+    element.addEventListener('mousedown', start);
+    element.addEventListener('mouseup', end);
+    element.addEventListener('mouseleave', end);
 }
 
-function showStickerContextMenu(x, y, sticker) {
-    // 移除旧菜单
+// ====================
+// ★ 上传逻辑 (经典版还原)
+// ====================
+
+// 1. 显示选择菜单
+window.showAddChoiceMenu = function(e) {
     const old = document.getElementById('ins-sticker-menu');
     if(old) old.remove();
 
@@ -5135,133 +5241,212 @@ function showStickerContextMenu(x, y, sticker) {
     menu.id = 'ins-sticker-menu';
     menu.className = 'ins-context-menu';
     
-    // 动态生成分组移动选项
-    let moveOptions = '';
-    stickerGroups.forEach(g => {
-        if(g !== sticker.group) {
-            moveOptions += `<div class="ins-menu-item" onclick="moveStickerTo('${sticker.id}', '${g}')">移至: ${g}</div>`;
+    menu.innerHTML = `
+        <div class="ins-menu-item" onclick="openFileUploader()">🖼️ 相册选图 (批量预览)</div>
+        <div class="ins-menu-item" onclick="openBulkUrlUploader()">📝 文本导入 (批量粘贴)</div>
+    `;
+
+    document.body.appendChild(menu);
+    // 居中
+    menu.style.position = 'fixed';
+    menu.style.top = '50%';
+    menu.style.left = '50%';
+    menu.style.transform = 'translate(-50%, -50%)';
+
+    setTimeout(() => { document.addEventListener('click', closeStickerMenu, { once: true }); }, 100);
+}
+
+window.closeAllPopups = function() {
+    document.getElementById('sticker-file-overlay').style.display = 'none';
+    document.getElementById('sticker-url-overlay').style.display = 'none';
+}
+
+// --- A. 相册上传 (列表预览) ---
+window.openFileUploader = function() {
+    tempStickerList = [];
+    document.getElementById('sticker-preview-list').innerHTML = '';
+    document.getElementById('sticker-file-overlay').style.display = 'flex';
+    setTimeout(() => document.getElementById('sticker-file-input').click(), 100);
+};
+
+window.handleStickerFiles = function(input) {
+    if (input.files && input.files.length > 0) {
+        Array.from(input.files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const name = file.name.replace(/\.[^/.]+$/, "");
+                addPreviewItem(e.target.result, name);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+    input.value = ''; 
+};
+
+function addPreviewItem(url, name) {
+    const list = document.getElementById('sticker-preview-list');
+    const idx = tempStickerList.length;
+    tempStickerList.push({ url: url, name: name });
+
+    const item = document.createElement('div');
+    item.className = 'upload-preview-item';
+    item.id = `temp-sticker-${idx}`;
+    item.innerHTML = `
+        <div class="up-thumb" style="background-image: url('${url}')"></div>
+        <input type="text" class="up-input-name" value="${name}" 
+               placeholder="名称" oninput="tempStickerList[${idx}].name=this.value">
+        <div class="up-del" onclick="removeTempSticker(${idx})">×</div>
+    `;
+    list.appendChild(item);
+    list.scrollTop = list.scrollHeight;
+}
+
+window.removeTempSticker = (idx) => {
+    document.getElementById(`temp-sticker-${idx}`).remove();
+    tempStickerList[idx] = null;
+};
+
+window.saveFileStickers = function() {
+    const valid = tempStickerList.filter(s => s !== null);
+    if (valid.length === 0) { closeAllPopups(); return; }
+
+    let group = (currentStickerTab === 'ai') ? null : (currentSubGroup === 'all' ? '默认' : currentSubGroup);
+    let type = (currentStickerTab === 'ai') ? 'ai' : 'fav';
+
+    valid.forEach(s => {
+        stickersDB.push({
+            id: 's_' + Date.now() + Math.random().toString(36).substr(2, 5),
+            url: s.url, name: s.name || '表情', type: type, group: group
+        });
+    });
+    saveStickers(); renderStickers();
+    closeAllPopups();
+    showSystemAlert(`导入了 ${valid.length} 张图片！`);
+};
+
+// --- B. 批量文本导入 (图3模式) ---
+window.openBulkUrlUploader = function() {
+    document.getElementById('bulk-url-input').value = '';
+    document.getElementById('sticker-url-overlay').style.display = 'flex';
+    setTimeout(() => document.getElementById('bulk-url-input').focus(), 100);
+};
+
+window.saveBulkUrlStickers = function() {
+    const text = document.getElementById('bulk-url-input').value;
+    const lines = text.split('\n');
+    let count = 0;
+
+    let group = (currentStickerTab === 'ai') ? null : (currentSubGroup === 'all' ? '默认' : currentSubGroup);
+    let type = (currentStickerTab === 'ai') ? 'ai' : 'fav';
+
+    lines.forEach(line => {
+        line = line.trim();
+        if (!line) return;
+        
+        let parts = line.split(/\s+/);
+        let name = '表情';
+        let url = '';
+
+        if (parts.length >= 2) {
+            name = parts[0];
+            url = parts[1];
+        } else if (parts.length === 1) {
+            url = parts[0];
+        }
+
+        if (url && url.includes('http')) {
+            stickersDB.push({
+                id: 's_' + Date.now() + Math.random().toString(36).substr(2, 5),
+                url: url, name: name, type: type, group: group
+            });
+            count++;
         }
     });
 
+    if (count > 0) {
+        saveStickers(); renderStickers();
+        closeAllPopups();
+        showSystemAlert(`成功添加 ${count} 个链接！`);
+    } else {
+        showSystemAlert('没识别到链接哦(T_T)');
+    }
+};
+
+// ====================
+// 辅助功能
+// ====================
+function showStickerContextMenu(x, y, sticker) {
+    const old = document.getElementById('ins-sticker-menu');
+    if(old) old.remove();
+
+    const menu = document.createElement('div');
+    menu.id = 'ins-sticker-menu';
+    menu.className = 'ins-context-menu';
+    
+    let moveOptions = '';
+    if (currentStickerTab !== 'ai') {
+        stickerGroups.forEach(g => {
+            if(g !== sticker.group) {
+                moveOptions += `<div class="ins-menu-item" onclick="moveStickerTo('${sticker.id}', '${g}')">移至: ${g}</div>`;
+            }
+        });
+    }
+
     menu.innerHTML = `
+        <div class="ins-menu-item" onclick="startMultiSelect()">★ 批量管理 (多选)</div>
         <div class="ins-menu-item" onclick="copyStickerUrl('${sticker.url}')">复制链接 <span>🔗</span></div>
         ${moveOptions}
         <div class="ins-menu-item danger" onclick="deleteSticker('${sticker.id}')">删除 <span>🗑️</span></div>
     `;
 
     document.body.appendChild(menu);
-    
-    // 智能定位防止溢出
-    const rect = menu.getBoundingClientRect();
-    let top = y + 10;
-    let left = x - rect.width / 2;
+    let left = x - 75; let top = y + 10;
     if(left < 10) left = 10;
-    if(left + rect.width > window.innerWidth) left = window.innerWidth - rect.width - 10;
-    if(top + rect.height > window.innerHeight) top = y - rect.height - 10;
-
-    menu.style.top = top + 'px';
-    menu.style.left = left + 'px';
-
-    // 点击外部关闭
-    setTimeout(() => {
-        document.addEventListener('click', closeStickerMenu, { once: true });
-    }, 100);
+    if(top + 150 > window.innerHeight) top = y - 150;
+    menu.style.top = top + 'px'; menu.style.left = left + 'px';
+    setTimeout(() => { document.addEventListener('click', closeStickerMenu, { once: true }); }, 100);
 }
 
-function closeStickerMenu() {
-    const menu = document.getElementById('ins-sticker-menu');
-    if(menu) menu.remove();
-}
+function closeStickerMenu() { const m = document.getElementById('ins-sticker-menu'); if(m) m.remove(); }
 
-// 菜单动作
+function toggleSelection(id) {
+    if (selectedStickerIds.includes(id)) selectedStickerIds = selectedStickerIds.filter(i => i !== id);
+    else selectedStickerIds.push(id);
+    document.getElementById('multi-count').innerText = selectedStickerIds.length;
+    renderStickers(); 
+}
+window.exitMultiSelect = () => { isMultiSelectMode = false; selectedStickerIds = []; renderStickers(); };
+window.startMultiSelect = () => { isMultiSelectMode = true; selectedStickerIds = []; renderStickers(); closeStickerMenu(); };
+window.deleteSelectedStickers = () => {
+    if (selectedStickerIds.length === 0) return;
+    showConfirmDialog(`删除 ${selectedStickerIds.length} 个表情？`, () => {
+        stickersDB = stickersDB.filter(s => !selectedStickerIds.includes(s.id));
+        saveStickers(); exitMultiSelect();
+    });
+};
+
 window.moveStickerTo = (id, group) => {
     const s = stickersDB.find(x => x.id === id);
-    if(s) {
-        s.group = group;
-        saveStickers();
-        renderStickers();
-        showSystemAlert(`已移动到 ${group}`);
-    }
+    if(s) { s.group = group; saveStickers(); renderStickers(); showSystemAlert(`已移动到 ${group}`); }
 };
-window.copyStickerUrl = (url) => {
-    navigator.clipboard.writeText(url);
-    showSystemAlert('链接已复制');
-};
+window.copyStickerUrl = (url) => { navigator.clipboard.writeText(url); showSystemAlert('链接已复制'); };
 window.deleteSticker = (id) => {
-    if(confirm('确定删除这个表情吗？')) {
-        stickersDB = stickersDB.filter(s => s.id !== id);
-        saveStickers();
-        renderStickers();
-    }
+    if(confirm('删除这个表情？')) { stickersDB = stickersDB.filter(s => s.id !== id); saveStickers(); renderStickers(); }
 };
 
-// 数据持久化
 function saveGroups() { localforage.setItem('stickerGroups', stickerGroups); }
 function saveStickers() { localforage.setItem('stickersData', stickersDB); }
-
-// 发送逻辑
 function sendSticker(stickerObj) {
     if (!currentChatId) return;
     const chat = chatsData.find(c => c.id === currentChatId);
-    
-    // 构建消息对象
-    const msg = {
-        id: Date.now(),
-        role: 'me',
-        type: 'sticker',
-        content: stickerObj.url, 
-        desc: stickerObj.name,   
-        time: new Date()
-    };
-    
-    chat.messages.push(msg);
+    if(!chat) return;
+    chat.messages.push({
+        id: Date.now(), role: 'me', type: 'sticker',
+        content: stickerObj.url, desc: stickerObj.name, time: new Date()
+    });
     saveChatAndRefresh(chat);
     toggleStickerMenu(); 
 }
-
-// 批量上传 (兼容分组)
-window.openStickerUploader = () => {
-    tempStickerList = [];
-    document.getElementById('sticker-preview-list').innerHTML = '';
-    document.getElementById('sticker-upload-overlay').style.display = 'flex';
-};
-window.closeStickerUploader = () => document.getElementById('sticker-upload-overlay').style.display = 'none';
-
-window.handleStickerFiles = (input) => {
-    Array.from(input.files).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (e) => addPreviewItem(e.target.result, file.name.replace(/\.[^/.]+$/, ""));
-        reader.readAsDataURL(file);
-    });
-};
-
-function addPreviewItem(url, name) {
-    tempStickerList.push({ url, name });
-    const idx = tempStickerList.length - 1;
-    const div = document.createElement('div');
-    div.className = 'upload-preview-item';
-    div.innerHTML = `
-        <div class="up-thumb" style="background-image: url('${url}')"></div>
-        <input type="text" class="up-input" value="${name}" onchange="updateTempSticker(${idx}, this.value)">
-        <div class="up-del" onclick="removeTempSticker(this, ${idx})">×</div>
-    `;
-    document.getElementById('sticker-preview-list').appendChild(div);
-}
-
-window.updateTempSticker = (idx, val) => { if(tempStickerList[idx]) tempStickerList[idx].name = val; }
-window.removeTempSticker = (el, idx) => { el.parentElement.remove(); delete tempStickerList[idx]; }
-
-window.saveNewStickers = () => {
-    const valid = tempStickerList.filter(s => s);
-    if (valid.length === 0) return closeStickerUploader();
-    valid.forEach(s => {
-        stickersDB.push({
-            id: 's_' + Date.now() + Math.random().toString(36).substr(2, 5),
-            url: s.url, name: s.name, type: 'fav', group: currentSubGroup === 'all' ? '默认' : currentSubGroup
-        });
-    });
-    saveStickers(); renderStickers(); closeStickerUploader();
-};
 // ==========================================================
 // ★ 全局字体系统 (Global Font System)
 // ==========================================================

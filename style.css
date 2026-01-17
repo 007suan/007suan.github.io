@@ -104,7 +104,7 @@ body {
    4. DESKTOP WIDGETS (桌面组件)
    ========================================================================== */
 /* APP 图标 */
-.app-grid { display: grid; grid-template-columns: repeat(4, 1fr); row-gap: 20px; column-gap: 15px; margin-top: 30px; padding: 0 10px; width: 100%; }
+.app-grid { display: grid; grid-template-columns: repeat(4, 1fr); row-gap: 20px; column-gap: 15px; margin-top: 15px; padding: 0 10px; width: 100%; }
 .app-item { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; transition: transform 0.1s; }
 .app-item:active { transform: scale(0.95); }
 .app-icon { width: var(--app-icon-size); height: var(--app-icon-size); background-color: var(--app-icon-default); border-radius: 14px; position: relative; overflow: hidden; background-size: cover; background-position: center; }
@@ -157,7 +157,7 @@ body {
     display: flex;
     justify-content: space-between; /* 左右两边贴边对齐 */
     align-items: flex-start;
-    gap: 13px; /* 左右大区块之间的间距 */
+    gap: 11px; /* 左右大区块之间的间距 */
 }
 
 /* 左边的大方块 (移植了V2的Ins风样式) */
@@ -187,8 +187,8 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr;
     /* ★★★ 关键修改在这里 ★★★ */
-    row-gap: 32.5px;    /* 行间距加大：上下更松 */
-    column-gap: 14px; /* 列间距减小：左右更紧 */
+    row-gap: 15px;    /* 行间距加大：上下更松 */
+    column-gap: 7px; /* 列间距减小：左右更紧 */
     align-content: start;
     padding-top: 5px; /* 稍微往下压一点，和左边大图视觉居中 */
 }
@@ -197,7 +197,7 @@ body {
 .app-grid {
     display: flex;
     justify-content: space-between;
-    padding: 0 5px;
+    padding: -1px 10px;
 }
 
 /* ==========================================================================
