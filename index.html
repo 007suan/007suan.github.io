@@ -52,8 +52,8 @@
         </div>
 
         <div class="widget-dual-row">
-            <div class="ins-square-widget upload-img" id="widget_sq_1" style="background-image: url('https://i.postimg.cc/k4kM9S5z/cat-bw.jpg');"></div>
-            <div class="ins-square-widget upload-img" id="widget_sq_2" style="background-image: url('https://i.postimg.cc/cH0z0d00/city-bw.jpg');"></div>
+            <div class="ins-square-widget upload-img" id="widget_sq_1"></div>
+            <div class="ins-square-widget upload-img" id="widget_sq_2"></div>
         </div>
 
         <div class="app-grid">
@@ -64,69 +64,69 @@
         </div>
     </div>
 
-    <div class="desktop-page" id="page-2">
-        <div class="top-widget-area">
-            <div class="side-pills">
-                <div class="pill edit-text" id="widget_top_l1">*｡☆梦游症🎧｡*</div>
-                <div class="pill edit-text" id="widget_top_l2">|||||||||| 17:49</div>
-            </div>
-            <div class="center-avatar-area">
-                <div class="avatar-circle upload-img" id="widget_center_avatar"></div>
-                <div class="widget-text-sm edit-text" id="widget_center_t1">☆*: .｡. .｡.:*☆</div>
-                <div class="widget-text-sm edit-text" id="widget_center_t2" style="margin-top:2px">♥ Memories </div>
-                <div class="widget-title edit-text" id="widget_center_title">Top Widgets⁺</div>
-            </div>
-            <div class="side-pills">
-                <div class="pill edit-text" id="widget_top_r1">⋈ 158GB</div>
-                <div class="pill edit-text" id="widget_top_r2">♡milkㄐ kitty 9*</div>
-            </div>
-        </div>
-
-        <div class="photo-widget-area">
-            <div class="star-decoration">★</div>
-            <div class="polaroid p-left">
-                <div class="clip"></div>
-                <div class="polaroid-img upload-img" id="photo_polaroid_left"></div>
-            </div>
-            <div class="polaroid p-center">
-                <div class="clip" style="left: 40px;"></div>
-                <div class="polaroid-img upload-img" id="photo_polaroid_center"></div>
-            </div>
-            <div class="polaroid p-right">
-                <div style="position:absolute; top:-5px; right:30px; width:40px; height:12px; background:rgba(255,255,255,0.7); transform:rotate(5deg); box-shadow:0 1px 2px rgba(0,0,0,0.1);"></div>
-                <div class="polaroid-img upload-img" id="photo_polaroid_right"></div>
-            </div>
-            <div class="widget-label-centered edit-text" id="photo_widget_label">Top Widgets⁺</div>
-        </div>
-
-        <div class="app-grid" id="desktopGrid">
-<div class="app-item" id="app-wechat" onclick="openApp('wechat')">
-    <div style="position: relative;">
-        <div class="app-icon" id="icon_app_wechat" style="background-color: #07c160;"></div> 
+<div class="desktop-page" id="page-2">
+    <div class="widgy-container">
         
-        <div class="app-badge" id="desktop-badge-wechat">0</div>
-    </div>
-    
-    <div class="app-name edit-text" id="name_app_wechat">微信</div>
-</div>
-            <div class="app-item">
-                <div class="app-icon" id="icon_app_world"></div>
-                <div class="app-name edit-text" id="name_app_world">世界书</div>
+        <div class="widgy-large-card">
+            <div class="w-top-part">
+                <div class="w-mini-cover upload-img"></div>
+                <div class="w-star-icon edit-text">★</div>
             </div>
-            <div class="app-item" id="app-settings" onclick="openApp('settings')">
-                <div class="app-icon" id="icon_app_settings" style="background-color: #8e8e93;"></div> 
-                <div class="app-name edit-text" id="name_app_settings">设置</div>
+            <div class="w-bottom-part">
+                <div class="w-thumb-item upload-img" style="background-color: #ddd;"></div>
+                <div class="w-thumb-item upload-img" style="background-color: #ccc;"></div>
+                <div class="w-thumb-item upload-img" style="background-color: #bbb;"></div>
+                <div class="w-thumb-item upload-img" style="background-color: #aaa;"></div>
             </div>
-            <div class="app-item" id="app-music" onclick="openApp('music')">
-                <div class="app-icon" id="icon_app_music" style="background-color: #fa233b;"></div> 
-                <div class="app-name edit-text" id="name_app_music">音乐</div>
-            </div>
-            <div class="app-item"><div class="app-icon upload-img" id="icon_app_idle_1" style="background-color: #ffcc00;"></div><div class="app-name edit-text" id="name_app_idle_1">相册</div></div>
-            <div class="app-item"><div class="app-icon upload-img" id="icon_app_idle_2" style="background-color: #5ac8fa;"></div><div class="app-name edit-text" id="name_app_idle_2">天气</div></div>
-            <div class="app-item"><div class="app-icon upload-img" id="icon_app_idle_3" style="background-color: #ff9500;"></div><div class="app-name edit-text" id="name_app_idle_3">备忘录</div></div>
-            <div class="app-item"><div class="app-icon upload-img" id="icon_app_idle_4" style="background-color: #af52de;"></div><div class="app-name edit-text" id="name_app_idle_4">播客</div></div>
         </div>
+
+        <div class="widgy-mid-row">
+            
+            <div class="big-photo-widget upload-img">
+                <div class="photo-tag edit-text">Focus</div>
+            </div>
+
+            <div class="widgy-small-grid">
+                <div class="app-item" onclick="openApp('music')">
+                    <div id="app-icon-kugou" class="app-icon" style="background-image: url('https://i.postimg.cc/J4YWwPZb/wu-biao-ti119-20260117103559.png');"></div>
+                    <div class="app-name">酷狗音乐</div>
+                </div>
+                <div class="app-item" onclick="openApp('clock')">
+                    <div id="app-icon-clock-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/XJPvY4y2/wu-biao-ti119-20260117101753.png');"></div>
+                    <div class="app-name">时钟</div>
+                </div>
+                <div class="app-item" onclick="openApp('camera')">
+                    <div id="app-icon-camera-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/j51jStJv/wu-biao-ti119-20260117101925.png');"></div>
+                    <div class="app-name">相机</div>
+                </div>
+                <div class="app-item" onclick="openApp('browser')">
+                    <div id="app-icon-safari" class="app-icon" style="background-image: url('https://i.postimg.cc/sDHRFw7Y/wu-biao-ti119-20260117103533.png');"></div>
+                    <div class="app-name">Safari浏览器</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-grid" style="margin-top: 15px;">
+            <div class="app-item" onclick="openApp('settings')">
+                <div id="app-icon-settings-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/85YCzNr0/wu-biao-ti119-20260117101553.png');"></div>
+                <div class="app-name">设置</div>
+            </div>
+            <div class="app-item" onclick="openApp('gallery')">
+                <div id="app-icon-photos-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/xCZd1nbx/wu-biao-ti119-20260117101708.png');"></div>
+                <div class="app-name">相册</div>
+            </div>
+            <div class="app-item" onclick="openApp('douyin')">
+                <div id="app-icon-douyin" class="app-icon" style="background-image: url('https://i.postimg.cc/nchtw6jd/wu-biao-ti119-20260117103441.png');"></div>
+                <div class="app-name">抖音</div>
+            </div>
+            <div class="app-item" onclick="openApp('map')">
+                <div id="app-icon-map-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/26t5SrBx/wu-biao-ti119-20260117102041.png');"></div>
+                <div class="app-name">地图</div>
+            </div>
+        </div>
+
     </div>
+</div>
 
     <div class="desktop-page" id="page-3">
         <div style="height: 100%; display:flex; justify-content:center; align-items:center; color:#ccc; font-size:12px;">
@@ -148,12 +148,20 @@
     </div>
 </div>
 
-        <div class="dock" id="dockGrid">
-            <div class="app-item" style="margin-bottom: 0;"><div class="app-icon" id="dock_icon_1"></div></div>
-            <div class="app-item" style="margin-bottom: 0;"><div class="app-icon" id="dock_icon_2"></div></div>
-            <div class="app-item" style="margin-bottom: 0;"><div class="app-icon" id="dock_icon_3"></div></div>
-            <div class="app-item" style="margin-bottom: 0;"><div class="app-icon" id="dock_icon_4"></div></div>
-        </div>
+<div class="dock" id="dockGrid">
+    <div class="app-item" style="margin-bottom: 0;" onclick="openApp('wechat')">
+        <div class="app-icon" id="wechat" style="background-image: url('https://i.postimg.cc/HxnxmVjP/wu-biao-ti119-20260117102207.png');"></div>
+    </div>
+    <div class="app-item" style="margin-bottom: 0;" onclick="openApp('qq')">
+        <div class="app-icon" id="QQ" style="background-image: url('https://i.postimg.cc/QtCtDHVz/wu-biao-ti119-20260117102253.png');"></div>
+    </div>
+    <div class="app-item" style="margin-bottom: 0;" onclick="openApp('messages')">
+        <div class="app-icon" id="iMessage" style="background-image: url('https://i.postimg.cc/Y9097hjD/wu-biao-ti119-20260117102401.png');"></div>
+    </div>
+    <div class="app-item" style="margin-bottom: 0;" onclick="openApp('phone')">
+        <div class="app-icon" id="telephone" style="background-image: url('https://i.postimg.cc/k4G4CBDp/wu-biao-ti119-20260117102457.png');"></div>
+    </div>
+</div>
 
         <div id="app-window-wechat" class="app-window">
             <div id="wx-main-view" style="position: relative; height: 100%; display: flex; flex-direction: column;">
