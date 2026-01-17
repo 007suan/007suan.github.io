@@ -5227,151 +5227,123 @@ function bindStickerLongPress(element, sticker) {
     element.addEventListener('mouseup', end);
     element.addEventListener('mouseleave', end);
 }
+// ==========================================
+// ★ 完美版：表情包上传逻辑 (Ins Style)
+// ==========================================
 
-// ====================
-// ★ 上传逻辑 (经典版还原)
-// ====================
-
-// 1. 显示选择菜单
-window.showAddChoiceMenu = function(e) {
-    const old = document.getElementById('ins-sticker-menu');
-    if(old) old.remove();
-
-    const menu = document.createElement('div');
-    menu.id = 'ins-sticker-menu';
-    menu.className = 'ins-context-menu';
+// 1. 打开弹窗 (自动判断是 AI 还是 普通)
+window.openStickerUploader = function() {
+    const overlay = document.getElementById('sticker-upload-overlay');
+    const input = document.getElementById('sticker-bulk-input');
+    const tip = document.getElementById('upload-tip-text');
     
-    menu.innerHTML = `
-        <div class="ins-menu-item" onclick="openFileUploader()">🖼️ 相册选图 (批量预览)</div>
-        <div class="ins-menu-item" onclick="openBulkUrlUploader()">📝 文本导入 (批量粘贴)</div>
-    `;
-
-    document.body.appendChild(menu);
-    // 居中
-    menu.style.position = 'fixed';
-    menu.style.top = '50%';
-    menu.style.left = '50%';
-    menu.style.transform = 'translate(-50%, -50%)';
-
-    setTimeout(() => { document.addEventListener('click', closeStickerMenu, { once: true }); }, 100);
-}
-
-window.closeAllPopups = function() {
-    document.getElementById('sticker-file-overlay').style.display = 'none';
-    document.getElementById('sticker-url-overlay').style.display = 'none';
-}
-
-// --- A. 相册上传 (列表预览) ---
-window.openFileUploader = function() {
-    tempStickerList = [];
-    document.getElementById('sticker-preview-list').innerHTML = '';
-    document.getElementById('sticker-file-overlay').style.display = 'flex';
-    setTimeout(() => document.getElementById('sticker-file-input').click(), 100);
-};
-
-window.handleStickerFiles = function(input) {
-    if (input.files && input.files.length > 0) {
-        Array.from(input.files).forEach(file => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const name = file.name.replace(/\.[^/.]+$/, "");
-                addPreviewItem(e.target.result, name);
-            };
-            reader.readAsDataURL(file);
-        });
+    // 清空上次的内容
+    if(input) input.value = "";
+    
+    // 显示弹窗
+    if(overlay) overlay.style.display = 'flex';
+    
+    // 智能提示当前是给谁加表情
+    if(tip) {
+        if (typeof currentStickerTab !== 'undefined' && currentStickerTab === 'ai') {
+            tip.innerText = "正在添加：char 专属表情 (记得起个好名字哦)";
+            tip.style.color = "#007aff";
+        } else {
+            let gName = (typeof currentSubGroup !== 'undefined' && currentSubGroup !== 'all') ? currentSubGroup : '默认';
+            tip.innerText = `正在添加至：${gName} 分组`;
+            tip.style.color = "#999";
+        }
     }
-    input.value = ''; 
+    
+    // 自动聚焦
+    setTimeout(() => { if(input) input.focus(); }, 100);
 };
 
-function addPreviewItem(url, name) {
-    const list = document.getElementById('sticker-preview-list');
-    const idx = tempStickerList.length;
-    tempStickerList.push({ url: url, name: name });
-
-    const item = document.createElement('div');
-    item.className = 'upload-preview-item';
-    item.id = `temp-sticker-${idx}`;
-    item.innerHTML = `
-        <div class="up-thumb" style="background-image: url('${url}')"></div>
-        <input type="text" class="up-input-name" value="${name}" 
-               placeholder="名称" oninput="tempStickerList[${idx}].name=this.value">
-        <div class="up-del" onclick="removeTempSticker(${idx})">×</div>
-    `;
-    list.appendChild(item);
-    list.scrollTop = list.scrollHeight;
-}
-
-window.removeTempSticker = (idx) => {
-    document.getElementById(`temp-sticker-${idx}`).remove();
-    tempStickerList[idx] = null;
+// 2. 关闭弹窗
+window.closeStickerUploader = function() {
+    const overlay = document.getElementById('sticker-upload-overlay');
+    if(overlay) overlay.style.display = 'none';
 };
 
-window.saveFileStickers = function() {
-    const valid = tempStickerList.filter(s => s !== null);
-    if (valid.length === 0) { closeAllPopups(); return; }
+// 3. 处理相册选图 (转成 Base64 并自动填入文本框)
+window.handleStickerFilesV2 = function(input) {
+    const textarea = document.getElementById('sticker-bulk-input');
+    if(!textarea) return;
 
-    let group = (currentStickerTab === 'ai') ? null : (currentSubGroup === 'all' ? '默认' : currentSubGroup);
-    let type = (currentStickerTab === 'ai') ? 'ai' : 'fav';
-
-    valid.forEach(s => {
-        stickersDB.push({
-            id: 's_' + Date.now() + Math.random().toString(36).substr(2, 5),
-            url: s.url, name: s.name || '表情', type: type, group: group
-        });
+    showSystemAlert('正在处理图片...稍等哦～');
+    
+    Array.from(input.files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const base64 = e.target.result;
+            // 自动用文件名当名字 (去掉后缀)
+            const name = file.name.replace(/\.[^/.]+$/, ""); 
+            
+            // 追加到文本框里 (格式：名字+空格+Base64+换行)
+            const newLine = `${name} ${base64}\n`;
+            textarea.value = newLine + textarea.value; // 加在最前面方便看
+        };
+        reader.readAsDataURL(file);
     });
-    saveStickers(); renderStickers();
-    closeAllPopups();
-    showSystemAlert(`导入了 ${valid.length} 张图片！`);
+    
+    // 清空文件框，允许重复选同一张
+    input.value = '';
 };
 
-// --- B. 批量文本导入 (图3模式) ---
-window.openBulkUrlUploader = function() {
-    document.getElementById('bulk-url-input').value = '';
-    document.getElementById('sticker-url-overlay').style.display = 'flex';
-    setTimeout(() => document.getElementById('bulk-url-input').focus(), 100);
-};
-
-window.saveBulkUrlStickers = function() {
-    const text = document.getElementById('bulk-url-input').value;
+// 4. 保存全部 (核心解析逻辑)
+window.saveBulkStickers = function() {
+    const textarea = document.getElementById('sticker-bulk-input');
+    if(!textarea) return;
+    
+    const text = textarea.value;
     const lines = text.split('\n');
     let count = 0;
 
-    let group = (currentStickerTab === 'ai') ? null : (currentSubGroup === 'all' ? '默认' : currentSubGroup);
-    let type = (currentStickerTab === 'ai') ? 'ai' : 'fav';
+    // 自动判断类型
+    let type = (typeof currentStickerTab !== 'undefined' && currentStickerTab === 'ai') ? 'ai' : 'fav';
+    let group = (type === 'ai') ? null : ((typeof currentSubGroup !== 'undefined' && currentSubGroup !== 'all') ? currentSubGroup : '默认');
 
     lines.forEach(line => {
         line = line.trim();
         if (!line) return;
         
-        let parts = line.split(/\s+/);
+        // 智能分割：支持 "名字 链接" 或 "链接"
+        // 这里的正则意思是：找到第一个空格，把字符串分成两半
+        let parts = line.split(/\s+(.*)/s); 
+        
         let name = '表情';
         let url = '';
 
-        if (parts.length >= 2) {
+        if (parts.length >= 2 && parts[1]) {
             name = parts[0];
             url = parts[1];
-        } else if (parts.length === 1) {
-            url = parts[0];
+        } else {
+            // 如果没空格，整行就是链接
+            url = parts[0]; 
         }
 
-        if (url && url.includes('http')) {
+        // 简单校验一下是不是链接或者Base64
+        if (url && (url.includes('http') || url.includes('data:image'))) {
             stickersDB.push({
                 id: 's_' + Date.now() + Math.random().toString(36).substr(2, 5),
-                url: url, name: name, type: type, group: group
+                url: url,
+                name: name,
+                type: type,
+                group: group
             });
             count++;
         }
     });
 
     if (count > 0) {
-        saveStickers(); renderStickers();
-        closeAllPopups();
-        showSystemAlert(`成功添加 ${count} 个链接！`);
+        saveStickers(); // 保存到数据库
+        renderStickers(); // 刷新列表
+        closeStickerUploader(); // 关闭弹窗
+        showSystemAlert(`成功添加 ${count} 个表情！(≧∇≦)`);
     } else {
-        showSystemAlert('没识别到链接哦(T_T)');
+        showSystemAlert('没识别到有效的图片链接哦qwq');
     }
 };
-
 // ====================
 // 辅助功能
 // ====================

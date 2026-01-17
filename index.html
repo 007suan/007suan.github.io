@@ -1220,9 +1220,9 @@
 <div id="sticker-picker-overlay" class="sticker-picker-container">
     <div class="sticker-glass-panel">
         <div class="sticker-header">
-            <div class="sticker-tab active" onclick="switchStickerTab('fav')">♥ 收藏</div>
-            <div class="sticker-tab" onclick="switchStickerTab('ai')">★ AI专属</div>
-            <div class="sticker-tab" onclick="switchStickerTab('sys')">♪ 默认</div>
+            <div class="sticker-tab active" onclick="switchStickerTab('fav')">♥ 默认</div>
+            <div class="sticker-tab" onclick="switchStickerTab('ai')">★ char专属</div>
+            <div class="sticker-tab" onclick="switchStickerTab('sys')">(𓐍ㅇㅂㅇ𓐍)</div>
             <div class="sticker-close" onclick="toggleStickerMenu()">×</div>
         </div>
 
@@ -1234,6 +1234,31 @@
             </div>
             <div style="font-size:10px; color:#999;">长按表情包可删除 / Long press to delete</div>
         </div>
+    </div>
+</div>
+<div id="sticker-upload-overlay" class="custom-alert-overlay" style="display: none;">
+    <div class="custom-alert-box ins-style" style="width: 320px; padding: 24px;">
+        <div style="text-align: left; margin-bottom: 16px;">
+            <div class="alert-title" style="font-size: 18px; font-weight: 700; color: #000; margin-bottom: 4px;">Add Stickers</div>
+            <div class="alert-msg" id="upload-tip-text" style="font-size: 13px; color: #999;">支持批量导入 (名称+空格+链接)</div>
+        </div>
+        
+        <textarea id="sticker-bulk-input" class="ins-bulk-textarea" 
+            placeholder="在此粘贴链接...&#10;或者点击下方从相册上传&#10;&#10;示例：&#10;开心 https://img..."></textarea>
+
+        <div class="alert-btn-group" style="margin-top: 20px; display: flex; gap: 12px;">
+            <div class="alert-btn cancel" onclick="closeStickerUploader()" style="flex: 1; background: #f2f2f7; color: #000; font-weight: 600;">Cancel</div>
+            <div class="alert-btn confirm" onclick="saveBulkStickers()" style="flex: 1; background: #007aff; color: #fff; font-weight: 600;">Save All</div>
+        </div>
+        
+        <div style="text-align:center; margin-top: 16px;">
+            <span style="font-size: 13px; color: #007aff; font-weight: 500; cursor: pointer;" 
+                  onclick="document.getElementById('sticker-file-input').click()">
+                + 或者从相册选图
+            </span>
+        </div>
+
+        <input type="file" id="sticker-file-input" multiple accept="image/*" style="display:none;" onchange="handleStickerFilesV2(this)">
     </div>
 </div>
 

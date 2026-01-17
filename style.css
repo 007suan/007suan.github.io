@@ -1579,125 +1579,200 @@ input:checked + .slider:before { transform: translateX(20px); }
 /* ==========================================================================
    23. 表情包系统 (Ins Style Ultimate)
    ========================================================================== */
-/* 容器 & 层级控制 */
-.sticker-picker-container{position:fixed;bottom:0;left:0;width:100%;height:100%;z-index:20000!important;display:none;align-items:flex-end;pointer-events:none}
-.sticker-picker-container.active{display:flex;pointer-events:auto}
-/* 弹窗层级：必须比表情包高 */
-.custom-alert-overlay,#sticker-upload-overlay{z-index:20001!important}
-/* 菜单层级：全场最高 */
-.ins-context-menu{z-index:20002!important;position:fixed;background:rgba(255,255,255,0.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:16px;padding:8px;width:220px;box-shadow:0 10px 40px rgba(0,0,0,0.15);transform-origin:center;animation:menuPop 0.2s cubic-bezier(0.2,0.8,0.2,1)}
-@keyframes menuPop{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
-
-/* 面板样式 */
-.sticker-glass-panel{width:100%;height:45vh;background:rgba(255,255,255,0.92);backdrop-filter:blur(25px);-webkit-backdrop-filter:blur(25px);border-radius:24px 24px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,0.1);display:flex;flex-direction:column;animation:slideUpSticker 0.3s cubic-bezier(0.2,0.8,0.2,1)}
-@keyframes slideUpSticker{from{transform:translateY(100%)}to{transform:translateY(0)}}
-
-/* 导航栏 */
-.sticker-header{display:flex;align-items:center;padding:15px 20px;border-bottom:1px solid rgba(0,0,0,0.05)}
-.sticker-tab{padding:6px 14px;margin-right:10px;font-size:13px;font-weight:600;color:#999;border-radius:12px;cursor:pointer;transition:all 0.2s}
-.sticker-tab.active{background:#333;color:#fff}
-.sticker-close{margin-left:auto;width:30px;height:30px;background:#f0f0f0;border-radius:50%;display:flex;justify-content:center;align-items:center;color:#666;font-size:18px;cursor:pointer}
-
-/* 分组子导航 */
-.sticker-sub-nav{display:flex;gap:10px;overflow-x:auto;padding:10px 15px;background:rgba(255,255,255,0.6);backdrop-filter:blur(10px);border-bottom:1px solid rgba(0,0,0,0.05);scrollbar-width:none}
-.sticker-sub-nav::-webkit-scrollbar{display:none}
-.sticker-group-pill{flex-shrink:0;padding:6px 14px;font-size:12px;font-weight:600;color:#999;background:#f2f2f7;border-radius:16px;transition:all 0.2s}
-.sticker-group-pill.active{background:#000;color:#fff;transform:scale(1.05)}
-
-/* 内容网格 */
-.sticker-grid-scroll{flex:1;overflow-y:auto;padding:20px;display:grid;grid-template-columns:repeat(4,1fr);gap:15px;align-content:start}
-.sticker-item{aspect-ratio:1/1;border-radius:12px;background-size:cover;background-position:center;cursor:pointer;transition:transform 0.1s;background-color:transparent;position:relative}
-.sticker-item:active{transform:scale(0.9)}
-.sticker-name-tag{position:absolute;bottom:0;left:0;width:100%;font-size:9px;color:rgba(0,0,0,0.4);text-align:center;pointer-events:none;opacity:0;transition:opacity 0.2s}
-.sticker-item:hover .sticker-name-tag{opacity:1}
-
-/* 底部与上传 */
-.sticker-footer{padding:10px 20px 30px;border-top:1px solid rgba(0,0,0,0.05);display:flex;justify-content:space-between;align-items:center}
-.sticker-add-btn{background:#f0f0f0;color:#333;padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer}
-.upload-preview-item{display:flex;align-items:center;gap:10px;background:#f9f9f9;padding:8px;border-radius:10px}
-.up-thumb{width:50px;height:50px;border-radius:8px;background-size:cover;background-position:center;flex-shrink:0}
-.up-input{flex:1;border:none;background:transparent;font-size:13px;outline:none}
-.up-del{color:#ff3b30;font-size:18px;padding:5px;cursor:pointer}
-
-/* 菜单项 */
-.ins-menu-item{padding:12px 16px;font-size:14px;color:#333;font-weight:500;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid rgba(0,0,0,0.1)}
-.ins-menu-item:last-child{border-bottom:none}
-.ins-menu-item:active{background:rgba(0,0,0,0.05);border-radius:8px}
-.ins-menu-item.danger{color:#ff3b30}
-
-/* 消息气泡修复 */
-.sticker-img-big{max-width:140px;max-height:140px;border-radius:8px;display:block;object-fit:contain}
-.msg-content.sticker-type{background:transparent!important;box-shadow:none!important;padding:0!important}
-.msg-row.has-tail .msg-content.sticker-type::before{display:none!important}
 /* =======================================================
-   ★ 26. 全局字体设置 (Global Font Settings)
+   1. 全局字体设置 (Global Font Settings)
    ======================================================= */
-
-/* 1. 定义全局变量 (放在 :root 里生效最快) */
 :root {
-    /* 默认字体 */
     --global-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
-
-/* 2. 强制应用到所有元素 */
 body, button, input, textarea, select, .edit-text {
     font-family: var(--global-font) !important;
 }
 
-/* 3. 设置面板样式 (Ins风 - 修复版) */
+/* 字体设置面板 */
 .font-setting-card {
-    /* ★★★ 关键修复：让它横跨整个网格，不再挤格子！ ★★★ */
-    grid-column: 1 / -1 !important; 
-    
-    background: #fff;
-    border-radius: 16px;
-    padding: 20px;
-    margin: 15px 0; /* 这里的左右 margin 改成 0，因为在网格里 */
+    grid-column: 1 / -1 !important; width: 100%;
+    background: #fff; border-radius: 16px; padding: 20px; margin: 15px 0;
     box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-    width: 100%; /* 确保占满 */
 }
-
-.font-input-group {
-    display: flex; gap: 10px; margin-bottom: 15px;
-}
-
+.font-input-group { display: flex; gap: 10px; margin-bottom: 15px; }
 .font-url-input {
-    flex: 1;
-    background: #f5f5f5;
-    border: 1px solid transparent;
-    border-radius: 10px;
-    padding: 10px 12px;
-    font-size: 13px;
-    outline: none;
-    transition: all 0.2s;
+    flex: 1; background: #f5f5f5; border: 1px solid transparent;
+    border-radius: 10px; padding: 10px 12px; font-size: 13px; outline: none; transition: all 0.2s;
 }
 .font-url-input:focus { background: #fff; border-color: #007aff; }
-
 .font-btn {
-    padding: 8px 16px;
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
+    padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
 }
 .font-btn.apply { background: #000; color: #fff; }
 .font-btn.reset { background: #f0f0f0; color: #ff3b30; }
-
-/* 4. 预览区域 */
 .font-preview-box {
-    background: #f9f9f9;
-    border-radius: 12px;
-    padding: 15px;
-    text-align: center;
-    border: 1px dashed #ddd;
-    margin-top: 10px;
+    background: #f9f9f9; border-radius: 12px; padding: 15px; text-align: center;
+    border: 1px dashed #ddd; margin-top: 10px;
 }
-.font-preview-text {
-    font-size: 20px;
-    margin-bottom: 5px;
-    color: #333;
-    /* 这里必须单独应用变量，以防JS还没加载完 */
-    font-family: var(--global-font); 
-}
+.font-preview-text { font-size: 20px; margin-bottom: 5px; color: #333; font-family: var(--global-font); }
 .font-preview-sub { font-size: 12px; color: #999; }
+
+/* =======================================================
+   2. 表情包系统 (Ins Style Ultimate)
+   ======================================================= */
+/* 容器 & 层级 */
+.sticker-picker-container {
+    position: fixed; bottom: 0; left: 0; width: 100%; height: 100%;
+    z-index: 20000 !important; display: none; align-items: flex-end; pointer-events: none;
+}
+.sticker-picker-container.active { display: flex; pointer-events: auto; }
+.sticker-glass-panel {
+    width: 100%; height: 45vh; background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+    border-radius: 24px 24px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
+    display: flex; flex-direction: column; animation: slideUpSticker 0.3s cubic-bezier(0.2,0.8,0.2,1);
+}
+@keyframes slideUpSticker { from { transform: translateY(100%) } to { transform: translateY(0) } }
+
+/* 导航栏 */
+.sticker-header { display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid rgba(0,0,0,0.05); }
+.sticker-tab { padding: 6px 14px; margin-right: 10px; font-size: 13px; font-weight: 600; color: #999; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
+.sticker-tab.active { background: #333; color: #fff; }
+.sticker-close { margin-left: auto; width: 30px; height: 30px; background: #f0f0f0; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #666; font-size: 18px; cursor: pointer; }
+
+/* 分组栏 (修复长按) */
+.sticker-sub-nav { display: flex; gap: 10px; overflow-x: auto; padding: 10px 15px; background: rgba(255,255,255,0.6); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0,0,0,0.05); scrollbar-width: none; }
+.sticker-sub-nav::-webkit-scrollbar { display: none; }
+.sticker-group-pill {
+    flex-shrink: 0; padding: 6px 14px; font-size: 12px; font-weight: 600; color: #999;
+    background: #f2f2f7; border-radius: 16px; transition: all 0.2s;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; /* 长按修复 */
+}
+.sticker-group-pill.active { background: #000; color: #fff; transform: scale(1.05); }
+
+/* 内容网格 (修复长按) */
+.sticker-grid-scroll { flex: 1; overflow-y: auto; padding: 20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; align-content: start; }
+.sticker-item {
+    aspect-ratio: 1/1; border-radius: 12px; background-size: cover; background-position: center;
+    cursor: pointer; transition: transform 0.1s; background-color: transparent; position: relative;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; /* 长按修复 */
+}
+.sticker-item:active { transform: scale(0.9); }
+.sticker-name-tag {
+    position: absolute; bottom: 0; left: 0; width: 100%; font-size: 9px;
+    color: rgba(0,0,0,0.4); text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.2s;
+}
+.sticker-item:hover .sticker-name-tag { opacity: 1; }
+
+/* 底部与上传按钮 */
+.sticker-footer { padding: 10px 20px 30px; border-top: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+.sticker-add-btn { background: #f0f0f0; color: #333; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; }
+
+/* =======================================================
+   3. 弹窗、菜单与上传 (Ins Style)
+   ======================================================= */
+/* 统一弹窗层级 (修复点不动) */
+.custom-alert-overlay, #sticker-upload-overlay { z-index: 20001 !important; }
+
+/* 右键/长按菜单 */
+.ins-context-menu {
+    z-index: 20002 !important; position: fixed; background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px; padding: 8px; width: 220px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15); transform-origin: center;
+    animation: menuPop 0.2s cubic-bezier(0.2,0.8,0.2,1);
+    -webkit-user-select: none; user-select: none;
+}
+@keyframes menuPop { from { opacity: 0; transform: scale(0.9) } to { opacity: 1; transform: scale(1) } }
+.ins-menu-item { padding: 12px 16px; font-size: 14px; color: #333; font-weight: 500; display: flex; justify-content: space-between; align-items: center; border-bottom: 0.5px solid rgba(0,0,0,0.1); }
+.ins-menu-item:last-child { border-bottom: none; }
+.ins-menu-item:active { background: rgba(0,0,0,0.05); border-radius: 8px; }
+.ins-menu-item.danger { color: #ff3b30; }
+
+/* 新增：URL输入框样式 */
+.ins-input-field {
+    flex: 1; background: #f5f5f5; border: 1px solid transparent;
+    border-radius: 8px; padding: 8px 12px; font-size: 14px; outline: none;
+}
+.ins-input-field:focus { background: #fff; border-color: #007aff; }
+.ins-mini-btn {
+    padding: 0 15px; background: #007aff; color: #fff; border-radius: 8px;
+    font-size: 13px; font-weight: 600; display: flex; align-items: center; cursor: pointer;
+}
+.ins-mini-btn:active { opacity: 0.8; }
+
+/* 上传预览列表 (修复版) */
+.upload-preview-item {
+    display: flex; align-items: center; gap: 10px; background: #f9f9f9;
+    padding: 10px; border-radius: 12px; margin-bottom: 10px;
+}
+.up-thumb {
+    width: 44px; height: 44px; border-radius: 8px; flex-shrink: 0;
+    background-size: cover; background-position: center; border: 1px solid #eee;
+}
+.up-input-name { flex: 1; border: none; background: transparent; outline: none; font-size: 14px; }
+.up-url-text { font-size: 10px; color: #aaa; margin-top: 2px; }
+.up-del {
+    width: 24px; height: 24px; background: #ff3b30; color: #fff; border-radius: 50%;
+    display: flex; justify-content: center; align-items: center; font-size: 14px; cursor: pointer;
+}
+
+/* 消息气泡修复 (去掉尾巴背景) */
+.sticker-img-big { max-width: 140px; max-height: 140px; border-radius: 8px; display: block; object-fit: contain; }
+.msg-content.sticker-type { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
+.msg-row.has-tail .msg-content.sticker-type::before { display: none !important; }
+/* style.css */
+
+/* 1. 修复长按菜单/弹窗的点按穿透问题 */
+.custom-alert-overlay { z-index: 10001 !important; }
+.ins-context-menu { z-index: 10002 !important; }
+
+/* 2. 预览列表样式 (修复图4UI不应用的问题) */
+.upload-preview-item {
+    display: flex; align-items: center; gap: 12px;
+    background: #f9f9f9; padding: 12px; border-radius: 12px; 
+    margin-bottom: 10px; border: 1px solid #eee;
+}
+.up-thumb {
+    width: 48px; height: 48px; border-radius: 8px; flex-shrink: 0;
+    background-size: cover; background-position: center; border: 1px solid #e0e0e0;
+}
+.up-input-name {
+    flex: 1; border: none; background: transparent; outline: none; 
+    font-size: 15px; font-weight: 500; color: #333;
+}
+.up-del {
+    width: 26px; height: 26px; background: #ff3b30; color: #fff; border-radius: 50%;
+    display: flex; justify-content: center; align-items: center; cursor: pointer;
+}
+
+/* 3. 添加按钮菜单样式 */
+.add-menu-options {
+    display: flex; flex-direction: column; gap: 0;
+}
+/* style.css (在最下面添加或修改) */
+
+/* 统一弹窗层级 */
+.custom-alert-overlay, #sticker-file-overlay, #sticker-url-overlay {
+    z-index: 20001 !important;
+}
+
+/* 输入框样式 */
+.ins-input-field {
+    width: 100%;
+    background: #f5f5f5;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+    color: #333;
+}
+.ins-input-field:focus { background: #fff; border-color: #007aff; }
+
+/* 底部按钮排版 */
+.sticker-footer {
+    padding: 10px 20px;
+    border-top: 1px solid rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
