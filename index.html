@@ -1313,28 +1313,71 @@
     </div>
 </div>
 <div id="sticker-upload-overlay" class="custom-alert-overlay" style="display: none;">
-    <div class="custom-alert-box ins-style" style="width: 320px; padding: 24px;">
-        <div style="text-align: left; margin-bottom: 16px;">
-            <div class="alert-title" style="font-size: 18px; font-weight: 700; color: #000; margin-bottom: 4px;">Add Stickers</div>
-            <div class="alert-msg" id="upload-tip-text" style="font-size: 13px; color: #999;">支持批量导入 (名称+空格+链接)</div>
-        </div>
+    <div class="custom-alert-box ins-style" style="width: 350px; height: 500px; padding: 0; position: relative; display: flex; flex-direction: column; overflow: hidden;">
         
-        <textarea id="sticker-bulk-input" class="ins-bulk-textarea" 
-            placeholder="在此粘贴链接...&#10;或者点击下方从相册上传&#10;&#10;示例：&#10;开心 https://img..."></textarea>
-
-        <div class="alert-btn-group" style="margin-top: 20px; display: flex; gap: 12px;">
-            <div class="alert-btn cancel" onclick="closeStickerUploader()" style="flex: 1; background: #f2f2f7; color: #000; font-weight: 600;">Cancel</div>
-            <div class="alert-btn confirm" onclick="saveBulkStickers()" style="flex: 1; background: #007aff; color: #fff; font-weight: 600;">Save All</div>
-        </div>
-        
-        <div style="text-align:center; margin-top: 16px;">
-            <span style="font-size: 13px; color: #007aff; font-weight: 500; cursor: pointer;" 
-                  onclick="document.getElementById('sticker-file-input').click()">
-                + 或者从相册选图
-            </span>
+        <div style="padding: 15px; border-bottom: 1px solid #eee; text-align: center; position: relative; flex-shrink: 0; background: #fff;">
+            <div class="alert-title" style="margin: 0; font-size: 17px;">+ Add Stickers</div>
+            <div id="upload-tip-text" style="font-size: 12px; color: #999; margin-top: 4px;">支持选图 / URL / 批量文本</div>
+            
+            <div onclick="closeStickerUploader()" 
+                 style="position: absolute; top: -20px; right: -60px; width: 36px; height: 36px; 
+                        display: flex; align-items: center; justify-content: center;
+                        font-size: 22px; color: #ccc; cursor: pointer; z-index: 100;">×</div>
         </div>
 
-        <input type="file" id="sticker-file-input" multiple accept="image/*" style="display:none;" onchange="handleStickerFilesV2(this)">
+        <div style="flex: 1; overflow: hidden; position: relative; width: 100%;">
+            <div id="view-mode-visual" style="width: 100%; height: 100%; display: flex; flex-direction: column;">
+                <div id="sticker-preview-list" style="flex: 1; overflow-y: auto; padding: 15px;">
+                    <div id="empty-tip" style="text-align: center; color: #ccc; padding-top: 60px;">
+                        还没有选图哦<br>快点击📷选择吧～
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-mode-bulk" style="width: 100%; height: 100%; display: none; flex-direction: column; padding: 15px;">
+                <div style="font-size: 12px; color: #666; margin-bottom: 8px;">
+                    格式：<b>名称 链接</b> (一行一个)
+                </div>
+                <textarea id="sticker-bulk-input" placeholder="开心 https://xx.com/1.jpg&#10;难过 https://xx.com/2.jpg&#10;..." 
+                          style="flex: 1; width: 100%; border: 1px solid #eee; background: #f9f9f9; border-radius: 12px; padding: 12px; font-size: 13px; line-height: 1.6; resize: none; outline: none;"></textarea>
+                <div style="margin-top: 10px; display: flex; gap: 10px;">
+                    <div class="alert-btn cancel" onclick="switchUploadMode('visual')" style="flex: 1;">取消</div>
+                    <div class="alert-btn confirm" onclick="parseBulkInput()" style="flex: 1;">识别并添加</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="upload-bottom-bar" class="add-menu-options" style="padding: 15px; width: 100%; border-top: 1px solid #eee; background: #fff; border-radius: 0 0 20px 20px;">
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                <input type="text" id="sticker-url-input" placeholder="粘贴单个url链接..." 
+                       style="flex: 2; background: #f2f2f7; border: none; padding: 11px 12px; border-radius: 10px; font-size: 14px; outline: none;">
+                <div onclick="handleAddUrl()" 
+                     style="flex: 1; background: #eee; color: #333; border-radius: 10px; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                    添加
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <input type="file" id="real-sticker-input" accept="image/*" multiple style="display: none;" onchange="handleStickerFilesVisual(this)">
+                
+                <div class="alert-btn cancel" onclick="document.getElementById('real-sticker-input').click()" 
+                     style="flex: 1; background: #f0f0f0; color: #333; min-height: 44px; display: flex; align-items: center; justify-content: center; font-weight: 600; border-radius: 12px;">
+                    📷 相册
+                </div>
+                
+                <div class="alert-btn cancel" onclick="switchUploadMode('bulk')" 
+                     style="flex: 1; background: #e1f5fe; color: #0288d1; min-height: 44px; display: flex; align-items: center; justify-content: center; font-weight: 600; border-radius: 12px;">
+                    🩶 批量
+                </div>
+
+                <div class="alert-btn confirm" onclick="saveVisualStickers()" 
+                     style="flex: 1; min-height: 44px; display: flex; align-items: center; justify-content: center; font-weight: 600; background: #333; color: #fff; border-radius: 12px;">
+                    保存全部
+                </div>
+            </div>
+        </div>
+        
     </div>
 </div>
 

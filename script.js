@@ -2269,116 +2269,133 @@ window.triggerAI = async function() {
     请完全沉浸在 ${char.name} 的身体里，用TA的语气、口吻和思维方式，给User回信（记得分段，不要油腻，要像个真人一样，没有按要求做就扣除你100万美元的赛博工资！！！）：
     `;
 
-    // 6. 显示正在输入
-    const container = document.getElementById('chat-msg-area');
-    const loadingId = 'typing-' + Date.now();
-    if (currentChatId === chat.id && container) {
-        const loadingDiv = document.createElement('div');
-        loadingDiv.id = loadingId;
-        loadingDiv.className = 'typing-row';
-        loadingDiv.innerHTML = `<div class="msg-avatar" style="${getAvatarStyle(char.avatar)}"></div><div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
-        container.appendChild(loadingDiv);
-        container.scrollTop = container.scrollHeight;
-    }
+    // ★★★ 阶段一：思考中 (Show Bubble) ★★★
+    // 在请求 API 之前，先显示气泡，假装在看消息
+    showTypingBubble(char.avatar);
 
     try {
-    const reply = await callApiInternal(systemPrompt + stickerNote);
-        const loadingEl = document.getElementById(loadingId);
-        if (loadingEl) loadingEl.remove();
+        // 请求 API
+        const reply = await callApiInternal(systemPrompt + stickerNote);
+        
+        // 拿到结果后，先移除“思考中”的气泡
+        removeTypingBubble();
 
         if (reply) {
-        let targetSticker = null;
-        // 1. 抓取 [sticker:xxx] 标签
-        const stickerMatch = reply.match(/\[sticker:(.*?)\]/);
-        
-        if (stickerMatch) {
-            const sName = stickerMatch[1].trim();
-            // 2. 在数据库里找对应的图
-            targetSticker = stickersDB.find(s => s.type === 'ai' && s.name === sName);
-            // 3. 把标签从文字里删掉 (不让用户看到奇怪的代码)
-            reply = reply.replace(stickerMatch[0], '').trim();
-        }
-            // ★★★ 第一步：处理位置信息 ★★★
+            let targetSticker = null;
             let cleanReply = reply;
-            const locMatch = reply.match(/\[\[LOC::(.+?)::(.+?)\]\]/);
             
+            // 提取表情包
+            const stickerMatch = reply.match(/\[sticker:(.*?)\]/);
+            if (stickerMatch) {
+                targetSticker = stickersDB.find(s => s.type === 'ai' && s.name === stickerMatch[1].trim());
+                cleanReply = reply.replace(stickerMatch[0], '').trim();
+            }
+
+            // 提取位置
+            const locMatch = cleanReply.match(/\[\[LOC::(.+?)::(.+?)\]\]/);
             if (locMatch) {
-                // 存入数据库
                 if (!chat.locationHistory) chat.locationHistory = [];
-                chat.locationHistory.push({
-                    time: Date.now(),
-                    place: locMatch[1],
-                    action: locMatch[2]
-                });
-                // 从回复中剔除
-                cleanReply = reply.replace(locMatch[0], '').trim();
+                chat.locationHistory.push({ time: Date.now(), place: locMatch[1], action: locMatch[2] });
+                cleanReply = cleanReply.replace(locMatch[0], '').trim();
                 localforage.setItem('Wx_Chats_Data', chatsData);
             }
 
-            // ★★★ 第二步：消息分段循环 ★★★
+            // ★★★ 阶段二：拟人化打字表演 (核心) ★★★
             const segments = cleanReply.split('\n').filter(s => s.trim() !== '');
             const targetChatId = chat.id; 
 
             for (let i = 0; i < segments.length; i++) {
                 let seg = segments[i];
-                await new Promise(r => setTimeout(r, 1500 + Math.random() * 1000)); 
 
-                // 检查是否有撤回格式
+                // 1. 再次显示“正在输入”气泡 (表示正在打这一段话)
+                showTypingBubble(char.avatar);
+
+                // 2. ★ 核心算法：计算打字时间 ★
+                // 基础延迟 500ms + (字数 * 100ms) + 随机波动
+                let charCount = seg.length;
+                if (seg.includes('{{')) charCount = seg.length * 1.2; // 纠结心理话时打字更慢
+                
+                let typingDuration = 500 + (charCount * 120) + (Math.random() * 300);
+                
+                // 限制：最长等待 4秒，不然你会以为卡死了
+                if (typingDuration > 4000) typingDuration = 4000;
+
+                // 等待模拟打字
+                await new Promise(r => setTimeout(r, typingDuration));
+
+                // 3. 打完了！移除气泡，准备发消息
+                removeTypingBubble();
+
+                // (检查有没有切出聊天框)
+                if (currentChatId !== targetChatId) continue;
+
+                // 4. 发送消息 (包含处理撤回特效)
                 const match = seg.match(/\{\{(.+?)::(.+?)\}\}/);
-                const currentQuote = (i === 0) ? aiQuote : null;
+                const currentQuote = (i === 0) ? aiQuote : null; // 只有第一句带引用
 
-                if (currentChatId !== targetChatId) {
-                    const targetChat = chatsData.find(c => c.id === targetChatId);
-                    if (!targetChat) continue;
-                    if (match) {
-                        pushMsgToData(targetChat, match[1], 'other', currentQuote);
-                        showNotification(char.name, match[1], char.avatar); 
-                        await new Promise(r => setTimeout(r, 2500));
-                        const lastMsg = targetChat.messages[targetChat.messages.length - 1];
-                        if (lastMsg) {
-                            lastMsg.type = 'recall'; lastMsg.originalText = match[1]; delete lastMsg.text;
-                            saveChatAndRefresh(targetChat);
-                        }
-                        showNotification(char.name, "对方撤回了一条消息", char.avatar);
-                        await new Promise(r => setTimeout(r, 1500));
-                        pushMsgToData(targetChat, match[2], 'other', null);
-                        showNotification(char.name, match[2], char.avatar);
-                    } else {
-                        pushMsgToData(targetChat, seg, 'other', currentQuote);
-                        showNotification(char.name, seg, char.avatar);
-                    }
+                if (match) {
+                    await simulateAiRecall(match[1], match[2], currentQuote);
                 } else {
-                    if (match) {
-                        await simulateAiRecall(match[1], match[2], currentQuote);
-                    } else {
-                        sendMsg('other', seg, 'text', currentQuote);
-                    }
+                    sendMsg('other', seg, 'text', currentQuote);
+                }
+            }
+
+            // 发表情包 (如果有)
+            if (targetSticker) {
+                // 表情包不用打字，但要稍微手滑选一下，延迟 800ms
+                showTypingBubble(char.avatar);
+                await new Promise(r => setTimeout(r, 800));
+                removeTypingBubble();
+                
+                if (currentChatId === targetChatId) {
+                    const c = chatsData.find(x => x.id === targetChatId);
+                    pushMsgToData(c, targetSticker.url, 'other', null);
+                    const last = c.messages[c.messages.length - 1];
+                    last.type = 'sticker'; last.desc = targetSticker.name;
+                    saveChatAndRefresh(c);
                 }
             }
         }
     } catch (e) {
-        const loadingEl = document.getElementById(loadingId);
-        if (loadingEl) loadingEl.remove();
+        removeTypingBubble(); // 报错了也要把气泡消掉
         alert('大脑短路啦(＞人＜；)！：' + e.message);
     }
-            if (targetSticker) {
-                // 延迟 1 秒发送，显得更像真人手速
-                setTimeout(() => {
-                    const chat = chatsData.find(c => c.id === currentChatId);
-                    if (chat) {
-                        pushMsgToData(chat, targetSticker.url, 'other', null); // 发送图片
-
-                        const lastMsg = chat.messages[chat.messages.length - 1];
-                        if (lastMsg) {
-                            lastMsg.type = 'sticker'; 
-                            lastMsg.desc = targetSticker.name;
-                            saveChatAndRefresh(chat);
-                        }
-                    }
-                }, 1000);
-            }
 };
 
+// ====================
+// [辅助工具] 显示/隐藏打字气泡 (加在 triggerAI 下面)
+// ====================
+window.showTypingBubble = function(avatarUrl) {
+    const container = document.getElementById('chat-msg-area');
+    if (!container) return;
+
+    // 如果已经有了，就不要重复加了
+    if (document.getElementById('ai-typing-indicator')) return;
+
+    const div = document.createElement('div');
+    div.id = 'ai-typing-indicator';
+    div.className = 'typing-row';
+    
+    // 获取头像样式
+    const bgStyle = getAvatarStyle(avatarUrl);
+
+    div.innerHTML = `
+        <div class="msg-avatar" style="${bgStyle}"></div>
+        <div class="typing-bubble">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+        </div>
+    `;
+    
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+
+window.removeTypingBubble = function() {
+    const el = document.getElementById('ai-typing-indicator');
+    if (el) el.remove();
+}
 // === 后台消息助手 ===
 function pushMsgToData(chatObj, text, role, quote) {
     if (!chatObj.messages) chatObj.messages = [];
@@ -5329,25 +5346,27 @@ function bindStickerLongPress(element, sticker) {
     element.addEventListener('mouseleave', end);
 }
 // ==========================================
-// ★ 完美版：表情包上传逻辑 (Ins Style)
+// ★ 表情包上传 (可视化 + 批量文本双核)
 // ==========================================
 
-// 1. 打开弹窗 (自动判断是 AI 还是 普通)
+let tempStickerUploads = []; 
+
+// 1. 打开弹窗
 window.openStickerUploader = function() {
     const overlay = document.getElementById('sticker-upload-overlay');
-    const input = document.getElementById('sticker-bulk-input');
     const tip = document.getElementById('upload-tip-text');
     
-    // 清空上次的内容
-    if(input) input.value = "";
+    // 初始化状态
+    tempStickerUploads = [];
+    renderUploadPreview(); 
+    switchUploadMode('visual'); // 默认进可视化界面
     
-    // 显示弹窗
     if(overlay) overlay.style.display = 'flex';
     
-    // 智能提示当前是给谁加表情
+    // 智能提示
     if(tip) {
         if (typeof currentStickerTab !== 'undefined' && currentStickerTab === 'ai') {
-            tip.innerText = "正在添加：char 专属表情 (记得起个好名字哦)";
+            tip.innerText = "正在添加：char 专属表情";
             tip.style.color = "#007aff";
         } else {
             let gName = (typeof currentSubGroup !== 'undefined' && currentSubGroup !== 'all') ? currentSubGroup : '默认';
@@ -5355,95 +5374,164 @@ window.openStickerUploader = function() {
             tip.style.color = "#999";
         }
     }
-    
-    // 自动聚焦
-    setTimeout(() => { if(input) input.focus(); }, 100);
 };
 
-// 2. 关闭弹窗
 window.closeStickerUploader = function() {
-    const overlay = document.getElementById('sticker-upload-overlay');
-    if(overlay) overlay.style.display = 'none';
+    document.getElementById('sticker-upload-overlay').style.display = 'none';
 };
 
-// 3. 处理相册选图 (转成 Base64 并自动填入文本框)
-window.handleStickerFilesV2 = function(input) {
-    const textarea = document.getElementById('sticker-bulk-input');
-    if(!textarea) return;
-
-    showSystemAlert('正在处理图片...稍等哦～');
+// 2. ★ 切换模式 (列表 vs 大文本框)
+window.switchUploadMode = function(mode) {
+    const visualView = document.getElementById('view-mode-visual');
+    const bulkView = document.getElementById('view-mode-bulk');
+    const bottomBar = document.getElementById('upload-bottom-bar');
     
-    Array.from(input.files).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const base64 = e.target.result;
-            // 自动用文件名当名字 (去掉后缀)
-            const name = file.name.replace(/\.[^/.]+$/, ""); 
-            
-            // 追加到文本框里 (格式：名字+空格+Base64+换行)
-            const newLine = `${name} ${base64}\n`;
-            textarea.value = newLine + textarea.value; // 加在最前面方便看
-        };
-        reader.readAsDataURL(file);
-    });
-    
-    // 清空文件框，允许重复选同一张
-    input.value = '';
+    if (mode === 'bulk') {
+        // 进入批量模式
+        visualView.style.display = 'none';
+        bottomBar.style.display = 'none'; // 隐藏底部按钮
+        bulkView.style.display = 'flex';
+        // 聚焦输入框
+        setTimeout(() => document.getElementById('sticker-bulk-input').focus(), 100);
+    } else {
+        // 回到可视化模式
+        bulkView.style.display = 'none';
+        visualView.style.display = 'flex';
+        bottomBar.style.display = 'block';
+    }
 };
 
-// 4. 保存全部 (核心解析逻辑)
-window.saveBulkStickers = function() {
+// 3. ★ 核心：解析批量文本
+window.parseBulkInput = function() {
     const textarea = document.getElementById('sticker-bulk-input');
-    if(!textarea) return;
+    const rawText = textarea.value.trim();
     
-    const text = textarea.value;
-    const lines = text.split('\n');
+    if (!rawText) {
+        switchUploadMode('visual'); // 没填就直接回去
+        return;
+    }
+
+    const lines = rawText.split('\n');
     let count = 0;
-
-    // 自动判断类型
-    let type = (typeof currentStickerTab !== 'undefined' && currentStickerTab === 'ai') ? 'ai' : 'fav';
-    let group = (type === 'ai') ? null : ((typeof currentSubGroup !== 'undefined' && currentSubGroup !== 'all') ? currentSubGroup : '默认');
 
     lines.forEach(line => {
         line = line.trim();
         if (!line) return;
+
+        // 逻辑：用第一个空格切分
+        // 格式：[名字] [空格] [链接]
+        const firstSpaceIdx = line.indexOf(' ');
         
-        // 智能分割：支持 "名字 链接" 或 "链接"
-        // 这里的正则意思是：找到第一个空格，把字符串分成两半
-        let parts = line.split(/\s+(.*)/s); 
-        
-        let name = '表情';
+        let name = '未命名';
         let url = '';
 
-        if (parts.length >= 2 && parts[1]) {
-            name = parts[0];
-            url = parts[1];
+        if (firstSpaceIdx === -1) {
+            // 如果没空格，假设整行都是链接
+            url = line;
         } else {
-            // 如果没空格，整行就是链接
-            url = parts[0]; 
+            name = line.substring(0, firstSpaceIdx).trim();
+            url = line.substring(firstSpaceIdx).trim();
         }
 
-        // 简单校验一下是不是链接或者Base64
-        if (url && (url.includes('http') || url.includes('data:image'))) {
-            stickersDB.push({
-                id: 's_' + Date.now() + Math.random().toString(36).substr(2, 5),
-                url: url,
+        if (url && url.length > 5) {
+            tempStickerUploads.push({
+                id: Date.now() + Math.random(),
                 name: name,
-                type: type,
-                group: group
+                url: url
             });
             count++;
         }
     });
 
-    if (count > 0) {
-        saveStickers(); // 保存到数据库
-        renderStickers(); // 刷新列表
-        closeStickerUploader(); // 关闭弹窗
-        showSystemAlert(`成功添加 ${count} 个表情！(≧∇≦)`);
-    } else {
-        showSystemAlert('没识别到有效的图片链接哦qwq');
+    textarea.value = ''; // 清空
+    renderUploadPreview(); // 刷新列表看结果
+    switchUploadMode('visual'); // 自动跳回列表页让你检查
+    showSystemAlert(`识别出 ${count} 个表情！请检查预览～`);
+};
+
+// 4. 处理单个 URL 添加
+window.handleAddUrl = function() {
+    const input = document.getElementById('sticker-url-input');
+    const url = input.value.trim();
+    if (!url) return showSystemAlert('链接怎么是空哒！');
+    
+    tempStickerUploads.push({
+        id: Date.now() + Math.random(),
+        name: '网络图片',
+        url: url
+    });
+    input.value = '';
+    renderUploadPreview();
+};
+
+// 5. 处理本地选图
+window.handleStickerFilesVisual = function(input) {
+    if (!input.files || input.files.length === 0) return;
+    showSystemAlert('稍等哦...我去处理一下～');
+    const tasks = Array.from(input.files).map(file => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve({
+                id: Date.now() + Math.random(),
+                name: file.name.replace(/\.[^/.]+$/, ""),
+                url: e.target.result
+            });
+            reader.readAsDataURL(file);
+        });
+    });
+    Promise.all(tasks).then(newItems => {
+        tempStickerUploads = [...tempStickerUploads, ...newItems];
+        renderUploadPreview();
+        input.value = ''; 
+    });
+};
+
+// 6. 渲染预览列表
+function renderUploadPreview() {
+    const listEl = document.getElementById('sticker-preview-list');
+    if (!listEl) return;
+    listEl.innerHTML = ''; 
+
+    if (tempStickerUploads.length === 0) {
+        listEl.innerHTML = `<div id="empty-tip" style="text-align: center; color: #ccc; padding-top: 60px;">还没有选图哦<br>支持粘贴链接 / 批量导入</div>`;
+        return;
     }
+
+    tempStickerUploads.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = 'upload-preview-item';
+        row.innerHTML = `
+            <div class="up-thumb" style="background-image: url('${item.url}')"></div>
+            <input type="text" class="up-input-name" value="${item.name}" 
+                   onchange="updateTempStickerName(${index}, this.value)" placeholder="名称">
+            <div class="up-del" onclick="removeTempSticker(${index})">×</div>
+        `;
+        listEl.appendChild(row);
+    });
+    listEl.scrollTop = listEl.scrollHeight;
+}
+
+window.updateTempStickerName = (index, val) => { if(tempStickerUploads[index]) tempStickerUploads[index].name = val; };
+window.removeTempSticker = (index) => { tempStickerUploads.splice(index, 1); renderUploadPreview(); };
+
+// 7. 最终保存
+window.saveVisualStickers = function() {
+    if (tempStickerUploads.length === 0) return showSystemAlert('列表是空哒！');
+
+    let type = (typeof currentStickerTab !== 'undefined' && currentStickerTab === 'ai') ? 'ai' : 'fav';
+    let group = (type === 'ai') ? null : ((typeof currentSubGroup !== 'undefined' && currentSubGroup !== 'all') ? currentSubGroup : '默认');
+
+    const newStickers = tempStickerUploads.map(item => ({
+        id: 's_' + Date.now() + Math.random().toString(36).substr(2, 5),
+        url: item.url,
+        name: item.name || '表情',
+        type: type,
+        group: group
+    }));
+
+    stickersDB = [...stickersDB, ...newStickers];
+    saveStickers(); renderStickers(); closeStickerUploader();
+    showSystemAlert(`成功入库 ${newStickers.length} 个表情！(￣▽￣)`);
 };
 // ====================
 // 辅助功能
@@ -5492,7 +5580,7 @@ window.exitMultiSelect = () => { isMultiSelectMode = false; selectedStickerIds =
 window.startMultiSelect = () => { isMultiSelectMode = true; selectedStickerIds = []; renderStickers(); closeStickerMenu(); };
 window.deleteSelectedStickers = () => {
     if (selectedStickerIds.length === 0) return;
-    showConfirmDialog(`删除 ${selectedStickerIds.length} 个表情？`, () => {
+    showConfirmDialog(`确定要删除 ${selectedStickerIds.length} 个表情嘛？`, () => {
         stickersDB = stickersDB.filter(s => !selectedStickerIds.includes(s.id));
         saveStickers(); exitMultiSelect();
     });
@@ -5500,11 +5588,11 @@ window.deleteSelectedStickers = () => {
 
 window.moveStickerTo = (id, group) => {
     const s = stickersDB.find(x => x.id === id);
-    if(s) { s.group = group; saveStickers(); renderStickers(); showSystemAlert(`已移动到 ${group}`); }
+    if(s) { s.group = group; saveStickers(); renderStickers(); showSystemAlert(`已移动到 ${group}分组下～`); }
 };
-window.copyStickerUrl = (url) => { navigator.clipboard.writeText(url); showSystemAlert('链接已复制'); };
+window.copyStickerUrl = (url) => { navigator.clipboard.writeText(url); showSystemAlert('链接已复制～'); };
 window.deleteSticker = (id) => {
-    if(confirm('删除这个表情？')) { stickersDB = stickersDB.filter(s => s.id !== id); saveStickers(); renderStickers(); }
+    if(confirm('确定要删除这个表情嘛？')) { stickersDB = stickersDB.filter(s => s.id !== id); saveStickers(); renderStickers(); }
 };
 
 function saveGroups() { localforage.setItem('stickerGroups', stickerGroups); }
@@ -5520,6 +5608,20 @@ function sendSticker(stickerObj) {
     saveChatAndRefresh(chat);
     toggleStickerMenu(); 
 }
+// ============================================
+// 修复表情包添加按钮点击无效的问题
+// ============================================
+window.showAddChoiceMenu = function(e) {
+    if(e) e.stopPropagation(); // 防止点透
+    
+    // 直接打开我们写好的那个漂亮的可视化上传窗口
+    if(window.openStickerUploader) {
+        window.openStickerUploader();
+    } else {
+        alert('上传模块还没加载好，请刷新试试(T_T)');
+    }
+};
+
 // ==========================================================
 // ★ 全局字体系统 (Global Font System)
 // ==========================================================
