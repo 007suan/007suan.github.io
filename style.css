@@ -218,7 +218,6 @@ body {
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
-/* 右边的 2x2 网格 (间距调整重点！) */
 .widgy-small-grid {
     flex: 1;
     display: grid;
@@ -649,11 +648,11 @@ body {
     /* 【微调区 */
     width: 16px;   /* 你图片的宽度 */
     height: 16px;  /* 你图片的高度 */
-    bottom: -8.8px;  /* 稍微往下一点点*/
-    left: 3px;   /* 往左伸出去的距离 */
+    bottom: -7.5px;  /* 稍微往下一点点*/
+    left: 2px;   /* 往左伸出去的距离 */
     
     /* 填入你的【左边尾巴】图片链接 */
-    background-image: url('https://i.postimg.cc/SNHy52ns/wu-biao-ti111-20260101110404.png'); 
+    background-image: url('https://i.postimg.cc/xTN25zFt/wu-biao-ti119-20260118120040.png'); 
     background-size: contain; background-repeat: no-repeat; background-position: bottom right; }
 /* --- 我的消息 --- */
 .msg-row.me { justify-content: flex-end; }
@@ -683,6 +682,9 @@ body {
 }
 .msg-row.new-msg-anim { animation: msgSlideUpIn 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; opacity: 0; }
 #chat-msg-area { scroll-behavior: smooth; }
+.msg-row.me + .msg-row.other,
+.msg-row.other + .msg-row.me {
+    margin-top: 15px; }
 /* 正在输入 */
 .typing-row { display: flex; align-items: flex-end; margin-bottom: 10px; padding-left: 4px; animation: slideUpFade 0.3s ease-out; }
 .typing-bubble { background-color: #F1F1F1; padding: 10px 18px; border-radius: 20px; display: flex; align-items: center; gap: 5px; height: 40px; width: fit-content; position: relative; margin-left: 20px; border-bottom-left-radius: 20px; }
@@ -731,7 +733,7 @@ body {
 /* 2. 气泡本体美化 */
 .typing-bubble {
     background-color: #f0f0f0; /* 浅灰色背景 */
-    padding: 12px 18px;
+    padding: 10px 18px;
     border-radius: 18px;
     border-bottom-left-radius: 4px; /* 左下角尖尖的 */
     display: flex;
@@ -747,8 +749,8 @@ body {
 }
 
 .typing-dot {
-    width: 6px;
-    height: 6px;
+    width: 7px;
+    height: 7px;
     background-color: #8e8e93; /* iOS灰 */
     border-radius: 50%;
     animation: dot-dance 1.4s infinite ease-in-out;
