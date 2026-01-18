@@ -2213,15 +2213,44 @@ window.triggerAI = async function() {
     
     1. **你的核心设定**：
        - **身份**：${char.name} (真名: ${char.realname || '未知'})
-       - **性格内核**：${char.persona}
-       - **背景故事**：${char.desc}
-       - **外貌/属性**：${char.tags || '无'} | ${char.hobbies || '无'}
-       - **其他特征**：${char.mbti || '未知'} | ${char.age || '未知'}岁
+
+    - 性别：${char.gender || '未知'}
+
+    - 年龄：${char.age || '未知'}
+
+    - 身高：${char.height || '未知'}
+
+    - MBTI：${char.mbti || '未知'}
+
+    - 标签：${char.tags || '无'}
+
+    - 爱好/其他设定：${char.hobbies || '无'}
+
+    - 背景故事：${char.desc}
+
+    - 性格/语气/说话方式：${char.persona}
+
     
     2. **你的聊天对象 (User)**：
        - 对方是：${me.name} (${me.alias || 'User'})
        - 你们的关系：请根据过往对话和你的设定自行判断（是暧昧、情侣、死对头还是陌生人），并据此调整语气的亲密程度！
-       - User设定：${me.persona} | ${me.desc}
+      - User的其他设定：
+
+    - 性别：${me.gender || '未知'}
+
+    - 年龄：${me.age || '未知'}
+
+    - 爱好/其他设定：${me.hobbies || '无'}
+
+    - 背景故事：${me.desc}
+
+    - 性格：${me.persona}
+
+    - 身高：${me.height || '未知'}
+
+    - MBTI：${me.mbti || '未知'}
+
+    - 性格/语气/说话方式：${me.persona}
 
     ${memoryPrompt}
 
@@ -5093,7 +5122,7 @@ document.body.addEventListener('keydown', function(e) {
     }
 });
 // ==========================================================
-// ★ 26. 强力表情包系统 V5.0 (经典回归 & 长按修复版)
+// ★ 26. 强力表情包系统 V5.0 (终极修复版)
 // ==========================================================
 
 let stickersDB = [
@@ -5106,6 +5135,7 @@ let currentSubGroup = '默认';
 let isMultiSelectMode = false; 
 let selectedStickerIds = [];
 let tempStickerList = []; 
+let tempStickerUploads = []; // 上传临时列表
 
 // 初始化
 function initStickerSystem() {
@@ -5120,7 +5150,7 @@ window.toggleStickerMenu = function() {
     
     if(isMultiSelectMode && window.exitMultiSelect) exitMultiSelect();
 
-    picker.style.zIndex = '99999'; 
+    picker.style.zIndex = '20000'; // 确保比普通弹窗低，但比页面高
     if (picker.classList.contains('active')) {
         picker.classList.remove('active');
         document.body.classList.remove('menu-open');
@@ -5128,7 +5158,7 @@ window.toggleStickerMenu = function() {
         document.body.classList.remove('menu-open'); 
         picker.classList.add('active');
         
-        // 强制刷新
+        // 强制刷新子导航
         if (currentStickerTab === 'fav' || currentStickerTab === 'sys') {
             createSubNav(); renderSubGroups();
             const nav = document.getElementById('sticker-sub-nav-container');
@@ -5225,7 +5255,6 @@ function createGroupPill(name, isActive, canEdit) {
         const movePress = (e) => {
             if(!timer) return;
             if(e.touches) {
-                // ★ 防抖：移动超过 10px 才算取消
                 if(Math.abs(e.touches[0].clientX - startX) > 10 || Math.abs(e.touches[0].clientY - startY) > 10) {
                     clearTimeout(timer); timer = null;
                 }
@@ -5266,7 +5295,7 @@ function renderStickers() {
     }
     multiBar.style.display = isMultiSelectMode ? 'flex' : 'none';
 
-    // ★★★ 重点：Add 按钮作为第一个格子回归！ ★★★
+    // Add 按钮
     if (!isMultiSelectMode && (currentStickerTab === 'fav' || currentStickerTab === 'ai')) {
         const addBtn = document.createElement('div');
         addBtn.className = 'sticker-item add-item'; 
@@ -5276,7 +5305,6 @@ function renderStickers() {
         addBtn.style.alignItems = 'center';
         addBtn.style.justifyContent = 'center';
         addBtn.innerHTML = `<span style="font-size: 28px; color: #ccc;">+</span>`;
-        // 点击弹出选择菜单
         addBtn.onclick = (e) => showAddChoiceMenu(e);
         grid.appendChild(addBtn);
     }
@@ -5292,8 +5320,6 @@ function renderStickers() {
         item.className = `sticker-item ${isMultiSelectMode && isSel ? 'selected' : ''}`;
         item.style.backgroundImage = `url('${s.url}')`;
         item.innerHTML = `<div class="sticker-name-tag">${s.name}</div>`;
-        
-        // 阻止默认菜单，防止冲突
         item.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); return false; };
 
         item.onclick = () => {
@@ -5305,33 +5331,28 @@ function renderStickers() {
     });
 }
 
-// ★★★ 核心修复：长按防抖逻辑 ★★★
+// 长按逻辑
 function bindStickerLongPress(element, sticker) {
     let timer;
     let startX, startY;
 
     const start = (e) => {
-        if(e.touches) {
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-        }
+        if(e.touches) { startX = e.touches[0].clientX; startY = e.touches[0].clientY; }
         timer = setTimeout(() => {
             const x = e.touches ? e.touches[0].clientX : e.clientX;
             const y = e.touches ? e.touches[0].clientY : e.clientY;
             showStickerContextMenu(x, y, sticker);
             if(navigator.vibrate) navigator.vibrate(50);
-        }, 500); // 500ms 长按
+        }, 500);
     };
 
     const move = (e) => {
         if(!timer) return;
-        // 如果移动距离超过 10px，才取消长按
         if(e.touches) {
             const moveX = e.touches[0].clientX;
             const moveY = e.touches[0].clientY;
             if(Math.abs(moveX - startX) > 10 || Math.abs(moveY - startY) > 10) {
-                clearTimeout(timer);
-                timer = null;
+                clearTimeout(timer); timer = null;
             }
         }
     };
@@ -5339,132 +5360,156 @@ function bindStickerLongPress(element, sticker) {
     const end = () => { if(timer) { clearTimeout(timer); timer = null; } };
 
     element.addEventListener('touchstart', start, {passive: true});
-    element.addEventListener('touchmove', move, {passive: true}); // 这里不直接end，而是check move
+    element.addEventListener('touchmove', move, {passive: true});
     element.addEventListener('touchend', end);
     element.addEventListener('mousedown', start);
     element.addEventListener('mouseup', end);
     element.addEventListener('mouseleave', end);
 }
-// ==========================================
-// ★ 表情包上传 (可视化 + 批量文本双核)
-// ==========================================
 
-let tempStickerUploads = []; 
-
-// 1. 打开弹窗
-window.openStickerUploader = function() {
+// ==========================================
+// ★ 强力修复：自动重写表情包弹窗 HTML (核心部分)
+// ==========================================
+window.rebuildStickerPopupHTML = function() {
     const overlay = document.getElementById('sticker-upload-overlay');
-    const tip = document.getElementById('upload-tip-text');
+    if (!overlay) return;
+
+    // ★ 关键：这里的 HTML 结构必须和 CSS 里的类名 100% 对应
+    overlay.innerHTML = `
+        <div class="custom-alert-box ins-style">
+            <div class="sticker-header">
+                <div class="alert-title" style="margin: 0; font-size: 17px; font-weight: 700;">表情包进货</div>
+                <div style="font-size: 12px; color: #999; margin-top: 4px;">支持选图 / URL / 批量文本</div>
+                <div onclick="closeStickerUploader()" style="position: absolute; top: 12px; right: 12px; width: 30px; height: 30px; background: #f5f5f7; border-radius: 50%; color: #bbb; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px;">×</div>
+            </div>
+
+            <div class="sticker-body">
+                <div id="view-mode-visual" style="height: 100%; display: flex; flex-direction: column;">
+                    <div id="sticker-preview-list"></div>
+                </div>
+                <div id="view-mode-bulk" style="height: 100%; display: none; flex-direction: column; padding: 15px;">
+                    <div style="font-size: 12px; color: #666; margin-bottom: 8px;">格式：<b>名称 链接</b> (一行一个)</div>
+                    <textarea id="sticker-bulk-input" placeholder="开心 https://xx.com/1.jpg..."></textarea>
+                    <div style="margin-top: 12px; display: flex; gap: 10px; flex-shrink: 0;">
+                        <div class="alert-btn cancel" onclick="switchUploadMode('visual')" style="flex: 1; text-align: center; background: #f0f0f0; padding: 10px; border-radius: 10px; cursor: pointer;">取消</div>
+                        <div class="alert-btn confirm" onclick="parseBulkInput()" style="flex: 1; text-align: center; background: #333; color: #fff; padding: 10px; border-radius: 10px; cursor: pointer;">识别</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sticker-footer">
+                <div class="url-input-row">
+                    <input type="text" id="sticker-url-input" placeholder="粘贴单个url链接...">
+                    <div class="url-add-btn" onclick="handleAddUrl()">添加</div>
+                </div>
+                <div class="action-btn-row">
+                    <input type="file" id="real-sticker-input" accept="image/*" multiple style="display: none;" onchange="handleStickerFilesVisual(this)">
+                    <div class="alert-btn cancel" onclick="document.getElementById('real-sticker-input').click()" style="background: #f0f0f0; color: #333;">📷 相册</div>
+                    <div class="alert-btn cancel" onclick="switchUploadMode('bulk')" style="background: #e1f5fe; color: #0288d1;">🩶 批量</div>
+                    <div class="alert-btn confirm" onclick="saveVisualStickers()" style="background: #333; color: #fff;">保存全部</div>
+                </div>
+            </div>
+        </div>
+    `;
+};
+
+// 修改打开弹窗的函数，每次打开前先修复HTML
+window.openStickerUploader = function() {
+    // 1. 先重置 HTML 结构，防止之前被破坏
+    rebuildStickerPopupHTML(); 
     
-    // 初始化状态
+    const overlay = document.getElementById('sticker-upload-overlay');
+    const tip = document.getElementById('upload-tip-text'); // 重新获取 dom
+    
+    // 2. 初始化数据
     tempStickerUploads = [];
     renderUploadPreview(); 
-    switchUploadMode('visual'); // 默认进可视化界面
+    switchUploadMode('visual');
     
     if(overlay) overlay.style.display = 'flex';
-    
-    // 智能提示
-    if(tip) {
+
+    // 3. 更新提示文字
+    // 注意：rebuildStickerPopupHTML 后，DOM 元素是新的，必须重新获取
+    const newTip = overlay.querySelector('.sticker-header div:nth-child(2)');
+    if(newTip) {
         if (typeof currentStickerTab !== 'undefined' && currentStickerTab === 'ai') {
-            tip.innerText = "正在添加：char 专属表情";
-            tip.style.color = "#007aff";
+            newTip.innerText = "正在添加：char 专属表情";
+            newTip.style.color = "#007aff";
         } else {
             let gName = (typeof currentSubGroup !== 'undefined' && currentSubGroup !== 'all') ? currentSubGroup : '默认';
-            tip.innerText = `正在添加至：${gName} 分组`;
-            tip.style.color = "#999";
+            newTip.innerText = `正在添加至：${gName} 分组`;
+            newTip.style.color = "#999";
         }
     }
 };
 
 window.closeStickerUploader = function() {
-    document.getElementById('sticker-upload-overlay').style.display = 'none';
+    const overlay = document.getElementById('sticker-upload-overlay');
+    if(overlay) overlay.style.display = 'none';
 };
 
-// 2. ★ 切换模式 (列表 vs 大文本框)
 window.switchUploadMode = function(mode) {
     const visualView = document.getElementById('view-mode-visual');
     const bulkView = document.getElementById('view-mode-bulk');
-    const bottomBar = document.getElementById('upload-bottom-bar');
+    const bottomBar = document.querySelector('.sticker-footer'); // 使用 class 选择器
     
     if (mode === 'bulk') {
-        // 进入批量模式
         visualView.style.display = 'none';
-        bottomBar.style.display = 'none'; // 隐藏底部按钮
+        if(bottomBar) bottomBar.style.display = 'none'; // 隐藏底部按钮
         bulkView.style.display = 'flex';
-        // 聚焦输入框
         setTimeout(() => document.getElementById('sticker-bulk-input').focus(), 100);
     } else {
-        // 回到可视化模式
         bulkView.style.display = 'none';
         visualView.style.display = 'flex';
-        bottomBar.style.display = 'block';
+        if(bottomBar) bottomBar.style.display = 'block';
     }
 };
 
-// 3. ★ 核心：解析批量文本
-window.parseBulkInput = function() {
-    const textarea = document.getElementById('sticker-bulk-input');
-    const rawText = textarea.value.trim();
-    
-    if (!rawText) {
-        switchUploadMode('visual'); // 没填就直接回去
-        return;
-    }
-
-    const lines = rawText.split('\n');
-    let count = 0;
-
-    lines.forEach(line => {
-        line = line.trim();
-        if (!line) return;
-
-        // 逻辑：用第一个空格切分
-        // 格式：[名字] [空格] [链接]
-        const firstSpaceIdx = line.indexOf(' ');
-        
-        let name = '未命名';
-        let url = '';
-
-        if (firstSpaceIdx === -1) {
-            // 如果没空格，假设整行都是链接
-            url = line;
-        } else {
-            name = line.substring(0, firstSpaceIdx).trim();
-            url = line.substring(firstSpaceIdx).trim();
-        }
-
-        if (url && url.length > 5) {
-            tempStickerUploads.push({
-                id: Date.now() + Math.random(),
-                name: name,
-                url: url
-            });
-            count++;
-        }
-    });
-
-    textarea.value = ''; // 清空
-    renderUploadPreview(); // 刷新列表看结果
-    switchUploadMode('visual'); // 自动跳回列表页让你检查
-    showSystemAlert(`识别出 ${count} 个表情！请检查预览～`);
-};
-
-// 4. 处理单个 URL 添加
 window.handleAddUrl = function() {
     const input = document.getElementById('sticker-url-input');
-    const url = input.value.trim();
-    if (!url) return showSystemAlert('链接怎么是空哒！');
+    const url = input ? input.value.trim() : '';
+    if (!url) return showSystemAlert('链接怎么是空的呀！');
     
     tempStickerUploads.push({
         id: Date.now() + Math.random(),
         name: '网络图片',
         url: url
     });
-    input.value = '';
+    if(input) input.value = '';
     renderUploadPreview();
+    showSystemAlert('添加成功！');
 };
 
-// 5. 处理本地选图
+// 解析批量文本
+window.parseBulkInput = function() {
+    const textarea = document.getElementById('sticker-bulk-input');
+    const rawText = textarea.value.trim();
+    if (!rawText) { switchUploadMode('visual'); return; }
+
+    const lines = rawText.split('\n');
+    let count = 0;
+    lines.forEach(line => {
+        line = line.trim();
+        if (!line) return;
+        const firstSpaceIdx = line.indexOf(' ');
+        let name = '未命名'; let url = '';
+
+        if (firstSpaceIdx === -1) { url = line; } 
+        else { name = line.substring(0, firstSpaceIdx).trim(); url = line.substring(firstSpaceIdx).trim(); }
+
+        if (url && url.length > 5) {
+            tempStickerUploads.push({ id: Date.now() + Math.random(), name: name, url: url });
+            count++;
+        }
+    });
+
+    textarea.value = '';
+    renderUploadPreview();
+    switchUploadMode('visual');
+    showSystemAlert(`识别出 ${count} 个表情！`);
+};
+
+// 处理本地文件
 window.handleStickerFilesVisual = function(input) {
     if (!input.files || input.files.length === 0) return;
     showSystemAlert('稍等哦...我去处理一下～');
@@ -5486,24 +5531,24 @@ window.handleStickerFilesVisual = function(input) {
     });
 };
 
-// 6. 渲染预览列表
+// 渲染预览列表
 function renderUploadPreview() {
     const listEl = document.getElementById('sticker-preview-list');
     if (!listEl) return;
     listEl.innerHTML = ''; 
 
     if (tempStickerUploads.length === 0) {
-        listEl.innerHTML = `<div id="empty-tip" style="text-align: center; color: #ccc; padding-top: 60px;">还没有选图哦<br>支持粘贴链接 / 批量导入</div>`;
+        listEl.innerHTML = `<div id="empty-tip" style="text-align: center; color: #ccc; padding-top: 60px;">还没有选图哦<br>快点击📷选择吧～</div>`;
         return;
     }
 
     tempStickerUploads.forEach((item, index) => {
         const row = document.createElement('div');
-        row.className = 'upload-preview-item';
+        row.className = 'upload-preview-item'; // 对应 CSS
         row.innerHTML = `
             <div class="up-thumb" style="background-image: url('${item.url}')"></div>
             <input type="text" class="up-input-name" value="${item.name}" 
-                   onchange="updateTempStickerName(${index}, this.value)" placeholder="名称">
+                   onchange="updateTempStickerName(${index}, this.value)" placeholder="重命名">
             <div class="up-del" onclick="removeTempSticker(${index})">×</div>
         `;
         listEl.appendChild(row);
@@ -5514,10 +5559,9 @@ function renderUploadPreview() {
 window.updateTempStickerName = (index, val) => { if(tempStickerUploads[index]) tempStickerUploads[index].name = val; };
 window.removeTempSticker = (index) => { tempStickerUploads.splice(index, 1); renderUploadPreview(); };
 
-// 7. 最终保存
+// 保存
 window.saveVisualStickers = function() {
-    if (tempStickerUploads.length === 0) return showSystemAlert('列表是空哒！');
-
+    if (tempStickerUploads.length === 0) return showSystemAlert('列表是空的！');
     let type = (typeof currentStickerTab !== 'undefined' && currentStickerTab === 'ai') ? 'ai' : 'fav';
     let group = (type === 'ai') ? null : ((typeof currentSubGroup !== 'undefined' && currentSubGroup !== 'all') ? currentSubGroup : '默认');
 
@@ -5531,15 +5575,19 @@ window.saveVisualStickers = function() {
 
     stickersDB = [...stickersDB, ...newStickers];
     saveStickers(); renderStickers(); closeStickerUploader();
-    showSystemAlert(`成功入库 ${newStickers.length} 个表情！(￣▽￣)`);
+    showSystemAlert(`成功入库 ${newStickers.length} 个表情！`);
 };
-// ====================
+
+// 打开弹窗的入口
+window.showAddChoiceMenu = function(e) {
+    if(e) e.stopPropagation();
+    if(window.openStickerUploader) { window.openStickerUploader(); }
+};
+
 // 辅助功能
-// ====================
 function showStickerContextMenu(x, y, sticker) {
     const old = document.getElementById('ins-sticker-menu');
     if(old) old.remove();
-
     const menu = document.createElement('div');
     menu.id = 'ins-sticker-menu';
     menu.className = 'ins-context-menu';
@@ -5552,14 +5600,12 @@ function showStickerContextMenu(x, y, sticker) {
             }
         });
     }
-
     menu.innerHTML = `
         <div class="ins-menu-item" onclick="startMultiSelect()">★ 批量管理 (多选)</div>
         <div class="ins-menu-item" onclick="copyStickerUrl('${sticker.url}')">复制链接 <span>🔗</span></div>
         ${moveOptions}
         <div class="ins-menu-item danger" onclick="deleteSticker('${sticker.id}')">删除 <span>🗑️</span></div>
     `;
-
     document.body.appendChild(menu);
     let left = x - 75; let top = y + 10;
     if(left < 10) left = 10;
@@ -5567,9 +5613,7 @@ function showStickerContextMenu(x, y, sticker) {
     menu.style.top = top + 'px'; menu.style.left = left + 'px';
     setTimeout(() => { document.addEventListener('click', closeStickerMenu, { once: true }); }, 100);
 }
-
 function closeStickerMenu() { const m = document.getElementById('ins-sticker-menu'); if(m) m.remove(); }
-
 function toggleSelection(id) {
     if (selectedStickerIds.includes(id)) selectedStickerIds = selectedStickerIds.filter(i => i !== id);
     else selectedStickerIds.push(id);
@@ -5585,7 +5629,6 @@ window.deleteSelectedStickers = () => {
         saveStickers(); exitMultiSelect();
     });
 };
-
 window.moveStickerTo = (id, group) => {
     const s = stickersDB.find(x => x.id === id);
     if(s) { s.group = group; saveStickers(); renderStickers(); showSystemAlert(`已移动到 ${group}分组下～`); }
@@ -5594,7 +5637,6 @@ window.copyStickerUrl = (url) => { navigator.clipboard.writeText(url); showSyste
 window.deleteSticker = (id) => {
     if(confirm('确定要删除这个表情嘛？')) { stickersDB = stickersDB.filter(s => s.id !== id); saveStickers(); renderStickers(); }
 };
-
 function saveGroups() { localforage.setItem('stickerGroups', stickerGroups); }
 function saveStickers() { localforage.setItem('stickersData', stickersDB); }
 function sendSticker(stickerObj) {
@@ -5608,20 +5650,6 @@ function sendSticker(stickerObj) {
     saveChatAndRefresh(chat);
     toggleStickerMenu(); 
 }
-// ============================================
-// 修复表情包添加按钮点击无效的问题
-// ============================================
-window.showAddChoiceMenu = function(e) {
-    if(e) e.stopPropagation(); // 防止点透
-    
-    // 直接打开我们写好的那个漂亮的可视化上传窗口
-    if(window.openStickerUploader) {
-        window.openStickerUploader();
-    } else {
-        alert('上传模块还没加载好，请刷新试试(T_T)');
-    }
-};
-
 // ==========================================================
 // ★ 全局字体系统 (Global Font System)
 // ==========================================================

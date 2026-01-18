@@ -1756,383 +1756,247 @@ input:checked + .slider:before { transform: translateX(20px); }
 /* 资料卡层级修复 */
 #sub-page-creator,.exp-theme-root{position:fixed!important;top:0;left:0;width:100%;height:100%;z-index:20000!important;background:#fff;transform:translateY(100%);transition:transform 0.4s cubic-bezier(0.32,0.72,0,1)}
 #sub-page-creator.active{transform:translateY(0)}
-
 /* ==========================================================================
-   23. 表情包系统 (Ins Style Ultimate)
+   ★ 表情包系统完整样式表 (终极满血版)
    ========================================================================== */
-:root {
-    --global-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+/* -----------------------------------------------------------
+   PART 1: 通用基础组件 (按钮、菜单) - 缺的就是这些！
+   ----------------------------------------------------------- */
+
+/* 底部通用按钮 (相册/批量/保存) */
+.alert-btn {
+    flex: 1;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    border-radius: 12px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 14px;
+    transition: opacity 0.2s;
 }
-body, button, input, textarea, select, .edit-text {
-    font-family: var(--global-font) !important;
+.alert-btn:active { opacity: 0.7; }
+
+/* 底部按钮容器 */
+.action-btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    width: 100%;
 }
 
-/* 字体设置面板 */
-.font-setting-card {
-    grid-column: 1 / -1 !important; width: 100%;
-    background: #fff; border-radius: 16px; padding: 20px; margin: 15px 0;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+/* 右键/长按菜单 */
+.ins-context-menu {
+    position: fixed;
+    z-index: 22000 !important; /* 最高层级 */
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 8px;
+    width: 220px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    animation: menuPop 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    -webkit-user-select: none;
+    user-select: none;
 }
-.font-input-group { display: flex; gap: 10px; margin-bottom: 15px; }
-.font-url-input {
-    flex: 1; background: #f5f5f5; border: 1px solid transparent;
-    border-radius: 10px; padding: 10px 12px; font-size: 13px; outline: none; transition: all 0.2s;
+@keyframes menuPop { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+
+.ins-menu-item {
+    padding: 12px 16px;
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.1);
+    cursor: pointer;
 }
-.font-url-input:focus { background: #fff; border-color: #007aff; }
-.font-btn {
-    padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-}
-.font-btn.apply { background: #000; color: #fff; }
-.font-btn.reset { background: #f0f0f0; color: #ff3b30; }
-.font-preview-box {
-    background: #f9f9f9; border-radius: 12px; padding: 15px; text-align: center;
-    border: 1px dashed #ddd; margin-top: 10px;
-}
-.font-preview-text { font-size: 20px; margin-bottom: 5px; color: #333; font-family: var(--global-font); }
-.font-preview-sub { font-size: 12px; color: #999; }
-/* 容器 & 层级 */
+.ins-menu-item:last-child { border-bottom: none; }
+.ins-menu-item:active { background: rgba(0, 0, 0, 0.05); border-radius: 8px; }
+.ins-menu-item.danger { color: #ff3b30; }
+
+
+/* -----------------------------------------------------------
+   PART 2: 表情包抽屉 (主界面)
+   ----------------------------------------------------------- */
 .sticker-picker-container {
     position: fixed; bottom: 0; left: 0; width: 100%; height: 100%;
     z-index: 20000 !important; display: none; align-items: flex-end; pointer-events: none;
 }
 .sticker-picker-container.active { display: flex; pointer-events: auto; }
+
 .sticker-glass-panel {
-    width: 100%; height: 45vh; background: rgba(255,255,255,0.92);
+    width: 100%; height: 45vh;
+    background: rgba(255, 255, 255, 0.96);
     backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-    border-radius: 24px 24px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
-    display: flex; flex-direction: column; animation: slideUpSticker 0.3s cubic-bezier(0.2,0.8,0.2,1);
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.1);
+    display: flex; flex-direction: column;
+    animation: slideUpSticker 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-@keyframes slideUpSticker { from { transform: translateY(100%) } to { transform: translateY(0) } }
+@keyframes slideUpSticker { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-/* 导航栏 */
-.sticker-header { display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid rgba(0,0,0,0.05); }
-.sticker-tab { padding: 6px 14px; margin-right: 10px; font-size: 13px; font-weight: 600; color: #999; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
+/* 抽屉顶部导航 */
+.sticker-header {
+    display: flex; align-items: center; padding: 15px 20px;
+    border-bottom: 1px solid rgba(0,0,0,0.05); flex-shrink: 0;
+}
+.sticker-tab {
+    padding: 6px 14px; margin-right: 10px; font-size: 13px; font-weight: 600;
+    color: #999; border-radius: 12px; cursor: pointer; transition: all 0.2s;
+}
 .sticker-tab.active { background: #333; color: #fff; }
-.sticker-close { margin-left: auto; width: 30px; height: 30px; background: #f0f0f0; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #666; font-size: 18px; cursor: pointer; }
+.sticker-close {
+    margin-left: auto; width: 30px; height: 30px; background: #f0f0f0;
+    border-radius: 50%; display: flex; justify-content: center; align-items: center;
+    color: #666; font-size: 18px; cursor: pointer;
+}
 
-/* 分组栏 (修复长按) */
-.sticker-sub-nav { display: flex; gap: 10px; overflow-x: auto; padding: 10px 15px; background: rgba(255,255,255,0.6); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0,0,0,0.05); scrollbar-width: none; }
+/* 分组子导航 (默认/开心/难过) */
+.sticker-sub-nav {
+    display: flex; gap: 10px; overflow-x: auto; padding: 10px 15px;
+    background: rgba(255,255,255,0.6); backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0,0,0,0.05); scrollbar-width: none;
+}
 .sticker-sub-nav::-webkit-scrollbar { display: none; }
+
 .sticker-group-pill {
-    flex-shrink: 0; padding: 6px 14px; font-size: 12px; font-weight: 600; color: #999;
-    background: #f2f2f7; border-radius: 16px; transition: all 0.2s;
-    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; /* 长按修复 */
+    flex-shrink: 0; padding: 6px 14px; font-size: 12px; font-weight: 600;
+    color: #999; background: #f2f2f7; border-radius: 16px; transition: all 0.2s;
+    cursor: pointer;
 }
 .sticker-group-pill.active { background: #000; color: #fff; transform: scale(1.05); }
 
-/* 内容网格 (修复长按) */
-.sticker-grid-scroll { flex: 1; overflow-y: auto; padding: 20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; align-content: start; }
+/* 表情网格 */
+.sticker-grid-scroll {
+    flex: 1; overflow-y: auto; padding: 20px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; align-content: start;
+}
 .sticker-item {
     aspect-ratio: 1/1; border-radius: 12px; background-size: cover; background-position: center;
-    cursor: pointer; transition: transform 0.1s; background-color: transparent; position: relative;
-    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; /* 长按修复 */
+    cursor: pointer; position: relative; background-color: #f9f9f9;
 }
-.sticker-item:active { transform: scale(0.9); }
+.sticker-item:active { transform: scale(0.95); }
+.sticker-item.add-item {
+    border: 2px dashed #e0e0e0; display: flex; align-items: center; justify-content: center; background: #fff;
+}
 .sticker-name-tag {
     position: absolute; bottom: 0; left: 0; width: 100%; font-size: 9px;
-    color: rgba(0,0,0,0.4); text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.2s;
+    color: rgba(0,0,0,0.4); text-align: center; pointer-events: none; opacity: 0;
 }
 .sticker-item:hover .sticker-name-tag { opacity: 1; }
 
-/* 底部与上传按钮 */
-.sticker-footer { padding: 10px 20px 30px; border-top: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
-.sticker-add-btn { background: #f0f0f0; color: #333; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; }
-/* 统一弹窗层级 */
-.custom-alert-overlay, #sticker-upload-overlay { z-index: 20001 !important; }
+/* ==========================================================================
+   ★ 终极修补：弹窗瘦身 & 找回消失的框框
+   ========================================================================== */
 
-/* 右键/长按菜单 */
-.ins-context-menu {
-    z-index: 20002 !important; position: fixed; background: rgba(255,255,255,0.95);
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    border-radius: 16px; padding: 8px; width: 220px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.15); transform-origin: center;
-    animation: menuPop 0.2s cubic-bezier(0.2,0.8,0.2,1);
-    -webkit-user-select: none; user-select: none;
-}
-@keyframes menuPop { from { opacity: 0; transform: scale(0.9) } to { opacity: 1; transform: scale(1) } }
-.ins-menu-item { padding: 12px 16px; font-size: 14px; color: #333; font-weight: 500; display: flex; justify-content: space-between; align-items: center; border-bottom: 0.5px solid rgba(0,0,0,0.1); }
-.ins-menu-item:last-child { border-bottom: none; }
-.ins-menu-item:active { background: rgba(0,0,0,0.05); border-radius: 8px; }
-.ins-menu-item.danger { color: #ff3b30; }
-
-/* 新增：URL输入框样式 */
-.ins-input-field {
-    flex: 1; background: #f5f5f5; border: 1px solid transparent;
-    border-radius: 8px; padding: 8px 12px; font-size: 14px; outline: none;
-}
-.ins-input-field:focus { background: #fff; border-color: #007aff; }
-.ins-mini-btn {
-    padding: 0 15px; background: #007aff; color: #fff; border-radius: 8px;
-    font-size: 13px; font-weight: 600; display: flex; align-items: center; cursor: pointer;
-}
-.ins-mini-btn:active { opacity: 0.8; }
-
-/* 上传预览列表 (修复版) */
-.upload-preview-item {
-    display: flex; align-items: center; gap: 10px; background: #f9f9f9;
-    padding: 10px; border-radius: 12px; margin-bottom: 10px;
-}
-.up-thumb {
-    width: 44px; height: 44px; border-radius: 8px; flex-shrink: 0;
-    background-size: cover; background-position: center; border: 1px solid #eee;
-}
-.up-input-name { flex: 1; border: none; background: transparent; outline: none; font-size: 14px; }
-.up-url-text { font-size: 10px; color: #aaa; margin-top: 2px; }
-.up-del {
-    width: 24px; height: 24px; background: #ff3b30; color: #fff; border-radius: 50%;
-    display: flex; justify-content: center; align-items: center; font-size: 14px; cursor: pointer;
+/* 1. 弹窗瘦身 (350px -> 310px, 520px -> 420px) */
+#sticker-upload-overlay .custom-alert-box {
+    width: 310px !important;  /* 变瘦 */
+    height: 420px !important; /* 变矮 */
+    max-height: 80vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    background: #fff !important;
+    border-radius: 18px !important; /* 圆角稍微小一点点更精致 */
+    padding: 0 !important;
+    position: relative !important;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2) !important;
 }
 
-/* 消息气泡修复 (去掉尾巴背景) */
-.sticker-img-big { max-width: 140px; max-height: 140px; border-radius: 8px; display: block; object-fit: contain; }
-.msg-content.sticker-type { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
-.msg-row.has-tail .msg-content.sticker-type::before { display: none !important; }
-
-/* 1. 修复长按菜单/弹窗的点按穿透问题 */
-.custom-alert-overlay { z-index: 10001 !important; }
-.ins-context-menu { z-index: 10002 !important; }
-
-/* 2. 预览列表样式 (修复图4UI不应用的问题) */
-.upload-preview-item {
-    display: flex; align-items: center; gap: 12px;
-    background: #f9f9f9; padding: 12px; border-radius: 12px; 
-    margin-bottom: 10px; border: 1px solid #eee;
+/* 2. 找回左下角那个消失的“+号格子”外容器 (抽屉里的) */
+.sticker-item.add-item {
+    border: 2px dashed #ccc !important; /* 强制加粗虚线框 */
+    background-color: #fff !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important; /* 防止边框挤出去 */
 }
-.up-thumb {
-    width: 48px; height: 48px; border-radius: 8px; flex-shrink: 0;
-    background-size: cover; background-position: center; border: 1px solid #e0e0e0;
-}
-.up-input-name {
-    flex: 1; border: none; background: transparent; outline: none; 
-    font-size: 15px; font-weight: 500; color: #333;
-}
-.up-del {
-    width: 26px; height: 26px; background: #ff3b30; color: #fff; border-radius: 50%;
-    display: flex; justify-content: center; align-items: center; cursor: pointer;
+/* 给里面的加号上色 */
+.sticker-item.add-item span {
+    color: #ccc !important;
+    font-weight: 300 !important;
+    font-size: 32px !important;
+    margin-top: -2px; /* 微调对齐 */
 }
 
-/* 3. 添加按钮菜单样式 */
-.add-menu-options {
-    display: flex; flex-direction: column; gap: 0;
-}
-/* 输入框样式 */
-.ins-input-field {
-    width: 100%;
-    background: #f5f5f5;
-    border: 1px solid transparent;
-    border-radius: 10px;
-    padding: 12px;
-    font-size: 14px;
-    outline: none;
-    transition: all 0.2s;
-    color: #333;
-}
-.ins-input-field:focus { background: #fff; border-color: #007aff; }
-
-/* 底部按钮排版 */
+/* 3. 弹窗底部按钮美化 (防止变秃) */
 .sticker-footer {
-    padding: 10px 20px;
-    border-top: 1px solid rgba(0,0,0,0.05);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-shrink: 0 !important;
+    background: #fff !important;
+    border-top: 1px solid #f0f0f0 !important;
+    padding: 12px !important;
+    position: relative !important;
+    z-index: 999 !important;
 }
-/* --- 表情包上传可视化样式 --- */
 
-/* 每一行的容器 */
+/* 4. 按钮组 (紧凑一点) */
+.action-btn-row {
+    display: flex !important;
+    gap: 8px !important;
+    margin-top: 0 !important;
+}
+.action-btn-row .alert-btn {
+    flex: 1 !important;
+    min-height: 38px !important; /* 按钮也变矮一点 */
+    font-size: 13px !important;
+    border-radius: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 600 !important;
+}
+
+/* 5. URL输入行 (紧凑版) */
+.url-input-row {
+    display: flex !important; gap: 8px !important; margin-bottom: 10px !important; align-items: center !important;
+}
+#sticker-url-input {
+    flex: 2 !important; height: 34px !important;
+    background: #f5f5f7 !important; border: none !important; padding: 0 10px !important;
+    border-radius: 8px !important; font-size: 12px !important; outline: none !important;
+}
+.url-add-btn {
+    flex: 1 !important; height: 34px !important;
+    background: #eee !important; color: #333 !important;
+    border-radius: 8px !important; font-size: 12px !important; font-weight: 600 !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+    cursor: pointer !important;
+}
+
+/* 6. 中间列表区 */
+.sticker-body {
+    flex: 1 !important;
+    min-height: 0 !important;
+    width: 100% !important;
+    background: #fff !important;
+    overflow: hidden !important;
+}
+#sticker-preview-list {
+    padding: 10px !important;
+}
+
+/* 7. 列表项 (防止太大) */
 .upload-preview-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: #f9f9f9;
-    padding: 10px;
-    border-radius: 12px;
-    margin-bottom: 10px;
-    border: 1px solid #eee;
+    display: grid !important;
+    grid-template-columns: 44px 1fr 28px !important; /*稍微缩小 */
+    gap: 10px !important;
+    align-items: center !important;
+    background: #f9f9f9 !important;
+    padding: 8px !important;
+    border-radius: 10px !important;
+    margin-bottom: 8px !important;
+    border: 1px solid #eee !important;
 }
-
-/* 左边的图片预览 */
 .up-thumb {
-    width: 48px;
-    height: 48px;
-    border-radius: 8px;
-    flex-shrink: 0;
-    background-size: cover;
-    background-position: center;
-    border: 1px solid #e0e0e0;
-    background-color: #fff;
-}
-
-/* 中间的名字输入框 */
-.up-input-name {
-    flex: 1;
-    border: none;
-    background: transparent;
-    outline: none;
-    font-size: 14px;
-    font-weight: 500;
-    color: #333;
-    min-width: 0; /* 防止溢出 */
-}
-
-/* 右边的删除按钮 */
-.up-del {
-    width: 24px;
-    height: 24px;
-    background: #ff3b30; /* 红色 */
-    color: #fff;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 14px;
-    cursor: pointer;
-    flex-shrink: 0;
-}
-
-/* --- Ins风 壁纸控制面板 --- */
-.blur-control-card {
-    background: #fff;
-    border-radius: 20px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-}
-
-.bcc-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    font-size: 14px;
-    font-weight: 700;
-    color: #333;
-}
-
-.bcc-reset {
-    font-size: 11px;
-    color: #007aff;
-    background: rgba(0,122,255,0.1);
-    padding: 4px 10px;
-    border-radius: 12px;
-    cursor: pointer;
-}
-
-.bcc-row {
-    margin-bottom: 18px;
-}
-.bcc-row:last-child { margin-bottom: 0; }
-
-.bcc-label {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    color: #888;
-    margin-bottom: 8px;
-    font-weight: 600;
-}
-.bcc-num { color: #333; font-family: monospace; }
-
-/* --- iOS风格滑块美化 --- */
-.ios-slider-range {
-    -webkit-appearance: none;
-    width: 100%;
-    height: 6px;
-    background: #f0f0f0;
-    border-radius: 3px;
-    outline: none;
-}
-.ios-slider-range::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 22px;
-    height: 22px;
-    background: #fff;
-    border-radius: 50%;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    cursor: pointer;
-    transition: transform 0.1s;
-}
-.ios-slider-range::-webkit-slider-thumb:active {
-    transform: scale(1.1);
-    background: #fafafa;
-}
-/* --- 2. 预览图同步层 --- */
-#wall-current-preview {
-    position: relative;
-    width: 100%;
-    height: 56%;
-    border-radius: 12px;
-    background-color: #8e8e93; 
-    background-image: var(--wall-url, none);
-    background-size: cover;
-    background-position: center;
-    
-    /* 同步特效 */
-    filter: blur(var(--bg-blur, 0px)) brightness(var(--bg-dim, 100%));
-    transition: filter 0.1s linear;
-    overflow: hidden;
-    z-index: 1;
-}
-/* 给预览图也加个暗角 */
-#wall-current-preview::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-    background: radial-gradient(circle, transparent 60%, rgba(0,0,0, var(--bg-vignette, 0)) 100%);
-    z-index: 2;
-}
-/* --- 表情包上传优化 --- */
-
-/* 每一行 */
-.upload-preview-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: #f9f9f9;
-    padding: 10px; /* 稍微紧凑点 */
-    border-radius: 12px;
-    margin-bottom: 10px;
-    border: 1px solid #eee;
-}
-
-/* 图片缩略图 */
-.up-thumb {
-    width: 48px;
-    height: 48px;
-    border-radius: 8px;
-    flex-shrink: 0;
-    background-size: cover;
-    background-position: center;
-    border: 1px solid #e0e0e0;
-    background-color: #fff;
-}
-
-/* 名字输入框 */
-.up-input-name {
-    flex: 1;
-    border: none;
-    background: transparent;
-    outline: none;
-    font-size: 14px;
-    font-weight: 500;
-    color: #333;
-    width: 100%;
-}
-
-/* 删除红点 */
-.up-del {
-    width: 28px; /* 加大一点好点 */
-    height: 28px;
-    background: #ff3b30;
-    color: #fff;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 16px;
-    cursor: pointer;
-    flex-shrink: 0;
+    width: 44px !important; height: 44px !important;
+    border-radius: 6px !important; background-size: cover !important;
+    background-position: center !important; background-color: #fff !important;
 }
