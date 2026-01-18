@@ -65,17 +65,43 @@ body {
 /* ==========================================================================
    2. PHONE CONTAINER & LAYOUT (手机容器与布局)
    ========================================================================== */
+/* --- 1. 主屏幕壁纸层 (修正版) --- */
 .phone-screen {
     width: 100%;
-    height: 100vh; /* 强制撑满 */
+    height: 100vh;
     position: relative;
     overflow: hidden;
-    background-color: #f0f2f5; 
-    background-image: radial-gradient(#d1d1d6 1.5px, transparent 1.5px);
-    background-size: 24px 24px;
     z-index: 1;
+    background: transparent !important; /* 顶层必须透明 */
 }
 
+.phone-screen::before {
+    content: '';
+    position: absolute;
+    top: -20px; left: -20px;
+    width: calc(100% + 40px);
+    height: calc(100% + 40px);
+    z-index: -1;
+    background-image: var(--wall-url, none); 
+    background-color: #8e8e93;
+    background-size: cover;
+    background-position: center;
+    
+    /* 特效滤镜 */
+    filter: blur(var(--bg-blur, 0px)) brightness(var(--bg-dim, 100%));
+    transition: filter 0.3s ease, background-image 0.3s ease;
+}
+.phone-screen::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: -1;
+    pointer-events: none;
+    /* 这是一个从中心向四周变黑的渐变 */
+    background: radial-gradient(circle, transparent 60%, rgba(0,0,0, var(--bg-vignette, 0)) 100%);
+    transition: background 0.2s;
+}
 /* 桌面内容容器 */
 .desktop-content {
     padding: 90px 20px 120px 20px; /* 顶部留白避开刘海 */
@@ -107,9 +133,20 @@ body {
 .app-grid { display: grid; grid-template-columns: repeat(4, 1fr); row-gap: 20px; column-gap: 15px; margin-top: 15px; padding: 0 10px; width: 100%; }
 .app-item { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; transition: transform 0.1s; }
 .app-item:active { transform: scale(0.95); }
-.app-icon { width: var(--app-icon-size); height: var(--app-icon-size); background-color: var(--app-icon-default); border-radius: 14px; position: relative; overflow: hidden; background-size: cover; background-position: center; }
+.app-icon {
+    /* 保持原来的大小设置 */
+    width: var(--app-icon-size);
+    height: var(--app-icon-size);
+    border-radius: 14px; /* iOS圆角 */
+    object-fit: cover;
+    box-shadow: 
+        0 4px 10px rgba(0, 0, 0, 0.03), /* 外部投影，稍微加深一点点让它浮起来 */
+        inset 0 1px 0 rgba(255, 255, 255, 0.25), /* 顶部边缘的一丝丝高光 */
+        inset 0 -1px 0 rgba(0, 0, 0, 0.05); /* 底部边缘的一丝丝阴影，增加立体感 */
+        
+    transition: transform 0.1s ease, filter 0.2s;
+    background-color: #000; }
 /* 图标光泽感 */
-.app-icon::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.4) 100%); pointer-events: none; }
 .app-name { font-size: 11px; color: #333; text-align: center; cursor: pointer; }
 .search-pill { margin: 10px auto 0; background: rgba(255,255,255,0.5); padding: 4px 12px; border-radius: 20px; display: flex; align-items: center; gap: 5px; font-size: 11px; color: #555; backdrop-filter: blur(10px); cursor: pointer; width: fit-content; }
 
@@ -198,6 +235,88 @@ body {
     display: flex;
     justify-content: space-between;
     padding: -1px 10px;
+}
+
+/* --- 特别关心组件 (透明加大版 Max) --- */
+.fav-contacts-widget {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    
+    /* ★★★ 改这里！控制上下位置 ★★★ */
+    /* 第一个数字 50px 是上边距（往下挪的距离） */
+    /* 第三个数字 10px 是下边距 */
+    margin: 50px 0 10px 0; 
+    
+    padding: 0 15px !important;
+    width: 100%;
+}
+
+/* 2. 列表布局：两端对齐撑满 */
+.fav-list {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+/* 3. 单个项目 */
+.fav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 40px; /* 稍微宽一点 */
+    position: relative;
+}
+
+/* 4. 头像盒子：加大到 66px */
+.fav-avatar-box {
+    position: relative;
+    width: 40px;   /* ★ 巨大！ */
+    height: 40px;  /* ★ 巨大！ */
+    margin-bottom: 5px;
+    z-index: 10;
+}
+
+/* 5. 头像图片 (核心去白) */
+.fav-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%; 
+    background-color: transparent; 
+
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    z-index: 5;
+    cursor: pointer;
+}
+
+/* 6. 那个头像框 */
+.fav-frame {
+    position: absolute;
+    top: -6.2px;
+    left: -6.2px;
+    width: 130%; /* 稍微大一圈包住头像 */
+    height: 130%;
+    pointer-events: none; /* ★ 关键！让鼠标能穿透框框点到里面的图片 */
+    opacity: 0.35;  /* 范围是 0 到 1 */
+    z-index: 20; 
+}
+
+/* 7. 名字输入框 */
+.fav-name {
+    width: 100%;
+    border: none;
+    background: transparent;
+    text-align: center;
+    font-size: 11px;
+    color: #333; /* 既然背景透了，字改深色看得清，或者你自己改成 #fff */
+    text-shadow: 0 1px 1px rgba(255,255,255,0.5);
+    outline: none;
+    padding: 0;
+    margin-top: 2px;
+    font-weight: 500;
 }
 
 /* ==========================================================================
@@ -1718,7 +1837,6 @@ body, button, input, textarea, select, .edit-text {
 .sticker-img-big { max-width: 140px; max-height: 140px; border-radius: 8px; display: block; object-fit: contain; }
 .msg-content.sticker-type { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
 .msg-row.has-tail .msg-content.sticker-type::before { display: none !important; }
-/* style.css */
 
 /* 1. 修复长按菜单/弹窗的点按穿透问题 */
 .custom-alert-overlay { z-index: 10001 !important; }
@@ -1775,4 +1893,97 @@ body, button, input, textarea, select, .edit-text {
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+/* --- Ins风 壁纸控制面板 --- */
+.blur-control-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+}
+
+.bcc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
+}
+
+.bcc-reset {
+    font-size: 11px;
+    color: #007aff;
+    background: rgba(0,122,255,0.1);
+    padding: 4px 10px;
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+.bcc-row {
+    margin-bottom: 18px;
+}
+.bcc-row:last-child { margin-bottom: 0; }
+
+.bcc-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+.bcc-num { color: #333; font-family: monospace; }
+
+/* --- iOS风格滑块美化 --- */
+.ios-slider-range {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    background: #f0f0f0;
+    border-radius: 3px;
+    outline: none;
+}
+.ios-slider-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+.ios-slider-range::-webkit-slider-thumb:active {
+    transform: scale(1.1);
+    background: #fafafa;
+}
+/* --- 2. 预览图同步层 --- */
+#wall-current-preview {
+    position: relative;
+    width: 100%;
+    height: 56%;
+    border-radius: 12px;
+    background-color: #8e8e93; 
+    background-image: var(--wall-url, none);
+    background-size: cover;
+    background-position: center;
+    
+    /* 同步特效 */
+    filter: blur(var(--bg-blur, 0px)) brightness(var(--bg-dim, 100%));
+    transition: filter 0.1s linear;
+    overflow: hidden;
+    z-index: 1;
+}
+/* 给预览图也加个暗角 */
+#wall-current-preview::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    background: radial-gradient(circle, transparent 60%, rgba(0,0,0, var(--bg-vignette, 0)) 100%);
+    z-index: 2;
 }

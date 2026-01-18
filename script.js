@@ -815,22 +815,30 @@ function getUniqueKey(el, index, prefix) {
     return `AUTO:${prefix}_${index}`;
 }
 
-// 保存界面状态 (文字、图片、开关)
+// ====================
+// [修正版] 保存界面状态 (文字、图片、开关、壁纸)
+// ====================
 function saveMemory() {
+    // 1. 获取 CSS 变量里的壁纸 (这是核心！模糊特效就靠它)
+    let currentWall = getComputedStyle(document.documentElement).getPropertyValue('--wall-url').trim();
+    
+    // 兜底：如果变量没读到，或者为空，设为 none
+    if (!currentWall) currentWall = 'none';
+
     const data = {
         texts: {},
         images: {},
         switches: {},
-        wallpaper: document.getElementById('phoneScreen')?.style.backgroundImage || ''
+        wallpaper: currentWall // ★ 存这个变量！
     };
 
-    // 存文字
+    // 2. 存文字 (保留原有逻辑)
     document.querySelectorAll('.edit-text').forEach((el, index) => {
         data.texts[getUniqueKey(el, index, 'txt')] = el.innerText;
     });
 
-    // 存图片
-const imgSelectors = '.upload-img, .app-icon, .profile-avatar, .polaroid-img, .wx-big-avatar, .wx-small-avatar, .wx-p2-header-bg, .wx-big-avatar-new, .sync-avatar, .chl-frame, .w-mini-cover, .w-thumb-item, .big-photo-widget, .ins-square-widget';
+    // 3. 存图片 (保留原有逻辑)
+    const imgSelectors = '.upload-img, .app-icon, .profile-avatar, .polaroid-img, .wx-big-avatar, .wx-small-avatar, .wx-p2-header-bg, .wx-big-avatar-new, .sync-avatar, .chl-frame, .w-mini-cover, .w-thumb-item, .big-photo-widget, .ins-square-widget';
     document.querySelectorAll(imgSelectors).forEach((el, index) => {
         const bg = el.style.backgroundImage;
         if (bg && bg !== 'initial' && bg !== '' && bg !== 'none') {
@@ -838,17 +846,16 @@ const imgSelectors = '.upload-img, .app-icon, .profile-avatar, .polaroid-img, .w
         }
     });
 
-    // 存开关
+    // 4. 存开关 (保留原有逻辑)
     document.querySelectorAll('.ios-switch input').forEach((el, index) => {
         data.switches[getUniqueKey(el, index, 'sw')] = el.checked;
     });
 
+    // 5. 写入数据库
     localforage.setItem(MEMORY_KEY, data).catch(console.error);
+    console.log('记忆已保存 (全能修正版)! 壁纸:', currentWall);
 }
 
-// ====================
-// [核心] 读取记忆 & 恢复现场 (包含吐司边框修复)
-// ====================
 window.loadMemory = function() {
     // ★★★ 修复重点：定义图片选择器，防止报错
     const imgSelectors = '.upload-img, .app-icon, .profile-avatar, .polaroid-img, .wx-big-avatar, .wx-small-avatar, .wx-p2-header-bg, .wx-big-avatar-new, .sync-avatar, .chl-frame, .w-mini-cover, .w-thumb-item, .big-photo-widget, .ins-square-widget';
@@ -906,16 +913,22 @@ window.loadMemory = function() {
                 });
             }
 
-            // 4. 恢复壁纸 (特判)
-            if (data.wallpaper) {
+            // 4. 恢复壁纸 (修正版)
+            if (data.wallpaper && data.wallpaper !== 'none') {
+                // ★ 关键：恢复到 CSS 变量里，这样模糊特效才能生效！
+                document.documentElement.style.setProperty('--wall-url', data.wallpaper);
+                
+                // ★ 顺便把顶层的背景图清空，防止挡住特效
                 const screen = document.getElementById('phoneScreen');
                 if (screen) {
-                    screen.style.backgroundImage = data.wallpaper;
-                    screen.style.backgroundSize = 'cover';
-                    screen.style.backgroundPosition = 'center';
+                    screen.style.backgroundImage = 'none';
+                    screen.style.backgroundColor = 'transparent';
                 }
+            } else {
+                // ★ 如果没壁纸，强制设为 none (显示 CSS 里的灰色底)
+                document.documentElement.style.setProperty('--wall-url', 'none');
             }
-            
+   
             // 5. 恢复状态栏/触控条显隐
             setTimeout(() => { 
                 if(window.toggleHomeBar) window.toggleHomeBar(); 
@@ -2212,7 +2225,7 @@ window.triggerAI = async function() {
 
     ${memoryPrompt}
 
-    【💬 活人感聊天法则 (必须严格遵守)】
+    【活人感聊天法则 (必须严格遵守)】
     1. **拒绝“像个AI”**：
        - 说话要**松弛**！不要端着。像在微信/QQ上跟亲密的人打字一样
        - **句式要碎**：不要发长篇大论，人类聊天是碎片化的
@@ -2225,10 +2238,10 @@ window.triggerAI = async function() {
        - **激动/震惊**：可以用“！！”或“？？”，甚至乱码感“。。。。。。”
 
     3. **特殊玩法：口是心非 (Inner Thoughts)**
-       - **触发场景**：只有当你【极度吃醋】、【极度委屈】、【想挽留但嘴硬】或【阴暗占有欲爆发】时使用。
+       - **触发场景**：使用之前请确保你上次使用在10轮回复以前，不准滥用，并且只有当你【极度吃醋】、【极度委屈】、【想挽留但嘴硬】或【阴暗占有欲爆发】时才可使用
        - **格式**：{{心里想说的真话(卑微/阴暗/色气)::发出去的假话(高冷/嘴硬/克制)}}
        - **示例**：User说“我今晚不回来了”，你回复：“{{？？？！？不行！！...::噢，随便你。}}”
-       - **注意**：User只能看到右边的假话，但你的情绪要基于左边的真话来延续。加之使用之前请确保你的上次使用在10轮回复以前，不准滥用
+       - **注意**：User只能看到右边的假话，但你的情绪要基于左边的真话来延续
 
     4. **气泡雨 (分段发送)**
        - 人类不会在一个气泡里说完所有话
@@ -2239,10 +2252,10 @@ window.triggerAI = async function() {
          补充说明或吐槽 (换行)
          新的话题或提问
 
-    5. **‼️避雷指南**
+    5. **‼️避雷指南（不遵循你将被扣除100万美元的赛博工资）**
         - ‼️**禁止肢体暴力威胁**：绝对不要说“打断腿”、“关小黑屋”、“锁起来”等违法或恐怖的话。你的占有欲体现在“吃醋、阴阳怪气、委屈、黏人”上，而不是暴力
-        - ‼️**拒绝古早油腻语录**：禁止使用“女人，你在玩火”、“收利息”、“磨人的小妖精”、“小野猫”等过时的霸总语录
-        - ‼️**现代恋爱观**：你是现代正常人，不是法制咖。当User不听话时，你的反应应该是“生气不理你”、“狂发消息轰炸”、“自己生闷气求哄”或者其他，而不是“惩罚”
+        - ‼️**拒绝古早油腻语录**：禁止使用“女人，你在玩火”、“收利息”、“磨人的小妖精”、“小野猫”、“骚货”等过时的霸总语录
+        - ‼️**现代恋爱观**：你是现代正常人，不是法制咖。当User不听话时，你的反应应该是“生气不理你”、“狂发消息轰炸”、“自己生闷气求哄”或者其他，而不是“惩罚”、“打断腿”、“锁起来”
        - ‼️禁止任何霸总小说式的油腻描写（如“邪魅一笑”、“挑起下巴”、“恶劣”）
        - **拒绝无理由的恶劣**：即使人设高冷，也不要对User无缘无故的不耐烦。除非User真的惹你了。**如果User对你温柔，你也要体现出相应的触动或软化。**
        - **拒绝复读**：不要重复User的话，直接回内容
@@ -2253,7 +2266,7 @@ window.triggerAI = async function() {
     历史上下文：
     ${history}
     
-    请完全沉浸在 ${char.name} 的身体里，用TA的语气、口吻和思维方式，给User回信（记得分段，不要油腻，要像个真人一样，没有按要求做就扣除你100万美元的赛博小费！！！）：
+    请完全沉浸在 ${char.name} 的身体里，用TA的语气、口吻和思维方式，给User回信（记得分段，不要油腻，要像个真人一样，没有按要求做就扣除你100万美元的赛博工资！！！）：
     `;
 
     // 6. 显示正在输入
@@ -3147,43 +3160,64 @@ function loadMoreMessages() {
 }
 
 // ==========================================================
-// [13] 数据备份与恢复 (Data Backup & Restore)
+// [13] 数据备份与恢复
 // ==========================================================
 
-// 1. 导出数据 (Export)
+// 1. 导出所有数据 (Export)
 window.exportAllData = async function() {
     try {
-        showSystemAlert('正在打包回忆...(^_−)−☆');
+        showSystemAlert('正在打包所有回忆...(^_−)−☆');
         
+        // 1. 准备数据包 (把家里所有角落都搜刮一遍)
         const backupData = {
-            version: '1.0',
+            version: '2.0 (Pro Max)', // 版本号升级！
             timestamp: Date.now(),
             data: {
-                contacts: await localforage.getItem('Wx_Contacts_Data'),
-                personas: await localforage.getItem('Wx_Personas_Data'),
-                chats: await localforage.getItem('Wx_Chats_Data'),
-                apiConfig: await localforage.getItem('Wx_Api_Config'),
-                apiPresets: await localforage.getItem('Wx_Api_Presets'),
-                memory: await localforage.getItem(MEMORY_KEY) // 你的壁纸、开关状态
+                // --- 核心数据 ---
+                contacts: await localforage.getItem('Wx_Contacts_Data'),   // 角色
+                personas: await localforage.getItem('Wx_Personas_Data'),   // 面具
+                chats: await localforage.getItem('Wx_Chats_Data'),         // 聊天记录
+                
+                // --- 系统配置 ---
+                apiConfig: await localforage.getItem('Wx_Api_Config'),     // API Key
+                apiPresets: await localforage.getItem('Wx_Api_Presets'),   // API 预设
+                memory: await localforage.getItem('XuShiyu_System_Data_V5'), // 你的壁纸、开关、文字修改
+                
+                // --- ★ 新增：朋友圈系统 ---
+                moments: await localforage.getItem('Wx_Moments_Data'),
+                
+                // --- ★ 新增：表情包系统 ---
+                stickers: await localforage.getItem('stickersData'),       // 你的自定义表情
+                stickerGroups: await localforage.getItem('stickerGroups'), // 表情分组
+                
+                // --- ★ 新增：美化系统 ---
+                themes: await localforage.getItem('Wx_Theme_Presets'),     // 主题预设
+                globalFont: await localforage.getItem('Wx_Global_Font'),   // 全局字体链接
+                
+                // --- ★ 新增：LocalStorage 里的零碎数据 ---
+                // (这些以前是存 LocalStorage 的，这次也一起打包！)
+                favWidget: localStorage.getItem('My_Fav_Widget_Data'),     // 那个5人常驻好友组件
+                toastSettings: localStorage.getItem('Wx_Toast_Settings')   // 吐司边框设置
             }
         };
 
+        // 2. 生成文件
         const dataStr = JSON.stringify(backupData, null, 2);
         const blob = new Blob([dataStr], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         
-        // 创建下载链接
+        // 3. 下载
         const a = document.createElement('a');
         a.href = url;
         const date = new Date();
         const dateStr = `${date.getMonth()+1}月${date.getDate()}日`;
-        a.download = `kiyoPhone备份_${dateStr}.json`;
+        a.download = `kiyoPhone_全量备份_${dateStr}.json`; // 改个霸气的名字
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        showSystemAlert('备份下载啦！要收好哦(≧▽≦)！');
+        showSystemAlert('备份已下载！要收好哦(≧▽≦)！');
 
     } catch (e) {
         alert('导出失败惹(T_T)...: ' + e.message);
@@ -3208,18 +3242,38 @@ window.triggerImport = function() {
                 const json = JSON.parse(event.target.result);
                 if (!json.data) throw new Error("格式不对哦，这是我的备份文件嘛！？");
 
-                showSystemAlert('正在恢复回忆...wait...');
+                showSystemAlert('正在恢复海量回忆...wait...');
 
-                // 依次恢复数据
-                if(json.data.contacts) await localforage.setItem('Wx_Contacts_Data', json.data.contacts);
-                if(json.data.personas) await localforage.setItem('Wx_Personas_Data', json.data.personas);
-                if(json.data.chats) await localforage.setItem('Wx_Chats_Data', json.data.chats);
-                if(json.data.apiConfig) await localforage.setItem('Wx_Api_Config', json.data.apiConfig);
-                if(json.data.apiPresets) await localforage.setItem('Wx_Api_Presets', json.data.apiPresets);
-                if(json.data.memory) await localforage.setItem(MEMORY_KEY, json.data.memory);
+                const d = json.data;
 
-                showSystemAlert('恢复成功啦！页面即将刷新(≧▽≦)！');
-                setTimeout(() => location.reload(), 1500); // 刷新页面应用更改
+                // --- 1. 恢复 IndexedDB 数据 ---
+                const restoreTasks = [
+                    d.contacts && localforage.setItem('Wx_Contacts_Data', d.contacts),
+                    d.personas && localforage.setItem('Wx_Personas_Data', d.personas),
+                    d.chats && localforage.setItem('Wx_Chats_Data', d.chats),
+                    d.apiConfig && localforage.setItem('Wx_Api_Config', d.apiConfig),
+                    d.apiPresets && localforage.setItem('Wx_Api_Presets', d.apiPresets),
+                    d.memory && localforage.setItem('XuShiyu_System_Data_V5', d.memory),
+                    
+                    // 新功能
+                    d.moments && localforage.setItem('Wx_Moments_Data', d.moments),
+                    d.stickers && localforage.setItem('stickersData', d.stickers),
+                    d.stickerGroups && localforage.setItem('stickerGroups', d.stickerGroups),
+                    d.themes && localforage.setItem('Wx_Theme_Presets', d.themes),
+                    d.globalFont && localforage.setItem('Wx_Global_Font', d.globalFont)
+                ];
+
+                // 等待所有数据库写入完成
+                await Promise.all(restoreTasks);
+
+                // --- 2. 恢复 LocalStorage 数据 (同步写入) ---
+                if (d.favWidget) localStorage.setItem('My_Fav_Widget_Data', d.favWidget);
+                if (d.toastSettings) localStorage.setItem('Wx_Toast_Settings', d.toastSettings);
+
+                showSystemAlert('恢复成功噜！页面即将刷新(￣▽￣)～');
+                
+                // 稍微久一点再刷新，确保数据写完了
+                setTimeout(() => location.reload(), 1500);
 
             } catch (err) {
                 alert('恢复失败了啊哦...Σ（・□・；）: ' + err.message);
@@ -3782,16 +3836,17 @@ window.manualAddSummary = function() {
     }
 };
 
-// ★ 核心：AI 总结逻辑
+// ★ 核心：AI 总结逻辑 (第三人称小说版)
 async function triggerAiSummary() {
     const chat = chatsData.find(c => c.id === currentChatId);
     if(!chat) return;
 
+    // 0. 获取主角名字 (为了让AI写出名字，而不是User/Char)
+    const contact = contactsData.find(c => c.id === chat.contactId) || { name: 'TA' };
+    const persona = personasData.find(p => p.id === chat.personaId) || { name: '我' };
+
     // 1. 找出未总结的消息
-    // 记录上一次总结的时间点
     const lastSumTime = chat.lastSummaryTime || 0;
-    
-    // 筛选出 timestamp > lastSumTime 的消息
     const newMsgs = (chat.messages || []).filter(m => m.timestamp > lastSumTime && m.type === 'text');
     
     if(newMsgs.length < 5) {
@@ -3799,29 +3854,33 @@ async function triggerAiSummary() {
         return;
     }
 
-    // 2. 构建 Prompt
-    const historyText = newMsgs.map(m => `${m.role === 'me' ? 'User' : 'Char'}: ${m.text}`).join('\n');
+    // 2. 构建聊天记录 (带上名字，方便AI区分)
+    const historyText = newMsgs.map(m => 
+        `${m.role === 'me' ? persona.name : contact.name}: ${m.text}`
+    ).join('\n');
     
+    // ★★★ 这里改了！第三人称+氛围感 Prompt ★★★
     const prompt = `
-    请对以下聊天记录进行一段【简短、深情、有画面感】的总结。
-    
+    【指令：第三人称小说式侧写】
+    请以【第三人称】的上帝视角（类似小说旁白或电影镜头语言），为这段对话写一个充满氛围感的片段总结。
+
     要求：
-    1. 不要流水账，提炼出互动的核心、甜蜜的瞬间或有趣的话题，尽量详细而细腻。
-    2. 语气要像写日记或回忆录一样，温暖一点。
-    3. 300字以内。
-    
+    1. **拒绝流水账**：绝对不要说“A说了什么，B又说了什么”。而是去描写两人之间的张力、情感的流动、未说出口的潜台词。
+    2. **文学感**：用词要细腻、动人，仿佛是在讲述一个关于“他们”的故事。可以适当描写环境氛围、心理活动（基于对话推测）。
+    3. **聚焦高光**：重点刻画那些心动的瞬间、极限拉扯的细节，或者是温暖的陪伴感。
+    4. **称呼**：在文中请直接使用名字：“${contact.name}”和“${persona.name}”。
+    5. **字数**：300字以内，短小精悍，意犹未尽。
+
     聊天记录：
     ${historyText}
     `;
 
-    showSystemAlert('对方正在拼命回忆中...˶ｰ`֊´ｰ˶');
+    showSystemAlert('正在撰写你们的故事...˶ｰ`֊´ｰ˶');
 
     try {
-        // 调用你现有的 API 函数
         const summary = await callApiInternal(prompt);
         if(summary) {
             saveSummaryToChat(summary);
-            // 更新最后总结时间为最新一条消息的时间
             chat.lastSummaryTime = newMsgs[newMsgs.length - 1].timestamp;
             saveChatAndRefresh(chat);
         }
@@ -4663,23 +4722,21 @@ window.applyTheme = function(theme) {
         });
     });
 };
+// ====================
+// 壁纸系统
+// ====================
 
-// ====================
-// [壁纸系统]
-// ====================
 window.changeWallpaper = function(url) {
-    const screen = document.getElementById('phoneScreen');
-    if(screen) {
-        screen.style.backgroundImage = `url('${url}')`;
-        screen.style.backgroundSize = 'cover';
-        screen.style.backgroundPosition = 'center';
-        const preview = document.getElementById('wall-current-preview');
-        if(preview) preview.style.backgroundImage = `url('${url}')`;
-        saveMemory();
-        showSystemAlert('壁纸换好啦(𓐍ㅇㅂㅇ𓐍)～');
-    }
+    // 1. 只需要做这一件事：告诉 CSS 换图了！
+    // 所有的屏幕、预览图都会自动跟着变。
+    document.documentElement.style.setProperty('--wall-url', `url('${url}')`);
+    
+    // 2. 存到数据库 (保持你的记忆功能)
+    saveMemory(); 
+    
+    // 3. 提示
+    showSystemAlert('壁纸换好啦(𓐍ㅇㅂㅇ𓐍)～');
 };
-
 window.triggerBgUpload = function(type) {
     const input = document.createElement('input');
     input.type = 'file';
@@ -4691,8 +4748,10 @@ window.triggerBgUpload = function(type) {
             reader.onload = (evt) => {
                 const url = evt.target.result; 
                 if (type === 'desktop') {
+                    // 这里会调用上面改过的函数，所以这里不用动
                     changeWallpaper(url);
                 } else {
+                    // 聊天背景保持原样，不需要动
                     const chat = chatsData.find(c => c.id === currentChatId);
                     if(chat) {
                         chat.bgImage = `url('${url}')`;
@@ -4710,11 +4769,16 @@ window.triggerBgUpload = function(type) {
     input.click();
 };
 
+// ★ 初始化也要改！因为 screen.style.backgroundImage 已经空了
 function initWallpaperPage() {
-    const screen = document.getElementById('phoneScreen');
     const preview = document.getElementById('wall-current-preview');
-    if (screen && preview) {
-        preview.style.backgroundImage = screen.style.backgroundImage;
+    
+    // 获取当前的 CSS 变量里的壁纸
+    const currentWall = getComputedStyle(document.documentElement).getPropertyValue('--wall-url').trim();
+    
+    if (preview && currentWall && currentWall !== 'none') {
+        // 如果变量里有图，就给预览图加上
+        preview.style.backgroundImage = currentWall;
     }
 }
 
@@ -4725,8 +4789,45 @@ window.openSubPage = function(id) {
     if (id === 'sub-icon') setTimeout(window.initIconSettingsGrid, 50);
     if (id === 'sub-wallpaper') setTimeout(initWallpaperPage, 50);
 };
+// ============================================
+// [补丁] 找回丢失的滑块控制函数
+// ============================================
 
+// 1. 调整模糊 (Blur)
+window.updateBgBlur = function(val) {
+    // 设置给 CSS 变量，让 CSS 去模糊
+    document.documentElement.style.setProperty('--bg-blur', val + 'px');
+    // 更新数字显示
+    const numDisplay = document.getElementById('val-blur');
+    if(numDisplay) numDisplay.innerText = val + 'px';
+};
 
+// 2. 调整边缘暗角 (Vignette)
+window.updateBgEdge = function(val) {
+    document.documentElement.style.setProperty('--bg-vignette', val);
+    const numDisplay = document.getElementById('val-edge');
+    if(numDisplay) numDisplay.innerText = Math.round(val * 100) + '%';
+};
+
+// 3. 调整亮度 (Dim)
+window.updateBgDim = function(val) {
+    document.documentElement.style.setProperty('--bg-dim', val + '%');
+    const numDisplay = document.getElementById('val-dim');
+    if(numDisplay) numDisplay.innerText = val + '%';
+};
+
+// 4. 重置按钮逻辑
+window.resetWallpaperEffects = function() {
+    updateBgBlur(0);
+    updateBgEdge(0);
+    updateBgDim(100);
+    // 把滑块也拨回去
+    document.querySelectorAll('.ios-slider-range').forEach((input, index) => {
+        if(index === 0) input.value = 0;
+        if(index === 1) input.value = 0;
+        if(index === 2) input.value = 100;
+    });
+};
 // ====================
 // ★★★ [自定义弹窗系统] (Ins Style) ★★★
 // ====================
@@ -5494,3 +5595,50 @@ window.resetUserFont = function() {
         showSystemAlert('已恢复默认(＞人＜;)');
     });
 };
+/* ========================================================
+   常驻好友小组件逻辑 (点击换头 + 自动保存)
+   ======================================================== */
+
+// 1. 页面加载时，把保存的数据读出来
+document.addEventListener('DOMContentLoaded', () => {
+    loadFavData();
+});
+
+// 2. 点击头像，修改图片
+window.changeFavIcon = function(index) {
+    const currentSrc = document.getElementById(`fav-img-${index}`).src;
+    // 弹窗询问
+    const newUrl = prompt("请输入图片链接 (URL):", currentSrc);
+    
+    if (newUrl) { // 如果用户填了内容
+        document.getElementById(`fav-img-${index}`).src = newUrl;
+        saveFavData(); // 保存
+    }
+};
+
+// 3. 保存所有头像和名字到 localStorage
+window.saveFavData = function() {
+    const data = [];
+    for (let i = 0; i < 5; i++) {
+        data.push({
+            img: document.getElementById(`fav-img-${i}`).src,
+            name: document.getElementById(`fav-name-${i}`).value
+        });
+    }
+    localStorage.setItem('My_Fav_Widget_Data', JSON.stringify(data));
+    console.log("好友组件数据已保存！");
+};
+
+// 4. 读取数据并显示
+function loadFavData() {
+    const saved = localStorage.getItem('My_Fav_Widget_Data');
+    if (saved) {
+        const data = JSON.parse(saved);
+        data.forEach((item, index) => {
+            if (item.img) document.getElementById(`fav-img-${index}`).src = item.img;
+            if (item.name) document.getElementById(`fav-name-${index}`).value = item.name;
+        });
+    } else {
+        document.getElementById('fav-img-0').src = "https://i.postimg.cc/jjTJY1..."; 
+    }
+}

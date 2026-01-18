@@ -124,11 +124,53 @@
                 <div class="app-name">地图</div>
             </div>
         </div>
-
     </div>
 </div>
 
     <div class="desktop-page" id="page-3">
+<div class="fav-contacts-widget">
+    <div class="fav-list">
+        <div class="fav-item">
+            <div class="fav-avatar-box">
+                <div class="fav-img upload-img" id="fav_head_1" style="background-image: url('https://i.postimg.cc/jjTJY1...');"></div> 
+                <img src="https://i.postimg.cc/SQTJkb6z/wu-biao-ti119-20260117234002.png" class="fav-frame">
+            </div>
+            <input type="text" class="fav-name" value="TvT" placeholder="Name">
+        </div>
+
+        <div class="fav-item">
+            <div class="fav-avatar-box">
+                <div class="fav-img upload-img" id="fav_head_2"></div>
+                <img src="https://i.postimg.cc/SQTJkb6z/wu-biao-ti119-20260117234002.png" class="fav-frame">
+            </div>
+            <input type="text" class="fav-name" value="(𓐍ㅇㅂㅇ𓐍)" placeholder="Name">
+        </div>
+
+        <div class="fav-item">
+            <div class="fav-avatar-box">
+                <div class="fav-img upload-img" id="fav_head_3"></div>
+                <img src="https://i.postimg.cc/SQTJkb6z/wu-biao-ti119-20260117234002.png" class="fav-frame">
+            </div>
+            <input type="text" class="fav-name" value="(⸝⸝> ω <⸝⸝)" placeholder="Name">
+        </div>
+
+        <div class="fav-item">
+            <div class="fav-avatar-box">
+                <div class="fav-img upload-img" id="fav_head_4"></div>
+                <img src="https://i.postimg.cc/SQTJkb6z/wu-biao-ti119-20260117234002.png" class="fav-frame">
+            </div>
+            <input type="text" class="fav-name" value="ㅋㅋㅋ…" placeholder="Name">
+        </div>
+
+        <div class="fav-item">
+            <div class="fav-avatar-box">
+                <div class="fav-img upload-img" id="fav_head_5"></div>
+                <img src="https://i.postimg.cc/SQTJkb6z/wu-biao-ti119-20260117234002.png" class="fav-frame">
+            </div>
+            <input type="text" class="fav-name" value="★₊⁺๑!!♪ 🤍ྀི" placeholder="Name">
+        </div>
+    </div>
+</div>
         <div style="height: 100%; display:flex; justify-content:center; align-items:center; color:#ccc; font-size:12px;">
             Waiting for decoration...<br>♡
         </div>
@@ -549,7 +591,41 @@
         </div>
 
         <div style="margin-top: 30px; font-size: 13px; color: #999; font-weight: 600; margin-bottom: 15px;">GALLERY</div>
-        
+<div class="blur-control-card">
+    <div class="bcc-header">
+        <span>💧 壁纸特效 (Effects)</span>
+        <div class="bcc-reset" onclick="resetWallpaperEffects()">重置</div>
+    </div>
+
+    <div class="bcc-row">
+        <div class="bcc-label">
+            <span>模糊 (Blur)</span>
+            <span id="val-blur" class="bcc-num">0%</span>
+        </div>
+        <input type="range" class="ios-slider-range" min="0" max="20" step="0.5" value="0" 
+               oninput="updateBgBlur(this.value)">
+    </div>
+
+    <div class="bcc-row">
+        <div class="bcc-label">
+            <span>边缘 (Edge)</span>
+            <span id="val-edge" class="bcc-num">0%</span>
+        </div>
+        <input type="range" class="ios-slider-range" min="0" max="0.8" step="0.05" value="0" 
+               oninput="updateBgEdge(this.value)">
+    </div>
+
+    <div class="bcc-row">
+        <div class="bcc-label">
+            <span>亮度 (Dim)</span>
+            <span id="val-dim" class="bcc-num">100%</span>
+        </div>
+        <input type="range" class="ios-slider-range" min="50" max="100" step="1" value="100" 
+               oninput="updateBgDim(this.value)">
+    </div>
+</div>
+
+<div style="height: 20px;"></div>
         <div class="wall-grid">
             <div class="wall-item add-btn" onclick="triggerBgUpload('desktop')">
                 <div class="wall-plus">+</div>
