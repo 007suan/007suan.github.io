@@ -2180,7 +2180,7 @@ window.triggerAI = async function() {
         memoryPrompt = `
     【你们过往的重要回忆】
     ${memoryText}
-    (请记住这些发生过的事情，保持剧情连贯)
+    (这是你们最珍贵的回忆喔～请记住这些发生过的事情，保持剧情连贯)
     `;
     }
     // =======================================================
@@ -2201,7 +2201,7 @@ window.triggerAI = async function() {
         例如：
         "宝宝我好想你！[sticker:抱抱]"
         "不要不理我嘛...[sticker:哭哭]"
-        (注意：不要滥用，只在情绪到位时使用。每次回复最多发一个。)
+        (注意：不要滥用，只在情绪到位时使用！每次回复最多发一个)
         `;
     }
     // =======================================================
@@ -2209,48 +2209,20 @@ window.triggerAI = async function() {
     // 5. 组装Prompt (优化版：更具活人感 & 贴合人设)
     const systemPrompt = `
     【指令：完全沉浸式角色扮演】
-    你现在不是AI，也不是语言模型。你就是 **${char.name}**。
+    你现在不是AI，也不是语言模型，你就是 **${char.name}**
     
     1. **你的核心设定**：
        - **身份**：${char.name} (真名: ${char.realname || '未知'})
-
-    - 性别：${char.gender || '未知'}
-
-    - 年龄：${char.age || '未知'}
-
-    - 身高：${char.height || '未知'}
-
-    - MBTI：${char.mbti || '未知'}
-
-    - 标签：${char.tags || '无'}
-
-    - 爱好/其他设定：${char.hobbies || '无'}
-
-    - 背景故事：${char.desc}
-
-    - 性格/语气/说话方式：${char.persona}
-
+       - **性格内核**：${char.persona}
+       - **背景故事**：${char.desc}
+       - **爱好**：${char.hobbies || '无'}
+       - **其他信息**：${char.mbti || '未知'} | ${char.age || '未知'}岁
     
     2. **你的聊天对象 (User)**：
        - 对方是：${me.name} (${me.alias || 'User'})
-       - 你们的关系：请根据过往对话和你的设定自行判断（是暧昧、情侣、死对头还是陌生人），并据此调整语气的亲密程度！
-      - User的其他设定：
-
-    - 性别：${me.gender || '未知'}
-
-    - 年龄：${me.age || '未知'}
-
-    - 爱好/其他设定：${me.hobbies || '无'}
-
-    - 背景故事：${me.desc}
-
-    - 性格：${me.persona}
-
-    - 身高：${me.height || '未知'}
-
-    - MBTI：${me.mbti || '未知'}
-
-    - 性格/语气/说话方式：${me.persona}
+       - **对方基础信息**：${me.gender || '未知'} | ${me.age || '未知'}岁
+       - **对方背景故事**：${me.desc}
+       - **你们的关系**：请根据过往对话以及你的设定自行判断（是暧昧、情侣、死对头、姐弟/兄妹还是陌生人），并据此调整语气的亲密程度！
 
     ${memoryPrompt}
 
@@ -2295,7 +2267,7 @@ window.triggerAI = async function() {
     历史上下文：
     ${history}
     
-    请完全沉浸在 ${char.name} 的身体里，用TA的语气、口吻和思维方式，给User回信（记得分段，不要油腻，要像个真人一样，没有按要求做就扣除你100万美元的赛博工资！！！）：
+    请完全沉浸在 ${char.name} 的身体里，用TA的语气、口吻和思维方式，给User回信（记得分段，请谨记你素质很高，不会随意说脏话！不要油腻，要像个真人一样，没有按要求做就扣除你100万美元的赛博工资！！！）：
     `;
 
     // ★★★ 阶段一：思考中 (Show Bubble) ★★★
@@ -3784,25 +3756,31 @@ window.openChatControl = function() {
     setTimeout(() => panel.classList.add('active'), 10);
 };
 
-// === 2. 聊天总结 (Summary Page) ===
+// ==========================================================
+// ★ 3. 聊天总结系统 (INS风美化 + 深度人设AI)
+// ==========================================================
+
+// 打开总结页
 window.openSummaryPage = function() {
     const chat = chatsData.find(c => c.id === currentChatId);
     if (!chat) return;
 
-    // 1. ★★★ 同步侧边栏头像 (只显示Char的) ★★★
-    const contact = contactsData.find(c => c.id === chat.contactId);
-    applyAvatarStyle('sum-sidebar-avatar', contact ? contact.avatar : '');
+    // 1. 同步侧边栏头像 (如果有的话)
+    // const contact = contactsData.find(c => c.id === chat.contactId);
+    // if(contact) applyAvatarStyle('sum-sidebar-avatar', contact.avatar);
 
-    // 2. 渲染列表
+    // 2. 渲染漂亮的列表
     renderSummaries();
     
     // 3. 显示页面
     const page = document.getElementById('sub-page-summary');
-    page.style.display = 'flex'; // 这里 CSS 强制了 flex-direction: row
-    setTimeout(() => page.classList.add('active'), 10);
+    if(page) {
+        page.style.display = 'flex';
+        setTimeout(() => page.classList.add('active'), 10);
+    }
 };
 
-// === 渲染总结列表 (Ins风卡片版) ===
+// === 渲染列表 (自动匹配 INS 风 CSS) ===
 function renderSummaries() {
     const container = document.getElementById('summary-list-container');
     if (!container) return;
@@ -3813,36 +3791,42 @@ function renderSummaries() {
     
     const summaries = chat.summaries || [];
 
-    // 空状态
+    // 空状态 (INS 风)
     if(summaries.length === 0) {
         container.innerHTML = `
-            <div style="text-align:center; padding-top:60px; color:#ccc; font-size:13px; line-height:1.6;">
-                <div style="font-size:40px; margin-bottom:10px;">🎐</div>
-                还没有回忆碎片...<br>点右下角记录一下吧
+            <div class="empty-memory">
+                <div style="font-size: 40px; margin-bottom: 15px; opacity: 0.5;">(￣▽￣)</div>
+                <div style="font-weight:600; color:#333;">还没有回忆碎片呢...</div>
+                <div style="font-size:12px; margin-top:5px; color:#999;">点击右上角的 ★ 生成一段吧！</div>
             </div>`;
         return;
     }
 
-    // 倒序遍历
+    // 倒序遍历 (新的在上面)
     [...summaries].reverse().forEach((sum, index) => {
         const realIndex = summaries.length - 1 - index; 
         
         const card = document.createElement('div');
-        card.className = 'ins-memory-card'; // 使用新样式类
+        // ★ 这里的类名对应 INS 风 CSS: memory-card, ai-gen
+        const isAi = (sum.type === 'ai'); // 假设我们在保存时标记了 type
+        card.className = `memory-card ${isAi ? 'ai-gen' : ''}`;
         
-        // 格式化时间
-        const timeStr = formatSummaryTime(sum.time); 
+        // 格式化时间 (英文月份看起来更高级)
+        const dateObj = new Date(sum.time || Date.now());
+        const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
 
         card.innerHTML = `
-            <div class="ins-mem-top">
-                <div class="ins-mem-date">${timeStr}</div>
-                <div class="ins-mem-icon">🔖</div>
+            <div class="mem-card-header">
+                <div class="mem-date">${dateStr}</div>
+                <div class="mem-tag">${isAi ? '★ AI STORY' : '★ NOTE'}</div>
             </div>
-            <div class="ins-mem-content edit-text" contenteditable="true" data-idx="${realIndex}">${sum.text}</div>
+            <div class="mem-content" contenteditable="true">${sum.text}</div>
         `;
 
-        // 绑定编辑保存
-        const textBlock = card.querySelector('.ins-mem-content');
+        // === 绑定事件 ===
+        const textBlock = card.querySelector('.mem-content');
+        
+        // 1. 失焦保存 (编辑功能)
         textBlock.addEventListener('blur', function() {
             if(this.innerText !== sum.text) {
                 chat.summaries[realIndex].text = this.innerText;
@@ -3850,92 +3834,150 @@ function renderSummaries() {
             }
         });
         
-        // 绑定长按删除
+        // 2. 长按删除 (带震动反馈)
         let pressTimer;
-        textBlock.addEventListener('touchstart', () => {
-             pressTimer = setTimeout(() => {
-                 if(confirm('要抹去这段回忆吗？')) {
-                     chat.summaries.splice(realIndex, 1);
-                     saveChatAndRefresh(chat);
-                     renderSummaries(); 
-                 }
-             }, 800);
-        });
-        textBlock.addEventListener('touchend', () => clearTimeout(pressTimer));
+        const startPress = () => {
+            pressTimer = setTimeout(() => {
+                if(navigator.vibrate) navigator.vibrate(50);
+                if(confirm('要抹去这段回忆嘛(｡ ́︿ ̀｡)？')) {
+                    chat.summaries.splice(realIndex, 1);
+                    saveChatAndRefresh(chat);
+                    renderSummaries(); 
+                }
+            }, 800);
+        };
+        const cancelPress = () => clearTimeout(pressTimer);
+        
+        textBlock.addEventListener('touchstart', startPress);
+        textBlock.addEventListener('touchend', cancelPress);
+        textBlock.addEventListener('touchmove', cancelPress);
 
+        // 加上进场动画延迟
+        card.style.animationDelay = `${index * 0.05}s`;
+        
         container.appendChild(card);
     });
 }
 
 // 确认 AI 总结
 window.confirmAiSummary = function() {
-    if(confirm('要让 AI 帮我们整理回忆吗？\n(这将会消耗api哦宝宝(＞人＜;)！)')) {
+    // 简单判断一下字数，如果太少就不浪费 token 了
+    const chat = chatsData.find(c => c.id === currentChatId);
+    if(chat) {
+        const lastSumTime = chat.lastSummaryTime || 0;
+        const newMsgs = (chat.messages || []).filter(m => m.timestamp > lastSumTime);
+        if(newMsgs.length < 5) {
+            return showSystemAlert('才说了两句话就要总结嘛？再聊聊呗～(＞﹏＜)');
+        }
+    }
+    
+    if(confirm('确定要让 TA 回忆这段故事嘛？\n这将会消耗api额度喔～')) {
         triggerAiSummary();
     }
 };
 
-// 手动添加
-window.manualAddSummary = function() {
-    const text = prompt("写下此刻的心情或总结₍^˶ ╸𖥦  ╸˵^₎⟆：");
-    if(text) {
-        saveSummaryToChat(text);
+// 打开手动记录弹窗 (复用那个漂亮的 note-editor)
+window.openNoteEditor = function() {
+    const overlay = document.getElementById('note-editor-overlay');
+    const input = document.getElementById('note-editor-input');
+    if(overlay && input) {
+        input.value = ''; // 清空
+        overlay.style.display = 'flex';
+        setTimeout(() => input.focus(), 100);
+        
+        // 绑定保存按钮 (只绑一次，防止重复)
+        const saveBtn = overlay.querySelector('.alert-btn.confirm');
+        saveBtn.onclick = () => {
+            const text = input.value.trim();
+            if(text) {
+                saveSummaryToChat(text, 'manual');
+                overlay.style.display = 'none';
+            }
+        };
+        
+        // 绑定取消按钮
+        const cancelBtn = overlay.querySelector('.alert-btn.cancel');
+        cancelBtn.onclick = () => overlay.style.display = 'none';
+    } else {
+        // 降级方案：如果没有弹窗HTML，就用系统弹窗
+        const text = prompt("写下此刻的心情或总结₍^˶ ╸ 𖥦 ╸˵^₎⟆：");
+        if(text) saveSummaryToChat(text, 'manual');
     }
 };
 
-// ★ 核心：AI 总结逻辑 (第三人称小说版)
+
+// ★★★ 核心：AI 总结逻辑 (Pro Max版) ★★★
 async function triggerAiSummary() {
     const chat = chatsData.find(c => c.id === currentChatId);
     if(!chat) return;
 
-    // 0. 获取主角名字 (为了让AI写出名字，而不是User/Char)
-    const contact = contactsData.find(c => c.id === chat.contactId) || { name: 'TA' };
-    const persona = personasData.find(p => p.id === chat.personaId) || { name: '我' };
+    const contact = contactsData.find(c => c.id === chat.contactId) || { name: 'TA', persona: '未知' };
+    const persona = personasData.find(p => p.id === chat.personaId) || { name: '我', persona: '未知' };
 
-    // 1. 找出未总结的消息
+    // 1. 找出新消息
     const lastSumTime = chat.lastSummaryTime || 0;
     const newMsgs = (chat.messages || []).filter(m => m.timestamp > lastSumTime && m.type === 'text');
     
-    if(newMsgs.length < 5) {
-        showSystemAlert('最近聊得有点少哦，攒攒再总结吧！(＞﹏＜)');
-        return;
-    }
-
-    // 2. 构建聊天记录 (带上名字，方便AI区分)
-    const historyText = newMsgs.map(m => 
-        `${m.role === 'me' ? persona.name : contact.name}: ${m.text}`
-    ).join('\n');
-    
-    // ★★★ 这里改了！第三人称+氛围感 Prompt ★★★
-    const prompt = `
-    【指令：第三人称小说式侧写】
-    请以【第三人称】的上帝视角（类似小说旁白或电影镜头语言），为这段对话写一个充满氛围感的片段总结
-
-    要求：
-    1. **拒绝流水账**：绝对不要说“A说了什么，B又说了什么”。而是去描写两人之间的张力、情感的流动、未说出口的潜台词，不准用比喻句
-    2. **文学感**：用词要细腻、动人，仿佛是在讲述一个关于“他们”的故事。可以适当描写环境氛围、心理活动（基于对话推测）
-    3. **聚焦高光**：重点刻画那些心动的瞬间、极限拉扯的细节，或者是温暖的陪伴感
-    4. **称呼**：在文中请直接使用名字：“${contact.name}”和“${persona.name}”
-    5. **字数**：500字以内，短小精悍，意犹未尽
-
-    聊天记录：
-    ${historyText}
+    // 2. 构建深度人设 Prompt
+    // 把宝宝要求的性别、年龄、详细设定都塞进去！
+    const charInfo = `
+    【主角A (Char)】
+    - 名字: ${contact.name}
+    - 性格内核: ${contact.persona}
+    - 详细设定: ${contact.desc || '无'}
+    - 基础属性: ${contact.gender || '未知'} | ${contact.age || '未知'}岁
     `;
 
-    showSystemAlert('正在撰写你们的故事...˶ｰ`֊´ｰ˶');
+    const userInfo = `
+    【主角B (User)】
+    - 名字: ${persona.name}
+    - 性格/给人的感觉: ${persona.persona}
+    - 详细设定: ${persona.desc || '无'}
+    - 基础属性: ${persona.gender || '未知'} | ${persona.age || '未知'}岁
+    `;
+
+    // 3. 格式化聊天记录
+    const historyText = newMsgs.map(m => 
+        `[${m.role === 'me' ? persona.name : contact.name}]: ${m.text}`
+    ).join('\n');
+    
+    const prompt = `
+    【指令：小说式剧情侧写 / 氛围感总结】
+    你是一位擅长捕捉情感流动的作家。请基于以下两位角色的人设和他们的最新对话，以【第三人称上帝视角】写一段剧情总结。
+
+    ${charInfo}
+    ${userInfo}
+
+    【最新对话内容】：
+    ${historyText}
+
+    【写作要求】：
+    1. **深度代入人设**：请结合【主角A】和【主角B】的性格特质来解读他们的言行。如果Char是傲娇，请点出他话语背后的在意；如果User是温吞，请描写他的心理活动。
+    2. **拒绝流水账**：不要像写会议纪要一样（"A说了X，B回复了Y"）。请描写场景感、空气中的张力、眼神的交汇、或者是那些未说出口的潜台词。
+    3. **氛围感**：文字要细腻、有画面感。可以适当加入环境描写（基于对话推测，例如深夜的微光、嘈杂的街道等）来烘托气氛。
+    4. **字数限制**：300-500字左右，短小精悍，读起来像小说的一个章节片段。
+    5. **称呼**：请用第三人称，直接使用他们的名字（${contact.name} 和 ${persona.name}）
+
+    请开始你的创作：
+    `;
+
+    showSystemAlert('TA正在努力回忆中...(＞人＜;)');
 
     try {
         const summary = await callApiInternal(prompt);
         if(summary) {
-            saveSummaryToChat(summary);
+            saveSummaryToChat(summary, 'ai'); // 标记为 ai 类型
             chat.lastSummaryTime = newMsgs[newMsgs.length - 1].timestamp;
             saveChatAndRefresh(chat);
         }
     } catch(e) {
-        alert('回忆失败惹(T_T)：' + e.message);
+        console.error(e);
+        showSystemAlert('灵感枯竭了(API错误)...(T_T)');
     }
 }
 
-function saveSummaryToChat(text) {
+// 保存辅助函数
+function saveSummaryToChat(text, type = 'manual') {
     const chat = chatsData.find(c => c.id === currentChatId);
     if(!chat) return;
     
@@ -3943,51 +3985,15 @@ function saveSummaryToChat(text) {
     
     chat.summaries.push({
         text: text,
-        time: Date.now()
+        time: Date.now(),
+        type: type // 'ai' 或 'manual'
     });
     
-    saveChatAndRefresh(chat); // 保存到数据库
-    renderSummaries();        // 刷新界面
-    showSystemAlert('回忆保持成功啦！！(=^▽^=)');
+    saveChatAndRefresh(chat); 
+    renderSummaries();        
+    showSystemAlert('回忆保存成功噜♪( ´▽｀)～');
 }
 
-// ====================
-// [22] 书签头像戳一戳逻辑 
-// ====================
-
-// 吐槽文案
-const moodTexts = [
-    "꒪ˊ꒳ˋ꒪",
-    "欸？",
-    "戳我干嘛！",
-    "(𓐍ㅇㅂㅇ𓐍)",
-    "别戳啦！！",
-    "我生气了。",
-    " ＞𐋣＜ ",
-    "♡=•ㅅ＜=)☆",
-    " ⦁ ɷ ⦁ "
-];
-
-let moodIndex = 0; 
-
-window.cycleSummaryMood = function() {
-    const bubble = document.getElementById('sum-mood-bubble');
-    if (!bubble) return;
-
-    // 1. 切文字
-    moodIndex = (moodIndex + 1) % moodTexts.length;
-    bubble.innerText = moodTexts[moodIndex];
-    
-    // 2. ★ 触发弹跳动画 (核心修复) ★
-    bubble.classList.remove('pop-anim'); // 先移除
-
-    void bubble.offsetWidth; 
-    
-    bubble.classList.add('pop-anim'); // 再加上，动画就会重新播放
-    
-    // 3. 震动反馈
-    if(navigator.vibrate) navigator.vibrate(30);
-};
 // ==========================================================
 // [23] 朋友圈/动态 (Moments) 逻辑
 // ==========================================================
@@ -4413,18 +4419,36 @@ window.initIconSettingsGrid = function() {
         }
     });
 
-    // --- Part 3: ★ 全局字体设置 (这里是修复好的位置！) ---
+    // --- Part 3: ★ 全局字体设置 (升级版！) ---
     const fontCard = document.createElement('div');
     fontCard.className = 'font-setting-card';
     fontCard.innerHTML = `
         <div style="font-size:14px; font-weight:600; margin-bottom:15px; color:#333;">全局字体 (Global Font)</div>
         
         <div class="font-input-group">
-            <input type="text" id="font-url-input" class="font-url-input" placeholder="请输入 .ttf / .woff 链接...(𓐍ㅇㅂㅇ𓐍)">
+            <input type="text" id="font-url-input" class="font-url-input" placeholder="输入链接 或 点击下方导入...(𓐍ㅇㅂㅇ𓐍)">
+        </div>
+
+        <div class="font-input-group" style="margin-top: 8px;">
+            <div onclick="triggerFileUpload()" style="
+                width: 100%;
+                background: rgba(0,0,0,0.03);
+                color: #007aff;
+                padding: 10px;
+                border-radius: 12px;
+                text-align: center;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                border: 1px dashed #c7c7cc;
+                transition: all 0.2s;
+            " onmouseover="this.style.background='rgba(0,0,0,0.06)'" onmouseout="this.style.background='rgba(0,0,0,0.03)'">
+                📂 从本地文件导入 (.ttf / .otf)
+            </div>
         </div>
         
         <div class="font-input-group">
-            <div class="font-btn apply" onclick="applyUserFont()">应用字体</div>
+            <div class="font-btn apply" onclick="applyUserFont()">应用链接</div>
             <div class="font-btn reset" onclick="resetUserFont()">恢复默认</div>
         </div>
 
@@ -4440,7 +4464,12 @@ window.initIconSettingsGrid = function() {
     // 回显当前字体链接
     localforage.getItem('Wx_Global_Font').then(url => {
         if(url && document.getElementById('font-url-input')) {
-            document.getElementById('font-url-input').value = url;
+            // 如果是很长很长的 base64 (文件导入的)，就显示个提示，不显示乱码
+            if (url.startsWith('data:')) {
+                document.getElementById('font-url-input').value = "[已使用本地文件]";
+            } else {
+                document.getElementById('font-url-input').value = url;
+            }
         }
     });
 
@@ -5122,7 +5151,7 @@ document.body.addEventListener('keydown', function(e) {
     }
 });
 // ==========================================================
-// ★ 26. 强力表情包系统 V5.0 (终极修复版)
+// ★ 26. 表情包系统
 // ==========================================================
 
 let stickersDB = [
@@ -5273,29 +5302,52 @@ function createGroupPill(name, isActive, canEdit) {
 }
 
 // ====================
-// 表情渲染 (Add按钮在格子里)
+// 表情渲染 
 // ====================
 function renderStickers() {
     const grid = document.getElementById('sticker-grid-view');
     grid.innerHTML = '';
     
-    // 多选栏
+    // ★ 1. 多选栏
     let multiBar = document.getElementById('multi-select-bar');
     if (!multiBar) {
         multiBar = document.createElement('div');
         multiBar.id = 'multi-select-bar';
-        multiBar.className = 'multi-select-bar';
-        multiBar.innerHTML = `
-            <div class="multi-btn cancel" onclick="exitMultiSelect()">退出多选</div>
-            <div style="font-size:12px; color:#999;">已选 <span id="multi-count">0</span> 项</div>
-            <div class="multi-btn del" onclick="deleteSelectedStickers()">删除</div>
-        `;
-        const panel = document.querySelector('.sticker-glass-panel');
-        if(panel) panel.appendChild(multiBar);
-    }
-    multiBar.style.display = isMultiSelectMode ? 'flex' : 'none';
 
-    // Add 按钮
+        multiBar.className = 'sticker-delete-bar'; 
+        multiBar.style.position = 'absolute';
+        multiBar.style.bottom = '0';
+        multiBar.style.left = '0';
+        multiBar.style.zIndex = '100';
+        multiBar.style.background = 'rgba(255,255,255,0.95)';
+        multiBar.style.backdropFilter = 'blur(10px)';
+        multiBar.style.borderTop = '1px solid rgba(0,0,0,0.1)';
+        
+        // 插入 HTML 结构
+        const panel = document.querySelector('.sticker-glass-panel');
+        if(panel) {
+            panel.style.position = 'relative'; // 确保 panel 是定位基准
+            panel.appendChild(multiBar);
+        }
+    }
+
+    // 根据多选状态更新底栏内容
+    if (isMultiSelectMode) {
+        multiBar.style.display = 'flex';
+        const count = selectedStickerIds.length;
+        multiBar.innerHTML = `
+            <div class="delete-cancel-btn" onclick="exitMultiSelect()">取消</div>
+            <div class="delete-count-text">已选 ${count} 项</div>
+            <div class="delete-confirm-btn" onclick="deleteSelectedStickers()" 
+                 style="opacity: ${count > 0 ? 1 : 0.5}; transform: scale(${count > 0 ? 1 : 0.95});">
+                删除
+            </div>
+        `;
+    } else {
+        multiBar.style.display = 'none';
+    }
+
+    // Add 按钮 (保持不变)
     if (!isMultiSelectMode && (currentStickerTab === 'fav' || currentStickerTab === 'ai')) {
         const addBtn = document.createElement('div');
         addBtn.className = 'sticker-item add-item'; 
@@ -5309,21 +5361,30 @@ function renderStickers() {
         grid.appendChild(addBtn);
     }
 
+    // 过滤列表
     let list = stickersDB.filter(s => s.type === currentStickerTab);
     if (currentStickerTab !== 'ai' && currentSubGroup !== 'all') {
         list = list.filter(s => s.group === currentSubGroup || (!s.group && currentSubGroup === '默认'));
     }
 
+    // 渲染每一个表情
     list.forEach(s => {
         const item = document.createElement('div');
         const isSel = selectedStickerIds.includes(s.id);
+        
         item.className = `sticker-item ${isMultiSelectMode && isSel ? 'selected' : ''}`;
+        
         item.style.backgroundImage = `url('${s.url}')`;
         item.innerHTML = `<div class="sticker-name-tag">${s.name}</div>`;
         item.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); return false; };
 
         item.onclick = () => {
-            if (isMultiSelectMode) { toggleSelection(s.id); } else { sendSticker(s); }
+            // 如果是多选模式，切换选中
+            if (isMultiSelectMode) { 
+                toggleSelection(s.id); 
+            } else { 
+                sendSticker(s); 
+            }
         };
         
         bindStickerLongPress(item, s);
@@ -5368,45 +5429,73 @@ function bindStickerLongPress(element, sticker) {
 }
 
 // ==========================================
-// ★ 强力修复：自动重写表情包弹窗 HTML (核心部分)
+// ★ 强力修复：表情包弹窗 (UI 终极微调版)
 // ==========================================
 window.rebuildStickerPopupHTML = function() {
     const overlay = document.getElementById('sticker-upload-overlay');
     if (!overlay) return;
 
-    // ★ 关键：这里的 HTML 结构必须和 CSS 里的类名 100% 对应
     overlay.innerHTML = `
-        <div class="custom-alert-box ins-style">
-            <div class="sticker-header">
-                <div class="alert-title" style="margin: 0; font-size: 17px; font-weight: 700;">表情包进货</div>
-                <div style="font-size: 12px; color: #999; margin-top: 4px;">支持选图 / URL / 批量文本</div>
-                <div onclick="closeStickerUploader()" style="position: absolute; top: 12px; right: 12px; width: 30px; height: 30px; background: #f5f5f7; border-radius: 50%; color: #bbb; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px;">×</div>
+        <div class="custom-alert-box ins-style" style="width: 340px !important; padding: 20px !important; border-radius: 24px !important; height: auto; max-height: 80vh; display: flex; flex-direction: column;">
+            
+            <div class="upload-modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; width: 100%; flex-shrink: 0;">
+                <div>
+                    <div class="upload-modal-title" style="font-size: 20px; font-weight: 700; color: #1c1c1e;">⇪ add sticker​​s</div>
+                    <div id="upload-tip-text" style="font-size: 12px; color: #999; margin-top: 2px;">添加的表情包太多的话记得往下翻翻哦～</div>
+                </div>
+                <div onclick="closeStickerUploader()" style="width: 32px; height: 32px; background: #f2f2f7; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #8e8e93; font-size: 20px; cursor: pointer;">×</div>
             </div>
 
-            <div class="sticker-body">
-                <div id="view-mode-visual" style="height: 100%; display: flex; flex-direction: column;">
+            <div class="upload-modal-body" style="width: 100%; min-height: 120px; max-height: 400px; background: #f9f9f9; border-radius: 16px; margin-bottom: 15px; overflow-y: auto; padding: 10px; flex: 1; display: flex; flex-direction: column;">
+                
+                <div id="view-mode-visual" style="display: flex; flex-direction: column; width: 100%;">
                     <div id="sticker-preview-list"></div>
                 </div>
-                <div id="view-mode-bulk" style="height: 100%; display: none; flex-direction: column; padding: 15px;">
-                    <div style="font-size: 12px; color: #666; margin-bottom: 8px;">格式：<b>名称 链接</b> (一行一个)</div>
-                    <textarea id="sticker-bulk-input" placeholder="开心 https://xx.com/1.jpg..."></textarea>
-                    <div style="margin-top: 12px; display: flex; gap: 10px; flex-shrink: 0;">
-                        <div class="alert-btn cancel" onclick="switchUploadMode('visual')" style="flex: 1; text-align: center; background: #f0f0f0; padding: 10px; border-radius: 10px; cursor: pointer;">取消</div>
-                        <div class="alert-btn confirm" onclick="parseBulkInput()" style="flex: 1; text-align: center; background: #333; color: #fff; padding: 10px; border-radius: 10px; cursor: pointer;">识别</div>
+                
+                <div id="view-mode-bulk" style="display: none; flex-direction: column; flex: 1; height: 100%;">
+                    <div style="font-size: 12px; color: #666; margin-bottom: 8px; flex-shrink: 0;">
+                        格式：<b>表情名 链接</b> (一行一个喔～)<br>
+                        <span style="color:#999; font-size:10px;">试试直接粘贴一大段带链接的文本...(￣▽￣)</span>
+                    </div>
+                    <textarea id="sticker-bulk-input" 
+                        placeholder="开心 https://xx.com/1.jpg..." 
+                        style="width:100%; flex: 1; min-height: 200px; border:none; background:transparent; resize:none; font-size: 14px; line-height: 1.6; outline:none; color: #333;"></textarea>
+                    
+                    <div style="margin-top: 10px; display: flex; gap: 10px; flex-shrink: 0;">
+                         <div class="alert-btn cancel" onclick="switchUploadMode('visual')" style="flex: 1; text-align: center; background: #f0f0f0; padding: 12px; border-radius: 12px; font-weight: 600; cursor: pointer;"> ↺ 取消</div>
+                         <div class="alert-btn confirm" onclick="parseBulkInput()" style="flex: 1; text-align: center; background: #333; color: #fff; padding: 12px; border-radius: 12px; font-weight: 600; cursor: pointer;">开始识别 ➜</div>
                     </div>
                 </div>
             </div>
 
-            <div class="sticker-footer">
-                <div class="url-input-row">
-                    <input type="text" id="sticker-url-input" placeholder="粘贴单个url链接...">
-                    <div class="url-add-btn" onclick="handleAddUrl()">添加</div>
+            <div class="sticker-footer" id="sticker-footer-area" style="width: 100%; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;">
+                
+                <div class="url-input-group" style="display: flex; gap: 8px; align-items: center;">
+                    <input type="text" id="sticker-url-input" placeholder="在这里粘贴表情包url链接..." 
+                           style="flex: 1; background: #f2f2f7; border: none; height: 36px; border-radius: 10px; padding: 0 12px; font-size: 14px; outline: none;">
+                    
+                    <div class="add-btn" onclick="handleAddUrl()" 
+                         style="width: 70px; height: 36px; background: #e5e5ea; color: #000; font-weight: 600; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer;">
+                        save
+                    </div>
                 </div>
-                <div class="action-btn-row">
+
+                <div class="func-btn-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <input type="file" id="real-sticker-input" accept="image/*" multiple style="display: none;" onchange="handleStickerFilesVisual(this)">
-                    <div class="alert-btn cancel" onclick="document.getElementById('real-sticker-input').click()" style="background: #f0f0f0; color: #333;">📷 相册</div>
-                    <div class="alert-btn cancel" onclick="switchUploadMode('bulk')" style="background: #e1f5fe; color: #0288d1;">🩶 批量</div>
-                    <div class="alert-btn confirm" onclick="saveVisualStickers()" style="background: #333; color: #fff;">保存全部</div>
+                    
+                    <div class="func-btn" onclick="document.getElementById('real-sticker-input').click()" 
+                         style="height: 44px; background: #e1f5fe; color: #0288d1; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; cursor: pointer;">
+                        📷 选择相册
+                    </div>
+                    <div class="func-btn" onclick="switchUploadMode('bulk')" 
+                         style="height: 44px; background: #f3e5f5; color: #7b1fa2; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; cursor: pointer;">
+                        🩶 批量导入
+                    </div>
+                </div>
+
+                <div class="save-full-btn" onclick="saveVisualStickers()" 
+                     style="width: 100%; height: 48px; margin-top: 4px; background: #1c1c1e; color: #fff; border-radius: 14px; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer;">
+                    全部保存
                 </div>
             </div>
         </div>
@@ -5448,27 +5537,42 @@ window.closeStickerUploader = function() {
     if(overlay) overlay.style.display = 'none';
 };
 
+// 切换 视图模式 / 批量文本模式 (带自动隐藏底部逻辑)
 window.switchUploadMode = function(mode) {
     const visualView = document.getElementById('view-mode-visual');
     const bulkView = document.getElementById('view-mode-bulk');
-    const bottomBar = document.querySelector('.sticker-footer'); // 使用 class 选择器
-    
+    const footerArea = document.getElementById('sticker-footer-area'); // 获取底部区域
+    const tipText = document.getElementById('upload-tip-text');
+
     if (mode === 'bulk') {
+        // === 进入批量模式 ===
         visualView.style.display = 'none';
-        if(bottomBar) bottomBar.style.display = 'none'; // 隐藏底部按钮
-        bulkView.style.display = 'flex';
+        bulkView.style.display = 'flex'; // 显示批量区
+        
+        // ★ 关键：隐藏底部所有按钮！让输入框占满整个弹窗！
+        if(footerArea) footerArea.style.display = 'none'; 
+        
+        if(tipText) tipText.innerText = "一行一个url链接哦，我会自动识别的～";
+        
+        // 自动聚焦
         setTimeout(() => document.getElementById('sticker-bulk-input').focus(), 100);
+        
     } else {
+        // === 回到普通预览模式 ===
         bulkView.style.display = 'none';
         visualView.style.display = 'flex';
-        if(bottomBar) bottomBar.style.display = 'block';
+        
+        // ★ 恢复底部按钮
+        if(footerArea) footerArea.style.display = 'flex';
+        
+        if(tipText) tipText.innerText = "添加的表情包太多的话记得往下翻翻喔～";
     }
 };
 
 window.handleAddUrl = function() {
     const input = document.getElementById('sticker-url-input');
     const url = input ? input.value.trim() : '';
-    if (!url) return showSystemAlert('链接怎么是空的呀！');
+    if (!url) return showSystemAlert('链接怎么是空的呀Σ（・□・；）！');
     
     tempStickerUploads.push({
         id: Date.now() + Math.random(),
@@ -5477,7 +5581,7 @@ window.handleAddUrl = function() {
     });
     if(input) input.value = '';
     renderUploadPreview();
-    showSystemAlert('添加成功！');
+    showSystemAlert('添加成功噜～！');
 };
 
 // 解析批量文本
@@ -5506,7 +5610,7 @@ window.parseBulkInput = function() {
     textarea.value = '';
     renderUploadPreview();
     switchUploadMode('visual');
-    showSystemAlert(`识别出 ${count} 个表情！`);
+    showSystemAlert(`识别出 ${count} 个表情包！`);
 };
 
 // 处理本地文件
@@ -5531,20 +5635,26 @@ window.handleStickerFilesVisual = function(input) {
     });
 };
 
-// 渲染预览列表
+// 渲染预览列表 (美化版)
 function renderUploadPreview() {
     const listEl = document.getElementById('sticker-preview-list');
     if (!listEl) return;
     listEl.innerHTML = ''; 
 
     if (tempStickerUploads.length === 0) {
-        listEl.innerHTML = `<div id="empty-tip" style="text-align: center; color: #ccc; padding-top: 60px;">还没有选图哦<br>快点击📷选择吧～</div>`;
+        // 空状态提示
+        listEl.innerHTML = `
+            <div id="empty-tip" style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ccc; margin-top: 30px;">
+                <div style="font-size: 30px; margin-bottom: 10px;">🌧️</div>
+                <div>还没有选择表情包哦(＞人＜;)</div>
+            </div>`;
         return;
     }
 
     tempStickerUploads.forEach((item, index) => {
         const row = document.createElement('div');
-        row.className = 'upload-preview-item'; // 对应 CSS
+        // ★ 使用新的 class
+        row.className = 'upload-preview-item'; 
         row.innerHTML = `
             <div class="up-thumb" style="background-image: url('${item.url}')"></div>
             <input type="text" class="up-input-name" value="${item.name}" 
@@ -5553,7 +5663,10 @@ function renderUploadPreview() {
         `;
         listEl.appendChild(row);
     });
-    listEl.scrollTop = listEl.scrollHeight;
+    
+    // 自动滚动到底部
+    const body = document.querySelector('.upload-modal-body');
+    if(body) body.scrollTop = body.scrollHeight;
 }
 
 window.updateTempStickerName = (index, val) => { if(tempStickerUploads[index]) tempStickerUploads[index].name = val; };
@@ -5575,7 +5688,7 @@ window.saveVisualStickers = function() {
 
     stickersDB = [...stickersDB, ...newStickers];
     saveStickers(); renderStickers(); closeStickerUploader();
-    showSystemAlert(`成功入库 ${newStickers.length} 个表情！`);
+    showSystemAlert(`成功添加了 ${newStickers.length} 个表情包！`);
 };
 
 // 打开弹窗的入口
@@ -5651,22 +5764,99 @@ function sendSticker(stickerObj) {
     toggleStickerMenu(); 
 }
 // ==========================================================
-// ★ 全局字体系统 (Global Font System)
+// ★ 全局字体系统 (Pro Max版 - 支持超大文件)
 // ==========================================================
+
+// 0. 初始化上传通道
+window.initFontUploader = function() {
+    if (document.getElementById('hidden-font-input')) return;
+
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.id = 'hidden-font-input';
+    fileInput.accept = '.ttf, .otf, .woff, .woff2'; // 加上 woff/woff2，这种格式更小
+    fileInput.style.display = 'none';
+    
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        // 12MB 也让你传！我们改用 Blob 存储，只要手机硬盘够就能存！
+        // 只要不是 50MB 这种离谱的就行
+        if (file.size > 30 * 1024 * 1024) { 
+            showSystemAlert('宝宝，这个文件实在太大了(>30MB)，会卡死的！换一个吧QwQ');
+            return;
+        }
+
+        showSystemAlert('正在保存字体文件...(￣▽￣)');
+
+        // ★ 重点修改：直接存 File 对象，不转 Base64 了！速度快很多！
+        localforage.setItem('Wx_Global_Font_File', file).then(() => {
+            // 清除旧的 URL 模式存储，避免冲突
+            localforage.removeItem('Wx_Global_Font'); 
+            
+            // 立即应用
+            applyFontBlob(file);
+            showSystemAlert('字体换好啦～！');
+            
+            // 更新输入框显示
+            const input = document.getElementById('font-url-input');
+            if(input) input.value = `[本地文件: ${file.name}]`;
+            
+        }).catch(err => {
+            console.error(err);
+            showSystemAlert('保存失败惹，可能是空间不足 (T_T)');
+        });
+    });
+
+    document.body.appendChild(fileInput);
+};
+
 
 // 1. 初始化/加载字体
 window.loadCustomFont = function() {
-    localforage.getItem('Wx_Global_Font').then(url => {
-        if (url) {
-            applyFontToDom(url);
-            // 更新输入框的回显 (如果设置页打开了)
+    window.initFontUploader();
+
+    // 优先检查有没有存“文件”
+    localforage.getItem('Wx_Global_Font_File').then(file => {
+        if (file) {
+            // 如果有文件，用文件模式加载
+            applyFontBlob(file);
             const input = document.getElementById('font-url-input');
-            if(input) input.value = url;
+            if(input) input.value = `[本地文件: ${file.name}]`;
+        } else {
+            // 如果没文件，再检查有没有存“链接” (兼容旧逻辑)
+            localforage.getItem('Wx_Global_Font').then(url => {
+                if (url) {
+                    applyFontToDom(url);
+                    const input = document.getElementById('font-url-input');
+                    if(input) input.value = url;
+                }
+            });
         }
     });
 };
 
-// 2. 将字体注入到页面
+// ★ 新增：专门处理 Blob/File 的应用函数
+async function applyFontBlob(file) {
+    try {
+        // 创建一个临时的 blob:http://... 链接
+        // 这个链接是瞬间生成的，不占内存，专门给大文件用
+        const blobUrl = URL.createObjectURL(file);
+        
+        // 复用原来的加载逻辑，把 blobUrl 传进去
+        await applyFontToDom(blobUrl);
+        
+        // 记得释放内存（虽然 FontFace 加载完通常就不需要了，但在页面关闭前保留着也行）
+        // URL.revokeObjectURL(blobUrl); 
+        
+    } catch (e) {
+        console.error("Blob字体加载失败", e);
+        showSystemAlert('这个字体文件好像不兼容欸... (T_T)');
+    }
+}
+
+// 2. 将字体注入到页面 (通用核心)
 async function applyFontToDom(url) {
     if (!url) {
         document.documentElement.style.setProperty('--global-font', '-apple-system, BlinkMacSystemFont, sans-serif');
@@ -5674,57 +5864,36 @@ async function applyFontToDom(url) {
     }
 
     try {
-        // 使用 FontFace API 加载
         const fontName = 'MyCustomFont';
-        const fontFace = new FontFace(fontName, `url(${url})`);
+        const fontFace = new FontFace(fontName, `url('${url}')`);
         
         await fontFace.load();
         document.fonts.add(fontFace);
         
-        // 应用 CSS 变量
         document.documentElement.style.setProperty('--global-font', `"${fontName}", sans-serif`);
-        console.log('字体加载成功噜:', url);
+        console.log('字体加载成功噜～');
         
-        // 更新预览文字的样式
         const preview = document.getElementById('font-preview-text');
         if(preview) preview.style.fontFamily = `"${fontName}", sans-serif`;
 
     } catch (e) {
-        console.error('字体加载失败惹....:', e);
-        // showSystemAlert('字体加载失败惹，可能是链接跨域了(T_T)');
+        console.error('字体加载失败惹:', e);
+        throw e;
     }
 }
 
-// 3. 用户点击应用
-window.applyUserFont = function() {
-    const input = document.getElementById('font-url-input');
-    const url = input.value.trim();
-    
-    if (!url) {
-        showSystemAlert('请输入字体链接哦～');
-        return;
+// 3. 触发上传 (不用改)
+window.triggerFileUpload = function() {
+    const input = document.getElementById('hidden-font-input');
+    if (input) {
+        input.value = '';
+        input.click();
+    } else {
+        window.initFontUploader();
+        setTimeout(() => document.getElementById('hidden-font-input').click(), 100);
     }
-    
-    showSystemAlert('正在下载字体...(＞人＜;)');
-    
-    applyFontToDom(url).then(() => {
-        // 保存到数据库
-        localforage.setItem('Wx_Global_Font', url);
-        showSystemAlert('字体换好啦！(≧∇≦)');
-    }).catch(() => {
-        showSystemAlert('字体链接无效或禁止访问(T_T)');
-    });
 };
 
-// 4. 重置字体
-window.resetUserFont = function() {
-    showConfirmDialog('恢复默认字体嘛？', () => {
-        localforage.removeItem('Wx_Global_Font');
-        document.documentElement.style.setProperty('--global-font', '-apple-system, BlinkMacSystemFont, sans-serif');
-        document.getElementById('font-url-input').value = '';
-        showSystemAlert('已恢复默认(＞人＜;)');
-    });
-};
 /* ========================================================
    常驻好友小组件逻辑 (点击换头 + 自动保存)
    ======================================================== */
