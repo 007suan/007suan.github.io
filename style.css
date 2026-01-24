@@ -980,7 +980,7 @@ body.menu-open #chat-msg-area { padding-bottom: 380px !important; transform: tra
     
     /* 2. 位置调整：数字越大越靠上 */
     bottom: 90px !important;  /* 👈 如果觉得挡住字了，就改大这个数 */
-    left: 2px !important;
+    left: 12px !important;
     
     /* 3. 样式美化：索引贴风格 */
     z-index: 9999 !important;
@@ -990,9 +990,9 @@ body.menu-open #chat-msg-area { padding-bottom: 380px !important; transform: tra
     gap: 8px;
     
     background-color: #F2F2F7 !important; 
-    border-radius: 12px 12px 12px 0 !important; /* 左下角也是直角？或者改圆角看你喜好 */
+    border-radius: 12px 12px 12px 12px !important; /* 左下角也是直角？或者改圆角看你喜好 */
     border: 1px solid rgba(0,0,0,0.1);
-    box-shadow: 0 -4px 15px rgba(0,0,0,0.08);
+    box-shadow: 0 -4px 15px rgba(0,0,0,0.05);
     padding: 8px 12px !important;
 }
 

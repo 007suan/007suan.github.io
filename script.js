@@ -6226,3 +6226,105 @@ window.sendActionOnly = function() {
     // 震动反馈
     if(navigator.vibrate) navigator.vibrate(30);
 };
+// ==========================================================
+// ★★★ 性能优化补丁 (Performance Patch) ★★★
+// ==========================================================
+// 逻辑说明：退出界面时直接清空 DOM，进入时再重新渲染
+// 解决问题：窗口开多了卡顿、内存占用过高
+
+// 1. 改良版打开 App：进门才干活
+window.openApp = function(appId) {
+    const appWindow = document.getElementById(`app-window-${appId}`);
+    if (!appWindow) return;
+
+    // 动画逻辑
+    appWindow.classList.remove('closing');
+    appWindow.style.display = 'flex';
+    setTimeout(() => {
+        appWindow.classList.add('active');
+    }, 10);
+
+    // ★ 数据刷新逻辑 (只在打开时运行)
+    if (appId === 'wx') {
+        // 瞬间刷新聊天列表
+        if(window.renderChatList) window.renderChatList();
+        // 刷新朋友圈流
+        if(window.renderMomentsFeed) window.renderMomentsFeed();
+        // 刷新通讯录
+        if(window.switchContactTab) switchContactTab('all'); 
+    }
+};
+
+// 2. 改良版关闭 App：出门就拆家 (释放内存)
+window.closeAllApps = function() {
+    const apps = document.querySelectorAll('.app-window.active');
+    
+    apps.forEach(app => {
+        // 动画逻辑
+        app.classList.remove('active');
+        app.classList.add('closing');
+        
+        // 等动画播完(0.4s)再清空，防止用户看到白屏闪烁
+        setTimeout(() => {
+            app.style.display = 'none';
+            app.classList.remove('closing');
+
+            // ★ 强力清空逻辑！
+            if (app.id === 'app-window-wx') {
+                // 清空聊天列表
+                const chatList = document.getElementById('chat-list-container');
+                if(chatList) chatList.innerHTML = ''; 
+                
+                // 清空朋友圈 (图片最占内存了！)
+                const momentsList = document.getElementById('moments-feed-container');
+                if(momentsList) momentsList.innerHTML = '';
+                
+                // 清空通讯录
+                const contactList = document.getElementById('contact-list-container');
+                if(contactList) contactList.innerHTML = '';
+            }
+        }, 400); 
+    });
+};
+
+// 3. 改良版关闭聊天详情：最核心的优化！
+// 之前的聊天气泡会一直堆积，现在退出去就销毁！
+window.closeChatDetail = function() {
+    const page = document.getElementById('sub-page-chat-detail');
+    if(page) {
+        page.classList.remove('active');
+        setTimeout(() => { 
+            page.style.display = 'none'; 
+            
+            // ★ 重点：清空聊天气泡区域
+            const msgArea = document.getElementById('chat-msg-area');
+            if(msgArea) msgArea.innerHTML = ''; 
+            
+            currentChatId = null;
+            // 顺便刷新一下外面的列表，保证预览也是新的
+            if(window.renderChatList) window.renderChatList();
+        }, 300);
+    }
+};
+
+// 4. 改良版关闭子页面：总结页、地图页也不放过
+const _originalCloseSubPage = window.closeSubPage; // 备份一下以防万一
+window.closeSubPage = function(id) {
+    const page = document.getElementById(id);
+    if(page) {
+        page.classList.remove('active');
+        setTimeout(() => {
+            page.style.display = 'none';
+            
+            // 针对性清空
+            if (id === 'sub-page-summary') {
+                const list = document.getElementById('summary-list-container');
+                if(list) list.innerHTML = '';
+            }
+            if (id === 'sub-page-map') {
+                const list = document.getElementById('map-history-list');
+                if(list) list.innerHTML = '';
+            }
+        }, 300);
+    }
+};
