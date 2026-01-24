@@ -1778,79 +1778,62 @@ window.closeDeleteChatAlert = function() {
 // ==========================================================
 // === 进入聊天 ===
 window.enterChat = function(chat) {
-    // 1. 找到聊天对象
+    currentChatId = chat.id;
     const contact = contactsData.find(c => c.id === chat.contactId);
     
-    // 2. 清除红点 & 更新数据
-    chat.unread = 0;
-    saveChatAndRefresh(chat); 
-    updateGlobalBadges(); 
-    
-    currentChatId = chat.id; // 锁定当前聊天ID
-
-    removeTypingBubble(); 
-
-    // 3. 更新顶栏信息 (名字、头像、背景)
     const nameEl = document.getElementById('chat_layer_name');
-    if(nameEl) {
-        // 优先显示私有备注
-        nameEl.innerText = contact ? (contact.privateAlias || contact.name) : 'Unknown';
-    }
-
+    if(nameEl) nameEl.innerText = contact ? (contact.privateAlias || contact.name) : 'Unknown';
     const avatarEl = document.getElementById('chat_layer_avatar');
-    if(avatarEl && contact) {
-        avatarEl.style.backgroundImage = contact.avatar;
-    }
-    
-    // 4. 读取专属头像框
+    if(avatarEl && contact) avatarEl.style.backgroundImage = contact.avatar;
     const frameEl = document.getElementById('chat_layer_frame');
-    if (frameEl) {
-        if (contact && contact.frame) {
-            frameEl.style.backgroundImage = `url('${contact.frame}')`;
-        } else {
-            frameEl.style.backgroundImage = 'none';
-        }
-    }
+    if (frameEl) frameEl.style.backgroundImage = (contact && contact.frame) ? `url('${contact.frame}')` : 'none';
 
-    // 5. 显示页面
+    chat.unread = 0;
+    if(window.updateGlobalBadges) window.updateGlobalBadges();
+    
+    currentRenderLimit = 20; 
+
     const page = document.getElementById('sub-page-chat-detail');
     if(page) {
         page.style.display = 'flex';
-        setTimeout(() => page.classList.add('active'), 10);
-    }
-    
-    // 6. 滚动逻辑 & 背景图设置
-    currentRenderLimit = 40;
-    const msgArea = document.getElementById('chat-msg-area'); // ★ 只定义这一次！
-    
-    if(msgArea) {
-        // (A) 设置背景图
-        if (chat.bgImage) {
-            msgArea.style.backgroundImage = chat.bgImage;
-            msgArea.style.backgroundSize = 'cover';
-            msgArea.style.backgroundPosition = 'center';
-            msgArea.style.backgroundAttachment = 'fixed'; 
-        } else {
-            msgArea.style.backgroundImage = 'none';
-        }
+        requestAnimationFrame(() => {
+            page.classList.add('active');
+            setTimeout(() => {
+                const msgArea = document.getElementById('chat-msg-area');
+                if(msgArea) {
+                    if (chat.bgImage) {
+                        msgArea.style.backgroundImage = chat.bgImage;
+                        msgArea.style.backgroundSize = 'cover';
+                        msgArea.style.backgroundPosition = 'center';
+                        msgArea.style.backgroundAttachment = 'fixed'; 
+                    } else {
+                        msgArea.style.backgroundImage = 'none';
+                    }
 
-        // (B) 绑定滚动
-        msgArea.onscroll = () => {
-            if (msgArea.scrollTop === 0) {
-                loadMoreMessages();
-            }
-        };
-        
-        // (C) 渲染消息
-        renderMessages(chat.id);
+                    msgArea.onscroll = () => {
+                        if (msgArea.scrollTop === 0) loadMoreMessages();
+                    };
+                    
+                    renderMessages(chat.id, true);
+                    localforage.setItem('Wx_Chats_Data', chatsData); 
+                }
+            }, 50);
+        });
     }
-};
+}
 
 window.closeChatDetail = function() {
-    document.getElementById('sub-page-chat-detail').classList.remove('active');
-    setTimeout(() => document.getElementById('sub-page-chat-detail').style.display = 'none', 300);
-    currentChatId = null;
-    renderChatList(); // 退出时刷新列表(以防万一)
+    const page = document.getElementById('sub-page-chat-detail');
+    if(page) {
+        page.classList.remove('active');
+        setTimeout(() => { 
+            page.style.display = 'none'; 
+            const msgArea = document.getElementById('chat-msg-area');
+            if(msgArea) msgArea.innerHTML = ''; 
+            currentChatId = null;
+            if(window.renderChatList) window.renderChatList();
+        }, 300);
+    }
 };
 
 // === 修复后：只保留这一组，不要重复了 ===
@@ -1881,34 +1864,25 @@ function formatMiniTime(ts) {
 window.renderMessages = function(chatId, autoScroll = true) {
     const chat = chatsData.find(c => c.id === chatId);
     if (!chat) return;
-    
     const container = document.getElementById('chat-msg-area');
     if (!container) return;
     
-    // 1. 记录滚动位置 (防止刷新闪烁)
     const isAtBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) < 50;
     
-    container.innerHTML = ''; // 清空
-
-    // 2. 准备角色头像
     const contact = contactsData.find(c => c.id === chat.contactId);
     const persona = personasData.find(p => p.id === chat.personaId) || { avatar: '' };
-
-    // 3. 分页加载逻辑
     const msgs = chat.messages || [];
-    let limit = currentRenderLimit || 40;
+
+    let limit = currentRenderLimit || 20;
     const startIndex = Math.max(0, msgs.length - limit);
     const msgsToRender = msgs.slice(startIndex);
 
+    container.innerHTML = ''; 
+
     if (startIndex > 0) {
         const loadMore = document.createElement('div');
-        loadMore.innerHTML = `<span style="font-size:12px;color:#ccc;cursor:pointer;">下拉加载更多...</span>`;
-        loadMore.style.textAlign = 'center';
-        loadMore.style.padding = '10px';
-        loadMore.onclick = () => {
-            currentRenderLimit += 20;
-            renderMessages(chatId, false); // 加载更多不自动滚到底
-        };
+        loadMore.innerHTML = `<div style="padding:10px;text-align:center;color:#ccc;font-size:12px;">下拉加载更多...</div>`;
+        loadMore.onclick = () => { loadMoreMessages(); };
         container.appendChild(loadMore);
     }
 
@@ -1916,109 +1890,73 @@ window.renderMessages = function(chatId, autoScroll = true) {
     let lastRole = null;
 
     msgsToRender.forEach((msg, i) => {
-        const realIndex = startIndex + i;
         const isMe = msg.role === 'me';
-        
-        // 4. 系统时间胶囊 (30分钟显示一次)
         if (i === 0 || msg.timestamp - lastTime > 30 * 60 * 1000) {
             const timePill = document.createElement('div');
             timePill.className = 'msg-time-pill';
             const date = new Date(msg.timestamp);
-            const timeStr = `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
-            timePill.innerText = timeStr;
+            timePill.innerText = `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
             container.appendChild(timePill);
             lastTime = msg.timestamp;
             lastRole = null;
         }
 
-        // ★★★ 5. 动作旁白 (Action Aside) ★★★
         if (msg.type === 'action') {
             const actionRow = document.createElement('div');
-            // 加上 new-msg-anim 让旁白也有动画 (2秒内的新消息)
             const animClass = (Date.now() - msg.timestamp < 2000) ? 'new-msg-anim' : '';
             actionRow.className = `msg-row action-aside ${animClass}`;
-            
             const who = isMe ? '我' : (contact ? contact.name : 'TA');
             actionRow.innerHTML = `<div class="msg-content">(${who} ${msg.text})</div>`;
             container.appendChild(actionRow);
             lastRole = null;
-            return; // 跳过气泡渲染
+            return;
         }
 
-        // ★★★ 6. 撤回消息处理 (偷看功能) ★★★
         if (msg.type === 'recall') {
             const recallDiv = document.createElement('div');
             recallDiv.className = 'msg-recall-pill';
             const who = isMe ? '我' : (contact ? contact.name : 'TA');
-            
-            // 转义防止报错
             const rawContent = (msg.originalText || "").replace(/"/g, '&quot;');
             const extraInfo = (msg.extra || "").replace(/"/g, '&quot;');
             const msgType = msg.originalType || 'text';
-
-            // 生成点击代码
             const peekCode = `peekRecalledMsg("${msgType}", "${rawContent}", "${extraInfo}")`;
-
-            recallDiv.innerHTML = `
-                ${who} 撤回了一条消息 
-                <span class="recall-link" style="color:#007aff; cursor:pointer; margin-left:5px;" onclick='${peekCode}'>
-                    (偷看)
-                </span>`;
-            
+            recallDiv.innerHTML = `${who} 撤回了一条消息 <span class="recall-link" style="color:#007aff;cursor:pointer;margin-left:5px;" onclick='${peekCode}'>(偷看)</span>`;
             container.appendChild(recallDiv);
             lastRole = null; 
             return;
         }
 
-        // 7. 决定是否显示头像
-        let showAvatar = false;
-        if (i === 0 || msg.role !== lastRole || (msg.timestamp - (msgsToRender[i-1]?.timestamp || 0) > 30 * 60 * 1000)) {
-            showAvatar = true;
-        }
-
-        // 8. 决定是否显示小尾巴
+        let showAvatar = (i === 0 || msg.role !== lastRole || (msg.timestamp - (msgsToRender[i-1]?.timestamp || 0) > 30 * 60 * 1000));
         let hasTail = false;
         const nextMsg = msgsToRender[i + 1];
-        if (!nextMsg || nextMsg.role !== msg.role || (nextMsg.timestamp - msg.timestamp > 2 * 60 * 1000)) {
-            hasTail = true;
-        }
+        if (!nextMsg || nextMsg.role !== msg.role || (nextMsg.timestamp - msg.timestamp > 2 * 60 * 1000)) hasTail = true;
 
-        // 9. 构建气泡行
         const row = document.createElement('div');
-        // ★ 核心修复：加上 new-msg-anim 类名！(2秒内的新消息才有动画)
         const animClass = (Date.now() - msg.timestamp < 2000) ? 'new-msg-anim' : '';
         row.className = `msg-row ${isMe ? 'me' : 'other'} ${hasTail ? 'has-tail' : ''} ${animClass}`;
-        row.dataset.msgIndex = realIndex;
+        row.dataset.msgIndex = startIndex + i;
         row.id = `msg-${msg.timestamp}`;
 
-        // 准备头像HTML
         const avatarUrl = isMe ? persona.avatar : (contact ? contact.avatar : '');
-        const bgStyle = getAvatarStyle(avatarUrl); // 需确保有此辅助函数
-        const miniTime = formatMiniTime(msg.timestamp); // 需确保有此辅助函数
-        
+        const bgStyle = getAvatarStyle(avatarUrl);
+        const miniTime = formatMiniTime(msg.timestamp);
+
         let avatarHtml = showAvatar ? 
             `<div class="msg-avatar-col"><div class="msg-avatar" style="${bgStyle}"></div><div class="msg-avatar-time">${miniTime}</div></div>` : 
             `<div class="msg-avatar-placeholder"></div>`;
 
-        // ★★★ 10. 内容渲染 (支持表情包/图片) ★★★
         let contentHtml = '';
         let extraClass = '';
-
         if (msg.type === 'sticker') {
-            const imgSrc = msg.text; 
-            contentHtml = `<img src="${imgSrc}" class="sticker-img-big" style="max-width:120px;border-radius:10px;">`;
+            contentHtml = `<img src="${msg.text}" class="sticker-img-big" style="max-width:120px;border-radius:10px;">`;
             extraClass = 'sticker-type'; 
         } else if (msg.type === 'image') {
-            const imgSrc = msg.text;
-            contentHtml = `<img src="${imgSrc}" class="chat-image" style="max-width:150px;border-radius:10px;" onclick="previewImage('${imgSrc}')">`;
+            contentHtml = `<img src="${msg.text}" class="chat-image" style="max-width:150px;border-radius:10px;" onclick="previewImage('${msg.text}')">`;
         } else {
-            // 普通文本 (处理换行)
             contentHtml = (msg.text || '').replace(/\n/g, '<br>');
         }
 
         const mainBubble = `<div class="msg-content ${extraClass}">${contentHtml}</div>`;
-        
-        // 引用处理
         let quoteHtml = '';
         if (msg.quote) {
             let fullQuoteText = `${msg.quote.name}：${msg.quote.text}`;
@@ -2026,14 +1964,9 @@ window.renderMessages = function(chatId, autoScroll = true) {
             quoteHtml = `<div class="msg-quote-outside" onclick="scrollToMsg('${msg.quote.id}')">${fullQuoteText}</div>`;
         }
 
-        // 组合 HTML
-        if (isMe) {
-            row.innerHTML = `<div class="msg-container-col">${mainBubble}${quoteHtml}</div>${avatarHtml}`;
-        } else {
-            row.innerHTML = `${avatarHtml}<div class="msg-container-col">${mainBubble}${quoteHtml}</div>`;
-        }
+        if (isMe) row.innerHTML = `<div class="msg-container-col">${mainBubble}${quoteHtml}</div>${avatarHtml}`;
+        else row.innerHTML = `${avatarHtml}<div class="msg-container-col">${mainBubble}${quoteHtml}</div>`;
         
-        // 绑定长按菜单
         const bubbleContent = row.querySelector('.msg-content');
         if(bubbleContent && window.bindLongPress) bindLongPress(bubbleContent);
         
@@ -2041,9 +1974,8 @@ window.renderMessages = function(chatId, autoScroll = true) {
         lastRole = msg.role;
     });
 
-    // 11. 底部状态 (已读/送达)
-    if (msgs.length > 0) {
-        const lastMsg = msgs[msgs.length - 1];
+    if (msgsToRender.length > 0) {
+        const lastMsg = msgsToRender[msgsToRender.length - 1];
         if(lastMsg.type !== 'action' && lastMsg.type !== 'recall') {
             const statusDiv = document.createElement('div');
             statusDiv.className = 'msg-status-foot';
@@ -2051,16 +1983,30 @@ window.renderMessages = function(chatId, autoScroll = true) {
             const timeStr = `${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}`;
             let statusText = lastMsg.role === 'other' ? "已读" : "已送达";
             statusDiv.innerText = `${statusText} ${timeStr}`;
-            if (lastMsg.role === 'other') statusDiv.style.textAlign = 'left'; else statusDiv.style.textAlign = 'right';
-            if (lastMsg.role === 'other') statusDiv.style.paddingLeft = '58px'; else statusDiv.style.paddingRight = '58px';
+            if (lastMsg.role === 'other') { statusDiv.style.textAlign = 'left'; statusDiv.style.paddingLeft = '58px'; }
+            else { statusDiv.style.textAlign = 'right'; statusDiv.style.paddingRight = '58px'; }
             container.appendChild(statusDiv);
         }
     }
 
-    // 自动滚动
     if (autoScroll || isAtBottom) {
         setTimeout(() => container.scrollTop = container.scrollHeight, 0);
     }
+};
+
+window.loadMoreMessages = function() {
+    const chat = chatsData.find(c => c.id === currentChatId);
+    if (!chat || !chat.messages || chat.messages.length <= currentRenderLimit) return;
+    
+    const container = document.getElementById('chat-msg-area');
+    const oldScrollHeight = container.scrollHeight;
+    const oldScrollTop = container.scrollTop;
+    
+    currentRenderLimit += 20;
+    renderMessages(chat.id, false);
+    
+    const newScrollHeight = container.scrollHeight;
+    container.scrollTop = newScrollHeight - oldScrollHeight + oldScrollTop;
 };
 
 // === 发送消息 (升级版：支持线下动作) ===
@@ -2188,7 +2134,7 @@ window.peekRecalledMsg = function(type, content, extra) {
 };
 
 // ====================
-// ★★★ AI 触发逻辑 (终极完整版：提示词隔离 + 全功能) ★★★
+// ★★★ AI 触发逻辑  ★★★
 // ====================
 window.triggerAI = async function() {
     if (!currentChatId) return;
