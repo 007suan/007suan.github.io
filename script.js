@@ -4384,142 +4384,9 @@ window.deleteMoment = function(id) {
         });
     }
 };
-// =================================================================
-// [24] 位置追踪系统 (Stalking Map)
-// =================================================================
-
-// 打开地图
-window.openLocationMap = function() {
-    if (!currentChatId) return;
-    const chat = chatsData.find(c => c.id === currentChatId);
-    if (!chat) return;
-
-    // 1. 设置头像
-    const contact = contactsData.find(c => c.id === chat.contactId);
-    const avatarEl = document.getElementById('map-corner-avatar');
-    if (avatarEl && contact) {
-        avatarEl.style.backgroundImage = getAvatarStyle(contact.avatar).replace('background-image: ', '').replace(';', '');
-    }
-
-    // 2. 渲染历史
-    renderMapHistory(chat);
-
-    // 3. 打开页面
-    openSubPage('sub-page-map');
-    
-    // 4. 自动定位到最新位置
-    const history = chat.locationHistory || [];
-    if (history.length > 0) {
-        setTimeout(() => updateMapPin(history[history.length - 1].place), 500);
-    }
-};
-
-// 关闭地图
-window.closeLocationMap = function() {
-    closeSubPage('sub-page-map');
-};
-
-// 渲染行程单
-function renderMapHistory(chat) {
-    const list = document.getElementById('map-history-list');
-    const statusText = document.getElementById('map-current-status');
-    const countText = document.getElementById('map-total-count');
-    
-    if(!list) return;
-    list.innerHTML = '';
-    
-    const history = chat.locationHistory || [];
-    if(countText) countText.innerText = history.length;
-
-    if (history.length === 0) {
-        if(statusText) statusText.innerText = "信号连接中...";
-        list.innerHTML = `<div style="text-align:center; color:#ccc; font-size:12px; margin-top:20px;">暂无行踪数据...</div>`;
-        return;
-    }
-
-    // 更新状态
-    const latest = history[history.length - 1];
-    if(statusText) statusText.innerText = `当前: ${latest.place}`;
-
-    // 倒序渲染
-    [...history].reverse().forEach((log, index) => {
-        const item = document.createElement('div');
-        item.className = `map-log-item ${index === 0 ? 'current' : ''}`;
-        const timeStr = formatTime(log.time);
-        item.innerHTML = `
-            <div class="map-log-dot"></div>
-            <div class="map-log-content">
-                <div class="map-log-place">${log.place}</div>
-                <div class="map-log-action">${log.action}</div>
-                <div class="map-log-time">${timeStr}</div>
-            </div>
-        `;
-        list.appendChild(item);
-    });
-}
-
-// ====================
-// [25] 地图交互增强
-// ====================
-let mapViewState = 0; 
-window.toggleMapState = function() {
-    const sheet = document.querySelector('.map-bottom-sheet');
-    if(!sheet) return;
-    mapViewState = (mapViewState + 1) % 3;
-    sheet.classList.remove('view-list', 'view-map');
-    if (mapViewState === 1) sheet.classList.add('view-list');
-    else if (mapViewState === 2) sheet.classList.add('view-map');
-};
-
-// 地点映射
-const LOCATION_MAP = {
-    '家': 'loc-home-char', '许时雨': 'loc-home-char',
-    '我': 'loc-home-user', 'User': 'loc-home-user',
-    '学校': 'loc-school', '大学': 'loc-school', '图书馆': 'loc-school',
-    '咖啡': 'loc-cafe',
-    '酒店': 'loc-hotel', '旅馆': 'loc-hotel',
-    '医院': 'loc-hospital',
-    '公园': 'loc-park', '散步': 'loc-park',
-    'default': 'loc-home-char'
-};
-
-window.updateMapPin = function(placeName) {
-    const viewport = document.getElementById('virtual-map-viewport');
-    const pin = document.getElementById('my-map-pin');
-    if (!viewport || !pin) return;
-
-    let targetId = LOCATION_MAP['default'];
-    if (placeName) {
-        for (let key in LOCATION_MAP) {
-            if (placeName.includes(key)) {
-                targetId = LOCATION_MAP[key];
-                break;
-            }
-        }
-    }
-
-    const targetEl = document.getElementById(targetId);
-    if (!targetEl) return;
-
-    const targetLeft = targetEl.offsetLeft;
-    const targetTop = targetEl.offsetTop;
-
-    pin.style.left = targetLeft + 'px';
-    pin.style.top = targetTop + 'px';
-
-    // 视口居中
-    const vw = viewport.clientWidth;
-    const vh = viewport.clientHeight;
-    viewport.scrollTo({
-        left: targetLeft - vw / 2,
-        top: targetTop - vh / 2,
-        behavior: 'smooth'
-    });
-};
-
 
 // =================================================================
-// ★★★ [主题与美化系统 - 终极整合版] ★★★
+// ★★★主题与美化系统★★★
 // =================================================================
 
 let tempIconEdits = {}; 
@@ -5483,13 +5350,13 @@ function renderStickers() {
     grid.innerHTML = '';
     
     let multiBar = document.getElementById('multi-select-bar');
-    const overlay = document.getElementById('sticker-picker-overlay'); // 获取最外层弹窗
+    const panel = document.querySelector('.sticker-glass-panel'); 
 
-    if (!multiBar && overlay) {
+    if (!multiBar && panel) {
         multiBar = document.createElement('div');
         multiBar.id = 'multi-select-bar';
-        multiBar.className = 'sticker-delete-bar'; // 对应 CSS
-        overlay.appendChild(multiBar); // 挂在最外层！
+        multiBar.className = 'sticker-footer sticker-delete-bar'; // 加上 footer 类名保证样式一致
+        panel.appendChild(multiBar); 
     }
 
     // 控制多选栏显示/隐藏
