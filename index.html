@@ -58,7 +58,7 @@
 
         <div class="app-grid">
 <div class="app-item" onclick="openAlipay()">
-    <div class="app-icon" style="background-image: url('https://link-to-alipay-icon.png');"></div>
+    <div class="app-icon" style="background-image: url('https://i.postimg.cc/Kv8ysdkp/wu-biao-ti119-20260117103413.png');"></div>
     <div class="app-name">Alipay</div>
 </div>
             <div class="app-item placeholder"><div class="app-icon"></div></div>
@@ -84,11 +84,9 @@
         </div>
 
         <div class="widgy-mid-row">
-            
             <div class="big-photo-widget upload-img">
                 <div class="photo-tag edit-text">Focus</div>
             </div>
-
             <div class="widgy-small-grid">
                 <div class="app-item" onclick="openApp('music')">
                     <div id="app-icon-kugou" class="app-icon" style="background-image: url('https://i.postimg.cc/J4YWwPZb/wu-biao-ti119-20260117103559.png');"></div>
@@ -104,7 +102,7 @@
                 </div>
                 <div class="app-item" onclick="openApp('browser')">
                     <div id="app-icon-safari" class="app-icon" style="background-image: url('https://i.postimg.cc/sDHRFw7Y/wu-biao-ti119-20260117103533.png');"></div>
-                    <div class="app-name">Safari浏览器</div>
+                    <div class="app-name">Safari</div>
                 </div>
             </div>
         </div>
@@ -127,7 +125,42 @@
                 <div class="app-name">地图</div>
             </div>
         </div>
+<div class="ios-music-widget-lg">
+    <div class="imw-top">
+        <div class="imw-cover-box">
+            <img id="widget-cover-2" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" 
+                 style="background-color: #ccc;"> </div>
+        
+        <div class="imw-info">
+            <div id="widget-title-2" class="imw-title">Not Playing</div>
+            <div id="widget-artist-2" class="imw-artist">SODA MUSIC</div>
+            <div id="widget-lyric-line" class="imw-lyric">点击播放音乐...</div>
+        </div>
     </div>
+
+    <div class="imw-progress">
+        <div class="imw-bar-bg" onclick="seekFromWidget(event)">
+            <div id="widget-prog-fill" class="imw-bar-fill" style="width: 0%;"></div>
+        </div>
+        <div class="imw-time">
+            <span id="widget-curr-time">0:00</span>
+            <span id="widget-total-time">0:00</span>
+        </div>
+    </div>
+
+    <div class="imw-controls">
+        <img src="https://i.postimg.cc/FRPWbGSC/wu-biao-ti118-20260116221202.png" 
+             onclick="playPrev()" class="imw-btn sm">
+        
+        <img id="widget-play-btn-2" 
+             src="https://i.postimg.cc/ydYqzL6F/wu-biao-ti119-20260131105300.png" 
+             onclick="toggleMusic()" class="imw-btn lg">
+        
+        <img src="https://i.postimg.cc/d1WHRnC5/wu-biao-ti118-20260117003643.png" 
+             onclick="playNext()" class="imw-btn sm">
+    </div>
+</div>
+        </div>
 </div>
 
     <div class="desktop-page" id="page-3">
@@ -207,6 +240,139 @@
         <div class="app-icon" id="telephone" style="background-image: url('https://i.postimg.cc/k4G4CBDp/wu-biao-ti119-20260117102457.png');"></div>
     </div>
 </div>
+
+<div id="app-kugou" class="app-window" style="display:none; flex-direction:column; background: #222; color: #fff; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5000; overflow: hidden;">
+
+    <div class="music-header" style="display:flex; justify-content:space-between; align-items:center; padding:15px; margin-top:30px; position:relative; z-index:10;">
+        
+        <div onclick="closeApp('kugou')" style="font-size:24px; cursor:pointer; padding:5px;">﹀</div>
+        
+        <div style="font-size:16px; font-weight:bold; margin-left:20px;">SODA MUSIC</div>
+        
+        <div style="display:flex; align-items:center; gap:12px;">
+    
+    <div onclick="triggerBgChange()" style="font-size:20px; cursor:pointer; text-shadow: 0 2px 5px rgba(0,0,0,0.3);">🎨</div>
+    <input type="file" id="bg-image-input" accept="image/*" style="display:none;" onchange="handleBgChange(this)">
+
+            <div onclick="toggleFloatLyric()" 
+                 style="font-size:12px; font-weight:bold; color: #fff; border: 1.5px solid rgba(255,255,255,0.4); padding: 3px 9px; border-radius: 12px; cursor: pointer; letter-spacing: 1px; transition: 0.2s;"
+                 onmouseover="this.style.borderColor='#fff';this.style.background='rgba(255,255,255,0.1)'"
+                 onmouseout="this.style.borderColor='rgba(255,255,255,0.4)';this.style.background='transparent'">
+                词
+            </div>
+
+            <img src="https://i.postimg.cc/rmhnGg4Q/wu-biao-ti118-20260117003704.png" 
+                 onclick="toggleMusicSearch()" 
+                 style="width:28px; height:28px; cursor:pointer;">
+        </div>
+    </div>
+
+<div class="music-main" style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; z-index:10; overflow:hidden;">
+    
+    <div id="disk-view" style="display:flex; flex-direction:column; align-items:center; transition: opacity 0.3s;">
+        <div class="disk-container" onclick="toggleLyricView()" style="width:260px; height:260px; border-radius:50%; background:#000; display:flex; justify-content:center; align-items:center; box-shadow: 0 0 30px rgba(0,0,0,0.6); border: 4px solid rgba(255,255,255,0.1); cursor:pointer;">
+            <img id="app-album-cover" src="https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1756312261242_qdqqd_g0eriz.jpeg" 
+                 style="width:260px; height:260px; border-radius:50%; object-fit:cover;">
+        </div>
+        
+        <div id="wave-visualizer" style="display:flex; align-items:flex-end; gap:4px; height:30px; margin-top:20px; opacity:0.8;">
+            <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+            <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+        </div>
+    </div>
+
+    <div id="lyric-view" onclick="toggleLyricView()" style="display:none; width:100%; height:350px; overflow-y:auto; text-align:center; padding:20px 0; mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);">
+        <div id="lyric-content" style="transition: transform 0.3s ease-out; color:rgba(255,255,255,0.6); line-height:2.5; font-size:15px;">
+            <p>点击唱片加载歌词...</p>
+        </div>
+    </div>
+    
+    <div style="margin-top:20px; text-align:center; width: 100%; padding: 0 20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div style="text-align:left; overflow:hidden; flex:1;">
+                <div id="app-song-title" style="font-size:22px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">暂无播放...{{(>_<)}}</div>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <span id="app-song-artist" style="color:#888; font-size:14px;">i was only temporary 2 u</span>
+                    <span id="quality-indicator" style="font-size:10px; border:1px solid #666; color:#888; padding:0 4px; border-radius:4px;">SQ</span>
+                </div>
+            </div>
+            <img id="like-btn-img" 
+                 src="https://i.postimg.cc/C1vPCJ8s/wu-biao-ti118-20260117003824.png" 
+                 onclick="toggleFavorite()" 
+                 style="width:28px; height:28px; cursor:pointer; transition: transform 0.2s;">
+        </div>
+    </div>
+</div>
+
+    <div class="music-controls" style="padding:20px 25px 50px 25px; position:relative; z-index:10;">
+        <div style="display:flex; align-items:center; font-size:12px; color:#888; margin-bottom:25px;">
+            <span id="curr-time">00:00</span>
+            <input type="range" id="prog-bar" value="0" min="0" max="100" style="flex:1; margin:0 12px; accent-color: #fff;">
+            <span id="total-time">00:00</span>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+<img id="play-mode-btn" 
+     src="https://i.postimg.cc/KzptZwYK/wu-biao-ti119-20260131195925.png" 
+     onclick="togglePlayMode()" 
+     style="width:28px; height:28px; cursor:pointer; opacity: 0.8;">
+            
+            <img src="https://i.postimg.cc/FRPWbGSC/wu-biao-ti118-20260116221202.png" 
+                 onclick="playPrev()" 
+                 style="width:32px; height:32px; cursor:pointer;">
+            
+            <img id="app-play-btn-img" 
+                 src="https://i.postimg.cc/ydYqzL6F/wu-biao-ti119-20260131105300.png" 
+                 onclick="toggleMusic()" 
+                 style="width:72px; height:72px; cursor:pointer;">
+            
+            <img src="https://i.postimg.cc/d1WHRnC5/wu-biao-ti118-20260117003643.png" 
+                 onclick="playNext()" 
+                 style="width:32px; height:32px; cursor:pointer;">
+            
+            <div onclick="toggleMusicList()" style="font-size:24px; color:#fff; cursor:pointer;">≣</div> 
+        </div>
+    </div>
+
+    <div class="kugou-bg" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none;"></div>
+    <div class="kugou-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:1; pointer-events:none;"></div>
+
+<div id="search-drawer" style="position:absolute; top:-100%; left:0; width:100%; height:100%; background:rgba(20, 20, 20, 0.95); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); transition: top 0.4s cubic-bezier(0.32, 1, 0.23, 1); z-index:20; display:flex; flex-direction:column;">
+    
+    <div style="padding: 50px 20px 10px 20px; display:flex; align-items:center; gap:12px;">
+        <div style="flex:1; height:36px; background:rgba(255,255,255,0.12); border-radius:10px; display:flex; align-items:center; padding:0 10px;">
+            <span style="color:rgba(255,255,255,0.4); font-size:14px;">🔍</span>
+            <input type="text" id="music-search-keyword" placeholder="Search" 
+                   style="flex:1; background:transparent; border:none; color:#fff; font-size:15px; margin-left:6px; outline:none; height:100%;">
+        </div>
+        
+        <div onclick="searchMusicCloud()" style="color:#fce76d; font-size:15px; font-weight:600; cursor:pointer;">搜索</div>
+    </div>
+
+    <div style="height:1px; background:rgba(255,255,255,0.08); margin: 0 20px;"></div>
+
+    <div id="music-search-results" style="flex:1; overflow-y:auto; padding:10px 20px;">
+        <div style="text-align:center; color:rgba(255,255,255,0.3); margin-top:50px; font-size:13px;">
+            ★ 於你而言我是一顆星嗎？
+        </div>
+    </div>
+
+    <div onclick="toggleMusicSearch()" style="padding:20px; text-align:center; cursor:pointer;">
+        <div style="width:40px; height:5px; background:rgba(255,255,255,0.2); border-radius:3px; margin:0 auto;"></div>
+    </div>
+</div>
+
+    <div id="playlist-drawer" style="position:absolute; bottom:-100%; left:0; width:100%; height:60%; background:rgba(30,30,30,0.98); transition: bottom 0.3s; z-index:20; display:flex; flex-direction:column; border-top-left-radius:24px; border-top-right-radius:24px;">
+        <div style="padding:20px; border-bottom:1px solid #333; display:flex; justify-content:space-between;">
+            <span style="font-weight:bold; font-size:18px;">播放列表</span>
+            <span onclick="clearPlaylist()" style="color:#888; font-size:14px;">清空</span>
+        </div>
+        <div id="playlist-content" style="flex:1; overflow-y:auto; padding:0 20px;"></div>
+        <div onclick="toggleMusicList()" style="padding:20px; text-align:center; color:#888;">关闭 ∨</div>
+    </div>
+</div>
+
+<audio id="global-audio" style="display:none;"></audio>
 
         <div id="app-window-wechat" class="app-window">
             <div id="wx-main-view" style="position: relative; height: 100%; display: flex; flex-direction: column;">
@@ -396,44 +562,6 @@
   </div>
 </div>
 
-            </div>
-        </div>
-
-        <div id="app-window-music" class="app-window">
-            <div class="music-ui">
-                <div class="soda-bg-blur"></div>
-                <div class="soda-top-bar">
-                    <div class="soda-tab" onclick="closeAllApps()">关注</div>
-                    <div class="soda-tab active">推荐</div>
-                </div>
-                <div class="soda-main-content">
-                    <div class="soda-album-cover"></div>
-                    <div class="soda-side-actions">
-                        <div class="s-action-item"><svg class="s-action-icon" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><span class="s-action-text">1.2w</span></div>
-                        <div class="s-action-item"><svg class="s-action-icon" viewBox="0 0 24 24"><path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18z"/></svg><span class="s-action-text">302</span></div>
-                        <div class="s-action-item"><svg class="s-action-icon" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg><span class="s-action-text">分享</span></div>
-                    </div>
-                </div>
-                <div class="soda-bottom-area">
-                    <div class="soda-info">
-                        <div class="soda-title edit-text" id="music_title">Intro - Soda Style</div>
-                        <div class="soda-artist edit-text" id="music_artist"><span class="soda-tag">原声</span> Unknown Artist</div>
-                    </div>
-                    <div class="soda-progress-container">
-                        <div class="soda-progress-bg"><div class="soda-progress-fill"><div class="soda-progress-thumb"></div></div></div>
-                        <span>03:45</span>
-                    </div>
-                    <div class="soda-controls">
-                        <svg class="sc-btn" viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
-                        <svg class="sc-btn" viewBox="0 0 24 24" style="width:32px; height:32px;"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
-                        <div class="sc-play-btn" id="soda-play-btn" onclick="toggleMusic()">
-                            <svg class="sc-play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                            <svg class="sc-pause-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                        </div>
-                        <svg class="sc-btn" viewBox="0 0 24 24" style="width:32px; height:32px;"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
-                        <svg class="sc-btn" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -1093,7 +1221,7 @@
     </div>
 </div>
 
-  </div>
+  </div>  </div>  </div>
 <div id="app-window-alipay" class="app-window" style="background: #f5f7fa; display: none;">
     
     <div class="ali-ins-header">
@@ -1598,6 +1726,12 @@
             <div class="alert-btn confirm" id="g-confirm-btn-yes">Confirm</div>
         </div>
     </div>
+</div>
+
+<div id="float-lyric-bar" class="float-lyric locked" style="display:none;">
+    <div class="fl-text">Waiting for music...</div>
+    <div class="fl-drag-handle">✥ 拖动我</div>
+    <div class="fl-lock-btn" onclick="toggleLyricLock()">🔒 锁定</div>
 </div>
 
     </div> <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>

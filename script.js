@@ -1214,14 +1214,6 @@ window.openSubPage = function(id) {
     }
 };
 
-// 音乐播放器简易逻辑
-let isMusicPlaying = false;
-window.toggleMusic = function() {
-    isMusicPlaying = !isMusicPlaying;
-    const btn = document.getElementById('soda-play-btn');
-    if(btn) isMusicPlaying ? btn.classList.add('playing') : btn.classList.remove('playing');
-};
-
 // ==========================================================
 // [5] 微信业务逻辑 (WeChat Core)
 // ==========================================================
@@ -2040,7 +2032,7 @@ window.renderMessages = function(chatId, autoScroll = true) {
                 // 情况A：最后一条是我发的 -> 显示【已送达】 -> 靠右
                 statusDiv.innerHTML = `已送达 ${timeStr}`;
                 statusDiv.style.textAlign = 'right';
-                statusDiv.style.paddingRight = '20px'; // 靠右不需要缩进太多，稍微留点边距就好
+                statusDiv.style.paddingRight = '10px'; // 靠右不需要缩进太多，稍微留点边距就好
                 statusDiv.style.paddingLeft = '0';
                 statusDiv.style.color = '#8e8e93'; // 灰色
             } else {
@@ -2186,7 +2178,7 @@ window.peekRecalledMsg = function(type, content, extra) {
     document.getElementById('global-confirm-modal').style.display = 'flex';
 };
 // ====================
-// ★★★ AI 触发逻辑 (终极修复版：真实手速 + 气泡雨 + 思考动画) ★★★
+// ★★★ AI 触发逻辑 真实手速 + 气泡雨 + 思考动画★★★
 // ====================
 window.triggerAI = async function() {
     if (!currentChatId) return;
@@ -3913,7 +3905,7 @@ window.addEventListener('load', () => {
     }
 });
 // ==========================================================
-// [21] 聊天总结 (Summary) 系统 - 终极修复版
+// [21] 聊天总结 (Summary) 系统
 // ==========================================================
 
 // === 辅助：设置背景图 (防止 CSS 干扰) ===
@@ -5584,7 +5576,7 @@ function bindStickerLongPress(element, sticker) {
 }
 
 // ==========================================
-// ★ 强力修复：表情包弹窗 (UI 终极微调版)
+// ★ 强力修复：表情包弹窗 (UI 微调版)
 // ==========================================
 window.rebuildStickerPopupHTML = function() {
     const overlay = document.getElementById('sticker-upload-overlay');
@@ -6170,108 +6162,6 @@ window.sendActionOnly = function() {
     if(navigator.vibrate) navigator.vibrate(30);
 };
 // ==========================================================
-// ★★★ 性能优化补丁 (Performance Patch) ★★★
-// ==========================================================
-// 逻辑说明：退出界面时直接清空 DOM，进入时再重新渲染
-// 解决问题：窗口开多了卡顿、内存占用过高
-
-// 1. 改良版打开 App：进门才干活
-window.openApp = function(appId) {
-    const appWindow = document.getElementById(`app-window-${appId}`);
-    if (!appWindow) return;
-
-    // 动画逻辑
-    appWindow.classList.remove('closing');
-    appWindow.style.display = 'flex';
-    setTimeout(() => {
-        appWindow.classList.add('active');
-    }, 10);
-
-    // ★ 数据刷新逻辑 (只在打开时运行)
-    if (appId === 'wx') {
-        // 瞬间刷新聊天列表
-        if(window.renderChatList) window.renderChatList();
-        // 刷新朋友圈流
-        if(window.renderMomentsFeed) window.renderMomentsFeed();
-        // 刷新通讯录
-        if(window.switchContactTab) switchContactTab('all'); 
-    }
-};
-
-// 2. 改良版关闭 App：出门就拆家 (释放内存)
-window.closeAllApps = function() {
-    const apps = document.querySelectorAll('.app-window.active');
-    
-    apps.forEach(app => {
-        // 动画逻辑
-        app.classList.remove('active');
-        app.classList.add('closing');
-        
-        // 等动画播完(0.4s)再清空，防止用户看到白屏闪烁
-        setTimeout(() => {
-            app.style.display = 'none';
-            app.classList.remove('closing');
-
-            // ★ 强力清空逻辑！
-            if (app.id === 'app-window-wx') {
-                // 清空聊天列表
-                const chatList = document.getElementById('chat-list-container');
-                if(chatList) chatList.innerHTML = ''; 
-                
-                // 清空朋友圈 (图片最占内存了！)
-                const momentsList = document.getElementById('moments-feed-container');
-                if(momentsList) momentsList.innerHTML = '';
-                
-                // 清空通讯录
-                const contactList = document.getElementById('contact-list-container');
-                if(contactList) contactList.innerHTML = '';
-            }
-        }, 400); 
-    });
-};
-
-// 3. 改良版关闭聊天详情：最核心的优化！
-// 之前的聊天气泡会一直堆积，现在退出去就销毁！
-window.closeChatDetail = function() {
-    const page = document.getElementById('sub-page-chat-detail');
-    if(page) {
-        page.classList.remove('active');
-        setTimeout(() => { 
-            page.style.display = 'none'; 
-            
-            // ★ 重点：清空聊天气泡区域
-            const msgArea = document.getElementById('chat-msg-area');
-            if(msgArea) msgArea.innerHTML = ''; 
-            
-            currentChatId = null;
-            // 顺便刷新一下外面的列表，保证预览也是新的
-            if(window.renderChatList) window.renderChatList();
-        }, 300);
-    }
-};
-
-// 4. 改良版关闭子页面：总结页、地图页也不放过
-const _originalCloseSubPage = window.closeSubPage; // 备份一下以防万一
-window.closeSubPage = function(id) {
-    const page = document.getElementById(id);
-    if(page) {
-        page.classList.remove('active');
-        setTimeout(() => {
-            page.style.display = 'none';
-            
-            // 针对性清空
-            if (id === 'sub-page-summary') {
-                const list = document.getElementById('summary-list-container');
-                if(list) list.innerHTML = '';
-            }
-            if (id === 'sub-page-map') {
-                const list = document.getElementById('map-history-list');
-                if(list) list.innerHTML = '';
-            }
-        }, 300);
-    }
-};
-// ==========================================================
 // [28] 支付宝 & 转账系统 (Ins风限定版) - 完整逻辑
 // ==========================================================
 // 1. 打开支付宝页面 
@@ -6459,4 +6349,805 @@ function processTransfer() {
     // 6. 收尾工作
     closePwdOverlay();
     showSystemAlert('转账发送成功啦');
+}
+
+// === 丝滑动画版 App 控制器 ===
+
+window.openApp = function(appId) {
+    let targetId = (appId === 'music' || appId === 'kugou') ? 'app-kugou' : 'app-window-' + appId;
+    const appWindow = document.getElementById(targetId);
+    
+    if (appWindow) {
+        // 1. 先把架子搭起来 (display: flex)
+        appWindow.style.display = 'flex';
+        
+        // 2. 强行重绘 (告诉浏览器：准备动起来！)
+        // 这一步虽然看起来没用，但它能保证动画不会被合并
+        appWindow.offsetHeight; 
+        
+        // 3. 加动画类
+        appWindow.classList.remove('closing'); // 移除关闭残留
+        appWindow.classList.add('active');
+        
+        // 特殊处理：酷狗小黑条
+        const homeBar = document.querySelector('.home-bar');
+        if(homeBar && targetId === 'app-kugou') homeBar.style.backgroundColor = '#fff';
+    } else {
+        showSystemAlert(`找不到应用：${targetId}`);
+    }
+};
+
+window.closeApp = function(specificId) {
+    const targetId = (specificId === 'kugou' || specificId === 'music') ? 'app-kugou' : 'app-window-' + specificId;
+    
+    // 如果没指定ID，就关闭所有
+    const targets = specificId ? [document.getElementById(targetId)] : document.querySelectorAll('.app-window, #app-kugou');
+    
+    targets.forEach(el => {
+        if(el && el.style.display !== 'none') {
+            // 1. 触发关闭动画
+            el.classList.remove('active');
+            el.classList.add('closing'); // 可选：加个专门的关闭缩小效果
+            
+            // 2. 等动画播完再彻底隐藏 (400ms 对应 CSS 里的 0.4s)
+            setTimeout(() => {
+                // 双重检查：防止用户手速太快又点开了
+                if(!el.classList.contains('active')) {
+                    el.style.display = 'none';
+                    el.classList.remove('closing');
+                }
+            }, 350); // 稍微比 CSS 快一点点，感觉更跟手
+        }
+    });
+    
+    // 恢复小黑条
+    const homeBar = document.querySelector('.home-bar');
+    if(homeBar) homeBar.style.backgroundColor = '#000';
+};
+
+/**
+ * ====================================================================
+ * ★★★ SODA MUSIC 最终究极版 (修复 V3.0) ★★★
+ * 修复内容：进度条拖动、变量未定义报错、函数结构断裂、小组件同步
+ * ====================================================================
+ */
+
+// --- 1. 全局配置 & 数据池 ---
+const API_BASE = 'https://netease-cloud-music-api-lilac.vercel.app'; 
+let currentPlaylist = []; 
+let currentIndex = -1;    
+let myFavorites = JSON.parse(localStorage.getItem('my_fav_songs') || '[]'); 
+let lyricTimer = null; // 歌词滚动的定时器
+
+// 图标配置
+const ICONS = {
+    play: "https://i.postimg.cc/ydYqzL6F/wu-biao-ti119-20260131105300.png",
+    pause: "https://i.postimg.cc/cH4qNF1c/wu-biao-ti119-20260131105215.png",
+    liked: "https://i.postimg.cc/XJ2HKx58/wu-biao-ti118-20260117003804.png",
+    unlike: "https://i.postimg.cc/C1vPCJ8s/wu-biao-ti118-20260117003824.png"
+};
+
+// 备用API
+const BACKUP_APIS = [
+    'https://music-api.sigure.xyz',
+    'https://netease-cloud-music-api-rose.vercel.app'
+];
+
+// --- 2. 核心功能类 ---
+
+// (A) 状态管理器
+const MusicState = {
+    save: function() {
+        const state = {
+            playlist: currentPlaylist,
+            index: currentIndex,
+            currentTime: document.getElementById('global-audio')?.currentTime || 0
+        };
+        localStorage.setItem('soda_music_state', JSON.stringify(state));
+    },
+    load: function() {
+        const raw = localStorage.getItem('soda_music_state');
+        if(!raw) return;
+        try {
+            const state = JSON.parse(raw);
+            if(state.playlist && state.playlist.length > 0) {
+                currentPlaylist = state.playlist;
+                currentIndex = state.index;
+                renderPlaylist();
+                // 恢复界面显示
+                if(currentIndex >= 0 && currentPlaylist[currentIndex]) {
+                    const song = currentPlaylist[currentIndex];
+                    safeSetText('app-song-title', song.name);
+                    safeSetText('app-song-artist', song.artist);
+                    safeSetImage('app-album-cover', song.cover);
+                    
+                    // 同步小组件信息
+                    safeSetText('widget-title-2', song.name);
+                    safeSetText('widget-artist-2', song.artist);
+                    safeSetImage('widget-cover-2', song.cover);
+                    
+                    checkIfLiked(song.id);
+                }
+            }
+        } catch(e) { console.error("读取存档失败", e); }
+    }
+};
+
+// (B) 歌词管理器 (修复版)
+const LyricManager = {
+    lrcData: [], 
+    
+    load: async function(id) {
+        document.getElementById('lyric-content').innerHTML = '<p>正在加载歌词...</p>';
+        safeSetText('widget-lyric-line', '加载歌词中...');
+        
+        try {
+            const res = await fetch(`${API_BASE}/lyric?id=${id}`);
+            const data = await res.json();
+            const lrcText = (data.lrc && data.lrc.lyric) ? data.lrc.lyric : "[00:00.00] 暂无歌词";
+            this.parse(lrcText);
+        } catch(e) {
+            document.getElementById('lyric-content').innerHTML = '<p>歌词加载失败 (T_T)</p>';
+            safeSetText('widget-lyric-line', '暂无歌词');
+        }
+    },
+    
+    parse: function(text) {
+        this.lrcData = [];
+        const lines = text.split('\n');
+        const timeExp = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/;
+        lines.forEach(line => {
+            const match = timeExp.exec(line);
+            if(match && line.replace(timeExp, '').trim()) {
+                const min = parseInt(match[1]);
+                const sec = parseInt(match[2]);
+                const ms = parseInt(match[3]);
+                const time = min * 60 + sec + ms / (match[3].length === 3 ? 1000 : 100);
+                this.lrcData.push({ time: time, text: line.replace(timeExp, '').trim() });
+            }
+        });
+        this.render();
+    },
+    
+    render: function() {
+        const box = document.getElementById('lyric-content');
+        box.innerHTML = '';
+        if(this.lrcData.length === 0) {
+            box.innerHTML = '<p>纯音乐 / 无歌词</p>';
+            safeSetText('widget-lyric-line', 'SODA MUSIC');
+            return;
+        }
+        this.lrcData.forEach((line, idx) => {
+            const p = document.createElement('p');
+            p.className = 'lrc-line';
+            p.id = `lrc-${idx}`;
+            p.innerText = line.text;
+            p.onclick = () => { document.getElementById('global-audio').currentTime = line.time; };
+            box.appendChild(p);
+        });
+    },
+    
+    sync: function(currentTime) {
+        let activeIdx = -1;
+        for(let i = 0; i < this.lrcData.length; i++) {
+            if(currentTime >= this.lrcData[i].time) { activeIdx = i; } else { break; }
+        }
+        
+        if(activeIdx !== -1) {
+            // A. 主App歌词滚动
+            document.querySelectorAll('.lrc-active').forEach(el => el.classList.remove('lrc-active'));
+            const activeLine = document.getElementById(`lrc-${activeIdx}`);
+            if(activeLine) {
+                activeLine.classList.add('lrc-active');
+                activeLine.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+            
+            // B. 小组件单行歌词
+            const text = this.lrcData[activeIdx].text;
+            safeSetText('widget-lyric-line', text);
+
+            // C. ★★★ 悬浮歌词同步 (这里修好啦！) ★★★
+            const floatText = document.querySelector('#float-lyric-bar .fl-text');
+            if(floatText) {
+                floatText.innerText = text;
+            }
+        }
+    }
+};
+
+// (C) 增强版VIP解析器
+class EnhancedVIPPlayer {
+    constructor() { this.baseUrl = API_BASE; }
+    async getVipPreview(songId) {
+        try {
+            let detailRes, urlRes;
+            try {
+                [detailRes, urlRes] = await Promise.all([
+                    fetch(`${this.baseUrl}/song/detail?ids=${songId}`),
+                    fetch(`${this.baseUrl}/song/url?id=${songId}`)
+                ]);
+            } catch(e) {
+                console.warn("主API失败，切换备用...");
+                const backup = BACKUP_APIS[0];
+                [detailRes, urlRes] = await Promise.all([
+                    fetch(`${backup}/song/detail?ids=${songId}`),
+                    fetch(`${backup}/song/url?id=${songId}`)
+                ]);
+            }
+            const detailData = await detailRes.json();
+            const urlData = await urlRes.json();
+            const song = detailData.songs[0];
+            const audioData = urlData.data[0];
+            if (!audioData || !audioData.url) return { success: false, error: "无链接" };
+            
+            const isVip = (song.fee === 1 || song.fee === 4);
+            const isPreview = isVip && (audioData.time < 60000 || audioData.freeTrialInfo);
+            return {
+                success: true,
+                song: {
+                    id: song.id,
+                    name: song.name,
+                    artists: song.ar.map(a => a.name).join(' / '),
+                    album: song.al.name,
+                    cover: song.al.picUrl,
+                    isVip: isVip
+                },
+                audio: {
+                    url: audioData.url,
+                    isPreview: isPreview,
+                    trialDuration: 30
+                }
+            };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+}
+const vipPlayer = new EnhancedVIPPlayer();
+
+
+// --- 3. 核心播放控制 (PlayIndex) ★★★ 修复了顺序问题 ★★★ ---
+window.playIndex = async function(idx) {
+    if (idx < 0 || idx >= currentPlaylist.length) return;
+    
+    currentIndex = idx;
+    const basicInfo = currentPlaylist[idx];
+    
+    // 1. UI预更新
+    safeSetText('app-song-title', basicInfo.name);
+    safeSetText('app-song-artist', basicInfo.artist);
+    // 也要预更新小组件，不然会有一瞬间是上一首的信息
+    safeSetText('widget-title-2', basicInfo.name);
+    safeSetText('widget-artist-2', basicInfo.artist);
+    
+    checkIfLiked(basicInfo.id);
+    renderPlaylist();
+    
+    showSystemAlert(`🎵 解析中：${basicInfo.name}...`, 'loading');
+    
+    // 2. 获取音源 (必须等拿到结果，才能用 result 变量！)
+    const result = await vipPlayer.getVipPreview(basicInfo.id);
+    
+    if (!result.success) {
+        showSystemAlert("播放失败：资源可能下架了", 'error');
+        return;
+    }
+
+    // 3. 加载歌词
+    LyricManager.load(basicInfo.id);
+
+    // 4. 播放设置
+    const audio = document.getElementById('global-audio');
+    audio.src = result.audio.url;
+    
+    if (result.audio.isPreview) {
+        showSystemAlert("VIP试听模式 (30秒)", 'vip');
+        safeSetText('quality-indicator', '试听');
+    } else {
+        showSystemAlert(`开始播放：${result.song.name}`, 'success');
+        safeSetText('quality-indicator', 'SQ');
+    }
+
+    try {
+        await audio.play();
+        window.isMusicPlaying = true;
+        updatePlayerState(true); // 更新UI状态
+        MusicState.save(); 
+    } catch(e) {
+        console.error("自动播放被拦截", e);
+    }
+    
+    // 5. 更新封面 (主App + 小组件)
+    const finalCover = result.song.cover || basicInfo.cover;
+    safeSetImage('app-album-cover', finalCover);
+    safeSetImage('widget-cover-2', finalCover); 
+};
+
+// --- 4. 界面/状态更新 ★★★ 修复了函数断裂问题 ★★★ ---
+function updatePlayerState(isPlaying) {
+    // 主App元素
+    const playBtn = document.getElementById('app-play-btn-img');
+    const disk = document.getElementById('app-album-cover');
+    const wave = document.getElementById('wave-visualizer');
+
+    // 小组件元素
+    const widgetBtn = document.getElementById('widget-play-btn-2');
+    
+    if(isPlaying) {
+        window.isMusicPlaying = true;
+        // 主App
+        if(playBtn) playBtn.src = ICONS.pause;
+        if(disk) { disk.classList.remove('disk-paused'); disk.classList.add('disk-rotating'); }
+        if(wave) wave.classList.add('playing'); 
+        // 小组件
+        if(widgetBtn) widgetBtn.src = ICONS.pause;
+    } else {
+        window.isMusicPlaying = false;
+        // 主App
+        if(playBtn) playBtn.src = ICONS.play;
+        if(disk) disk.classList.add('disk-paused');
+        if(wave) wave.classList.remove('playing');
+        // 小组件
+        if(widgetBtn) widgetBtn.src = ICONS.play;
+    }
+}
+
+window.toggleMusic = function() {
+    const audio = document.getElementById('global-audio');
+    if(audio.paused) {
+        audio.play();
+        updatePlayerState(true);
+    } else {
+        audio.pause();
+        updatePlayerState(false);
+    }
+};
+
+window.toggleLyricView = function() {
+    const diskView = document.getElementById('disk-view');
+    const lyricView = document.getElementById('lyric-view');
+    if(lyricView.style.display === 'none') {
+        diskView.style.display = 'none'; lyricView.style.display = 'block';
+    } else {
+        lyricView.style.display = 'none'; diskView.style.display = 'flex';
+    }
+};
+
+// --- 5. 辅助功能 ---
+window.searchMusicCloud = async function() {
+    const input = document.getElementById('music-search-keyword');
+    const keyword = input ? input.value.trim() : '';
+    const resultBox = document.getElementById('music-search-results');
+    
+    if(!keyword) return showSystemAlert("请输入歌名", 'info');
+    resultBox.innerHTML = '<div style="text-align:center;padding:50px;color:rgba(255,255,255,0.4);">正在搜索...</div>';
+
+    try {
+        const res = await fetch(`${API_BASE}/search?keywords=${keyword}&limit=20`);
+        const data = await res.json();
+        
+        if(!data.result || !data.result.songs) {
+            resultBox.innerHTML = '<div style="text-align:center;padding:50px;color:rgba(255,255,255,0.4);">未找到结果</div>';
+            return;
+        }
+
+        resultBox.innerHTML = ''; 
+        data.result.songs.forEach(song => {
+            const artist = song.artists.map(a=>a.name).join('/');
+            const isVip = (song.fee === 1 || song.fee === 4);
+            const coverImg = song.album?.artist?.img1v1Url || song.artists[0]?.img1v1Url || 'https://i.postimg.cc/k4kM9S4h/default-cover.png';
+            
+            const div = document.createElement('div');
+            div.className = 'ins-search-item';
+            div.innerHTML = `
+                <img src="${coverImg}" class="ins-search-cover">
+                <div class="ins-search-info">
+                    <div class="ins-search-title">
+                        ${song.name}
+                        ${isVip ? '<span style="background:rgba(252, 231, 109, 0.2); color:#fce76d; font-size:10px; padding:1px 4px; border-radius:3px;">VIP</span>' : ''}
+                    </div>
+                    <div class="ins-search-artist">${artist}</div>
+                </div>
+                <div class="ins-add-btn">+</div>
+            `;
+            div.onclick = () => {
+                div.style.transform = 'scale(0.95)';
+                setTimeout(()=>div.style.transform='scale(1)', 150);
+                addToPlaylist({ id: song.id, name: song.name, artist: artist, cover: coverImg }, true);
+                toggleMusicSearch();
+                showSystemAlert(`正在播放  ${song.name}`, 'success');
+            };
+            resultBox.appendChild(div);
+        });
+    } catch(e) {
+        resultBox.innerHTML = '<div style="text-align:center;padding:50px;color:rgba(255,255,255,0.4);">网络开小差了...</div>';
+    }
+};
+
+window.addToPlaylist = function(songInfo, playNow = false) {
+    const existingIdx = currentPlaylist.findIndex(s => s.id === songInfo.id);
+    if (existingIdx !== -1) {
+        if(playNow) playIndex(existingIdx);
+    } else {
+        currentPlaylist.push(songInfo);
+        MusicState.save();
+        if(playNow) playIndex(currentPlaylist.length - 1);
+    }
+    renderPlaylist();
+};
+
+window.playNext = function() {
+    if(currentPlaylist.length === 0) return;
+    let nextIdx = currentIndex + 1;
+    if(nextIdx >= currentPlaylist.length) nextIdx = 0;
+    playIndex(nextIdx);
+};
+window.playPrev = function() {
+    if(currentPlaylist.length === 0) return;
+    let prevIdx = currentIndex - 1;
+    if(prevIdx < 0) prevIdx = currentPlaylist.length - 1;
+    playIndex(prevIdx);
+};
+
+// ==========================================================
+// ★★★ 监听器与初始化 (究极缝合版：修复冲突 + 循环模式) ★★★
+// ==========================================================
+
+// 1. 播放模式配置 (放在这里是为了防止重复定义报错)
+if (typeof playMode === 'undefined') {
+    var playMode = 'sequence'; // 默认：顺序播放
+}
+const MODE_ICONS = {
+    sequence: "https://i.postimg.cc/KzptZwYK/wu-biao-ti119-20260131195925.png", // 顺序
+    loop:     "https://i.postimg.cc/63bC9gQ2/wu-biao-ti119-20260131195916.png", // 单曲
+    shuffle:  "https://i.postimg.cc/ydp0VtN3/wu-biao-ti119-20260131195934.png"  // 随机
+};
+
+// 2. 切换模式函数
+window.togglePlayMode = function() {
+    const btn = document.getElementById('play-mode-btn');
+    
+    // 切换逻辑：顺序 -> 单曲 -> 随机 -> 顺序
+    if (playMode === 'sequence') {
+        playMode = 'loop';
+        showSystemAlert("单曲循环 🔂");
+    } else if (playMode === 'loop') {
+        playMode = 'shuffle';
+        showSystemAlert("随机播放 🔀");
+    } else {
+        playMode = 'sequence';
+        showSystemAlert("顺序播放 🔁");
+    }
+    
+    // 更新图标
+    if (btn) btn.src = MODE_ICONS[playMode];
+};
+
+// 3. 核心：下一首逻辑 (带模式判断)
+window.playNext = function(isAuto = false) {
+    if (currentPlaylist.length === 0) return;
+
+    let nextIdx = currentIndex;
+
+    // ★ 根据模式决定下一首 ★
+    if (playMode === 'shuffle') {
+        // 随机模式：随机选一个
+        let randomIdx = Math.floor(Math.random() * currentPlaylist.length);
+        // 防止随机到当前这首 (除非只有这一首)
+        if (currentPlaylist.length > 1) {
+            while (randomIdx === currentIndex) {
+                randomIdx = Math.floor(Math.random() * currentPlaylist.length);
+            }
+        }
+        nextIdx = randomIdx;
+    } 
+    else if (playMode === 'loop') {
+        // 单曲循环模式：
+        // 如果是自动播放结束 (isAuto=true) -> 重播当前这首
+        // 如果是手动点按钮 (isAuto=false) -> 切下一首
+        if (isAuto) {
+            nextIdx = currentIndex; 
+        } else {
+            nextIdx = currentIndex + 1;
+        }
+    } 
+    else {
+        // 顺序模式
+        nextIdx = currentIndex + 1;
+    }
+
+    // 列表循环保护
+    if (nextIdx >= currentPlaylist.length) nextIdx = 0;
+    
+    playIndex(nextIdx);
+};
+
+// 4. 上一首逻辑
+window.playPrev = function() {
+    if (currentPlaylist.length === 0) return;
+    let prevIdx = currentIndex;
+    
+    if (playMode === 'shuffle') {
+        prevIdx = Math.floor(Math.random() * currentPlaylist.length);
+    } else {
+        prevIdx = currentIndex - 1;
+        if (prevIdx < 0) prevIdx = currentPlaylist.length - 1;
+    }
+    playIndex(prevIdx);
+};
+
+// 5. 全局监听器 (进度条 + 歌词 + 自动切歌)
+// ★★★ 重点：这里只定义一次 globalAudio，不会报错了！ ★★★
+const globalAudio = document.getElementById('global-audio');
+if(globalAudio) {
+    // A. 进度更新事件
+    globalAudio.ontimeupdate = function() {
+        const curr = globalAudio.currentTime;
+        const dur = globalAudio.duration;
+        
+        if(dur && dur > 0) {
+            const percent = (curr / dur) * 100;
+            const format = t => Math.floor(t/60).toString().padStart(1,'0') + ':' + Math.floor(t%60).toString().padStart(2,'0');
+            
+            // 更新主App进度条 (防抖动)
+            const bar = document.getElementById('prog-bar');
+            if(bar && document.activeElement !== bar) {
+                bar.value = percent;
+            }
+            safeSetText('curr-time', format(curr));
+            safeSetText('total-time', format(dur));
+
+            // 更新小组件进度条
+            const widgetFill = document.getElementById('widget-prog-fill');
+            const widgetCurr = document.getElementById('widget-curr-time');
+            const widgetTotal = document.getElementById('widget-total-time');
+            if(widgetFill) widgetFill.style.width = `${percent}%`;
+            if(widgetCurr) widgetCurr.innerText = format(curr);
+            if(widgetTotal) widgetTotal.innerText = format(dur);
+
+            // 同步歌词
+            if(typeof LyricManager !== 'undefined') LyricManager.sync(curr);
+        }
+    };
+    
+    // B. 拖动进度条事件
+    const progBar = document.getElementById('prog-bar');
+    if(progBar) {
+        progBar.addEventListener('input', function(e) {
+            const val = e.target.value;
+            const dur = globalAudio.duration;
+            if(dur) globalAudio.currentTime = (val / 100) * dur;
+        });
+    }
+
+    // C. 播放结束事件 (接入新的切歌逻辑)
+    globalAudio.onended = function() {
+        // 传入 true，告诉它这是自动结束的
+        // 这样单曲循环模式下才会重播自己
+        playNext(true); 
+    };
+}
+
+// 6. 启动时读取存档
+window.addEventListener('load', () => {
+    if(typeof MusicState !== 'undefined') MusicState.load();
+    // 恢复之前的播放模式图标
+    const btn = document.getElementById('play-mode-btn');
+    if(btn && typeof playMode !== 'undefined' && MODE_ICONS[playMode]) {
+        btn.src = MODE_ICONS[playMode];
+    }
+});
+
+// ==========================================================
+// ★★★ 一键换肤功能 ★★★
+// ==========================================================
+// 1. 点击按钮触发选图
+window.triggerBgChange = function() {
+    document.getElementById('bg-image-input').click();
+};
+
+// 2. 图片选择后的处理
+window.handleBgChange = function(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const reader = new FileReader();
+        
+        showSystemAlert("正在更换背景...", "loading");
+
+        reader.onload = function(e) {
+            const newBgUrl = e.target.result; // 这里的 result 是图片的 Base64 编码
+            
+            // A. 设置新背景
+            const bgEl = document.querySelector('.kugou-bg');
+            if(bgEl) bgEl.style.backgroundImage = `url('${newBgUrl}')`;
+            
+            // B. 保存到本地存储 (记住你的选择！)
+            try {
+                localStorage.setItem('my_kugou_bg', newBgUrl);
+                showSystemAlert("背景更换成功！✨", "success");
+            } catch(err) {
+                showSystemAlert("图片太大了，没法保存，但这次可以看！", "info");
+                console.warn("背景保存失败(可能是图片太大):", err);
+            }
+        };
+        
+        reader.readAsDataURL(file);
+    }
+};
+
+// 3. 初始化时加载保存的背景
+// (请确保这段代码在 window.addEventListener('load', ...) 里面)
+window.addEventListener('load', () => {
+    // ... 其他初始化代码 ...
+    
+    // ★★★ 加载自定义背景 ★★★
+    const savedBg = localStorage.getItem('my_kugou_bg');
+    if(savedBg) {
+        const bgEl = document.querySelector('.kugou-bg');
+        if(bgEl) bgEl.style.backgroundImage = `url('${savedBg}')`;
+    }
+});
+// ==========================================================
+// ★★★ 7. 界面交互与工具 (补回丢失的四肢) ★★★
+// ==========================================================
+
+// 1. 切换 搜索框
+window.toggleMusicSearch = function() { 
+    const d = document.getElementById('search-drawer'); 
+    if(d) {
+        d.style.top = (d.style.top === '0px' ? '-100%' : '0px'); 
+        // 如果打开了搜索，就把列表关掉，防止重叠
+        if(d.style.top === '0px') {
+            const list = document.getElementById('playlist-drawer');
+            if(list) list.style.bottom = '-100%';
+        }
+    }
+};
+
+// 2. 切换 播放列表
+window.toggleMusicList = function() { 
+    renderPlaylist(); // 打开前刷新一下数据
+    const d = document.getElementById('playlist-drawer'); 
+    if(d) {
+        d.style.bottom = (d.style.bottom === '0px' ? '-100%' : '0px'); 
+        // 如果打开了列表，就把搜索关掉
+        if(d.style.bottom === '0px') {
+            const search = document.getElementById('search-drawer');
+            if(search) search.style.top = '-100%';
+        }
+    }
+};
+
+// 3. 切换 唱片/歌词 视图
+window.toggleLyricView = function() {
+    const diskView = document.getElementById('disk-view');
+    const lyricView = document.getElementById('lyric-view');
+    
+    if(lyricView.style.display === 'none') {
+        // 显示歌词
+        diskView.style.display = 'none';
+        lyricView.style.display = 'block';
+    } else {
+        // 显示唱片
+        lyricView.style.display = 'none'; 
+        diskView.style.display = 'flex';
+    }
+};
+
+// 4. 清空列表
+window.clearPlaylist = function() { 
+    currentPlaylist = []; 
+    currentIndex = -1; 
+    renderPlaylist(); 
+    if(typeof MusicState !== 'undefined') MusicState.save();
+    
+    // 停止播放
+    const audio = document.getElementById('global-audio');
+    if(audio) audio.pause();
+    
+    showSystemAlert("列表已清空"); 
+};
+
+// 5. 渲染播放列表
+function renderPlaylist() {
+    const box = document.getElementById('playlist-content');
+    if(!box) return;
+    box.innerHTML = '';
+    
+    if(currentPlaylist.length === 0) {
+        box.innerHTML = '<div style="text-align:center; padding:30px; color:#666;">列表空空如也~</div>';
+        return;
+    }
+
+    currentPlaylist.forEach((song, idx) => {
+        const isPlaying = (idx === currentIndex);
+        const div = document.createElement('div');
+        div.className = `playlist-item ${isPlaying ? 'playing' : ''}`; // 记得在CSS里写 .playing { color: #fce76d; }
+        
+        // 构建列表项
+        div.innerHTML = `
+            <div style="flex:1; overflow:hidden;">
+                <div style="font-size:14px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:${isPlaying?'#fce76d':'#fff'}">
+                    ${idx+1}. ${song.name}
+                </div>
+                <div style="font-size:12px; color:#888;">${song.artist}</div>
+            </div>
+            <div onclick="event.stopPropagation(); removeFromList(${idx})" style="padding:10px; color:#666; cursor:pointer;">×</div>
+        `;
+        
+        // 点击切歌
+        div.onclick = () => playIndex(idx);
+        box.appendChild(div);
+    });
+}
+
+// 6. 从列表中删除
+window.removeFromList = function(idx) {
+    currentPlaylist.splice(idx, 1);
+    
+    // 如果删的是当前正在播的
+    if(idx === currentIndex) {
+        playNext(); // 切下一首
+    } 
+    // 如果删的是前面的歌，当前索引要减1
+    else if(idx < currentIndex) {
+        currentIndex--;
+    }
+    
+    if(typeof MusicState !== 'undefined') MusicState.save();
+    renderPlaylist();
+};
+
+// 7. 收藏功能
+window.toggleFavorite = function() {
+    if(currentIndex === -1) return;
+    const song = currentPlaylist[currentIndex];
+    
+    const favIdx = myFavorites.findIndex(s => s.id === song.id);
+    if(favIdx === -1) {
+        myFavorites.push(song);
+        showSystemAlert("已收藏 ❤");
+    } else {
+        myFavorites.splice(favIdx, 1);
+        showSystemAlert("已取消收藏 💔");
+    }
+    
+    localStorage.setItem('my_fav_songs', JSON.stringify(myFavorites));
+    checkIfLiked(song.id);
+};
+
+// 8. 检查是否收藏 (更新爱心图标)
+function checkIfLiked(songId) {
+    const img = document.getElementById('like-btn-img');
+    if(!img) return;
+    
+    const isLiked = myFavorites.some(s => s.id === songId);
+    if(isLiked) {
+        img.src = ICONS.liked; // 实心红心
+    } else {
+        img.src = ICONS.unlike; // 空心爱心
+    }
+}
+
+// 9. 小组件进度条拖动支持
+window.seekFromWidget = function(e) {
+    const audio = document.getElementById('global-audio');
+    if(!audio || !audio.duration) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const width = rect.width;
+    const percent = x / width;
+    
+    audio.currentTime = percent * audio.duration;
+};
+
+// 10. 安全设置文本/图片的防报错助手
+function safeSetText(id, text) { 
+    const el = document.getElementById(id); 
+    if(el) el.innerText = text; 
+}
+function safeSetImage(id, url) { 
+    const el = document.getElementById(id); 
+    if(el) el.src = url; 
 }
