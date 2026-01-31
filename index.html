@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>KIYO Phone</title>
+    <title>kkk...</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
@@ -57,7 +57,10 @@
         </div>
 
         <div class="app-grid">
-            <div class="app-item placeholder"><div class="app-icon"></div></div>
+<div class="app-item" onclick="openAlipay()">
+    <div class="app-icon" style="background-image: url('https://link-to-alipay-icon.png');"></div>
+    <div class="app-name">Alipay</div>
+</div>
             <div class="app-item placeholder"><div class="app-icon"></div></div>
             <div class="app-item placeholder"><div class="app-icon"></div></div>
             <div class="app-item placeholder"><div class="app-icon"></div></div>
@@ -896,7 +899,7 @@
                     <div class="plus-icon-box"><svg viewBox="0 0 24 24"><path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z"/></svg></div>
                     <div class="plus-label">红包</div>
                 </div>
-                <div class="plus-item" onclick="sendMsg('me', '微信转账：￥520.00', 'text')">
+                <div class="plus-item" onclick="startTransferFlow()">
                     <div class="plus-icon-box"><svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg></div>
                     <div class="plus-label">转账</div>
                 </div>
@@ -1049,56 +1052,6 @@
     </div>
 </div>
 
-<div id="sub-page-post-creator" class="sub-page" style="background: #fff; z-index: 6000;">
-<div class="wx-post-header">
-    <div class="wx-post-cancel" onclick="closeSubPage('sub-page-post-creator')" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: flex-start;">
-        <svg viewBox="0 0 24 24" width="28" height="28" fill="#333">
-            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-        </svg>
-    </div>
-
-    <div class="wx-post-publish" onclick="publishPost()" style="padding: 6px 16px; border-radius: 4px; background: #07c160; color: #fff; font-weight: 600; margin-bottom: 4px;">
-        Post
-    </div>
-</div>
-
-    <div class="wx-post-content">
-        <textarea id="post-text-input" class="wx-post-input" placeholder="Say something..."></textarea>
-        
-        <div id="post-img-preview-area" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;">
-            <div onclick="triggerPostImgUpload()" style="width: 100px; height: 100px; background: #f7f7f7; display: flex; justify-content: center; align-items: center; cursor: pointer;">
-                <svg viewBox="0 0 24 24" width="30" height="30" fill="#ccc"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-            </div>
-        </div>
-
-<div class="wx-options-list">
-    <div class="wx-opt-item" onclick="alert('定位ing...')">
-        <img src="https://i.postimg.cc/yWCzHdyK/wu-biao-ti117-20260110141805.png" class="wx-opt-icon" style="width: 24px; height: 24px;">
-        <div class="wx-opt-text">Location</div>
-        <div class="wx-opt-right"><span>Moon</span><svg class="wx-opt-arrow" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5v10z"/></svg></div>
-    </div>
-    
-    <div class="wx-opt-item">
-        <img src="https://i.postimg.cc/PNnkjxQn/wu-biao-ti117-20260110141818.png" class="wx-opt-icon" style="width: 24px; height: 24px;">
-        <div class="wx-opt-text">Mention</div>
-        <div class="wx-opt-right"><svg class="wx-opt-arrow" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5v10z"/></svg></div>
-    </div>
-    
-    <div class="wx-opt-item">
-        <img src="https://i.postimg.cc/xqVS2CyW/wu-biao-ti117-20260110141831.png" class="wx-opt-icon" style="width: 24px; height: 24px;">
-        <div class="wx-opt-text">Visible To</div>
-        <div class="wx-opt-right">
-            <select id="post-privacy-select" style="border:none;background:transparent;text-align:right;font-size:14px;color:#999;outline:none;">
-                <option value="public">All</option>
-                <option value="private">Private</option>
-            </select>
-            <svg class="wx-opt-arrow" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5v10z"/></svg>
-        </div>
-          </div>
-       </div>
-    </div>
-</div>
-
 <div id="sub-page-summary" class="sub-page">
     <div class="sub-header">
         <div class="back-btn" onclick="closeSubPage('sub-page-summary')">‹</div>
@@ -1140,105 +1093,138 @@
     </div>
 </div>
 
-    </div>
-</div>
-
-<div id="sub-page-map" class="sub-page" style="background: #eef0f3; z-index: 8000;">
-    <div class="map-search-bar">
-        <div class="map-back-btn" onclick="closeLocationMap()">
-            <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-        </div>
-        <div class="map-search-input">
-            <div class="map-dot state-green"></div>
-            <span id="map-current-status">正在定位 TA 的位置...</span>
-        </div>
-        <div class="map-avatar-small" id="map-corner-avatar"></div>
-    </div>
-
-    <div class="map-container">
-<div class="map-container" id="virtual-map-viewport">
-    <div id="large-map-world" class="large-map-world">
-        
-        <div class="map-road road-h" style="top: 400px; content: '梧桐大道';"></div>
-        <div class="map-road road-h" style="top: 1200px; content: '杏花街';"></div>
-        <div class="map-road road-v" style="left: 600px; content: '中央大街';"></div>
-        <div class="map-road road-v" style="left: 1400px; content: '滨海路';"></div>
-
-        <div class="map-landmark" id="loc-home-char" style="top: 320px; left: 500px;">
-            <div class="land-icon">🏠</div>
-            <div class="land-name">许时雨的家</div>
-        </div>
-
-        <div class="map-landmark" id="loc-home-user" style="top: 550px; left: 650px;">
-            <div class="land-icon">🏡</div>
-            <div class="land-name">我的家</div>
-        </div>
-
-        <div class="map-landmark" id="loc-school" style="top: 200px; left: 1200px;">
-            <div class="land-icon">🏫</div>
-            <div class="land-name">圣南大学</div>
-        </div>
-
-        <div class="map-landmark" id="loc-cafe" style="top: 450px; left: 1450px;">
-            <div class="land-icon">☕</div>
-            <div class="land-name">转角咖啡</div>
-        </div>
-
-        <div class="map-landmark" id="loc-hotel" style="top: 1300px; left: 1500px;">
-            <div class="land-icon">🏩</div>
-            <div class="land-name">爱琴海酒店</div>
-        </div>
-
-        <div class="map-landmark" id="loc-hospital" style="top: 1100px; left: 200px;">
-            <div class="land-icon">🏥</div>
-            <div class="land-name">市中心医院</div>
-        </div>
-        
-        <div class="map-landmark" id="loc-park" style="top: 800px; left: 1000px;">
-            <div class="land-icon">🌳</div>
-            <div class="land-name">中央公园</div>
-        </div>
-
-        <div class="map-pin-wrapper" id="my-map-pin">
-            <div class="map-pin-halo"></div>
-            <div class="map-pin-core"></div>
-            <div class="map-pin-arrow"></div>
-        </div>
-    </div>
-</div>
-
-<div class="map-bottom-sheet">
-    <div class="map-sheet-handle-area" onclick="toggleMapState()">
-        <div class="map-sheet-handle"></div>
-    </div>
-    
-    <div class="map-sheet-header">
-        <div class="map-sheet-title">我的足迹</div>
-        <div class="map-sheet-subtitle">共记录 <span id="map-total-count">0</span> 个行程点</div>
-    </div>
-
-        <div class="map-quick-actions">
-            <div class="map-qa-item">
-                <div class="map-qa-icon home-icon">🏠</div>
-                <span>家</span>
-            </div>
-            <div class="map-qa-item">
-                <div class="map-qa-icon work-icon">💼</div>
-                <span>公司</span>
-            </div>
-            <div class="map-qa-item">
-                <div class="map-qa-icon plus-icon">➕</div>
-                <span>常去</span>
-            </div>
-        </div>
-
-        <div class="map-divider"></div>
-
-        <div id="map-history-list" class="map-history-scroll">
-            </div>
-    </div>
-</div>
   </div>
+<div id="app-window-alipay" class="app-window" style="background: #f5f7fa; display: none;">
+    
+    <div class="ali-ins-header">
+        <div class="ali-header-left">
+            <div class="ali-avatar-small" id="ali-header-avatar"></div>
+            <div class="ali-user-info">
+                <div class="ali-greetings">Good Evening</div>
+                <div class="ali-username">My Wallet</div>
+            </div>
+        </div>
+        <div class="ali-header-right">
+            <svg viewBox="0 0 24 24" class="ali-icon"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+        </div>
+    </div>
+
+    <div class="ali-scroll-content">
+        
+        <div class="ali-main-card">
+            <div class="ali-card-top">
+                <span style="opacity:0.8; font-size:13px; font-weight:500;">Total Assets (CNY)</span>
+                <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:white;opacity:0.8"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </div>
+            <div class="ali-balance-num">¥ <span id="ali-total-balance">0.00</span></div>
+            <div class="ali-card-bottom">
+                <div class="ali-card-tag">+2.4% Income</div>
+                <div class="ali-card-tag" style="background:rgba(255,255,255,0.15)">Analysis ></div>
+            </div>
+        </div>
+
+        <div class="ali-grid-menu">
+            <div class="ali-menu-item" onclick="showSystemAlert('扫码功能开发中...')">
+                <div class="ali-icon-box blue"><svg viewBox="0 0 24 24"><path d="M3 5v4h2V5h4V3H5c-1.1 0-2 .9-2 2zm2 10H3v4c0 1.1.9 2 2 2h4v-2H5v-4zm14 4h-4v2h4c1.1 0 2-.9 2-2v-4h-2v4zm0-16h-4v2h4v4h2V5c0-1.1-.9-2-2-2z"/></svg></div>
+                <span>Scan</span>
+            </div>
+            <div class="ali-menu-item" onclick="showSystemAlert('收付款码已准备好')">
+                <div class="ali-icon-box blue"><svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg></div>
+                <span>Pay/Receive</span>
+            </div>
+            <div class="ali-menu-item" onclick="showSystemAlert('卡包空空如也qwq')">
+                <div class="ali-icon-box orange"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-9H4V6h16v3z"/></svg></div>
+                <span>Pocket</span>
+            </div>
+            <div class="ali-menu-item" onclick="showSystemAlert('更多服务敬请期待')">
+                <div class="ali-icon-box purple"><svg viewBox="0 0 24 24"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/></svg></div>
+                <span>More</span>
+            </div>
+        </div>
+
+        <div class="ali-section-title">Quick Transfer</div>
+        <div class="ali-quick-transfer-scroll">
+            <div class="ali-qt-item add" onclick="showSystemAlert('从通讯录添加朋友')">
+                <div class="ali-qt-avatar add">+</div>
+                <span>Add</span>
+            </div>
+            <div class="ali-qt-item">
+                <div class="ali-qt-avatar"></div>
+                <span>Kuku</span>
+            </div>
+        </div>
+
+        <div class="ali-section-title" style="margin-top:20px; display:flex; justify-content:space-between;">
+            <span>Recent Transactions</span>
+            <span style="font-size:12px; color:#007aff; font-weight:400;">All ></span>
+        </div>
+        
+        <div id="ali-bill-list" class="ali-ins-list">
+            </div>
+
+        <div style="height: 40px;"></div>
+    </div>
+</div>
+        <div class="ali-list-title">Recent Transactions</div>
+        <div id="ali-bill-list" class="ali-bill-list">
+            </div>
+    </div>
+</div>
+
+<div id="transfer-amount-overlay" class="custom-alert-overlay" style="display:none;">
+    <div class="transfer-box">
+        <div class="transfer-header">
+            <div class="close-btn" onclick="closeTransferFlow()">×</div>
+            <div>Transfer to TA</div>
+        </div>
+        <div class="transfer-avatar-area">
+            <div id="tf-target-avatar" class="tf-avatar"></div>
+            <div id="tf-target-name" class="tf-name">Target Name</div>
+        </div>
+        
+        <div class="tf-input-area">
+            <div class="tf-symbol">¥</div>
+            <input type="number" id="tf-amount-input" placeholder="0.00" oninput="checkTransferAmount()">
+        </div>
+        
+        <div class="tf-btn disabled" id="tf-next-btn" onclick="showPwdOverlay()">Transfer</div>
+    </div>
+</div>
+
+<div id="transfer-pwd-overlay" class="custom-alert-overlay" style="display:none; align-items: flex-end;">
+    <div class="pwd-sheet">
+        <div class="pwd-header">
+            <div class="pwd-close" onclick="closePwdOverlay()">×</div>
+            <div class="pwd-title">Enter Payment Password</div>
+        </div>
+        <div class="pwd-amount">¥ <span id="pwd-display-amount">0.00</span></div>
+        <div class="pwd-method">Balance (Alipay)</div>
+        
+        <div class="pwd-dots-box">
+            <div class="pwd-dot" id="pwd-dot-0"></div>
+            <div class="pwd-dot" id="pwd-dot-1"></div>
+            <div class="pwd-dot" id="pwd-dot-2"></div>
+            <div class="pwd-dot" id="pwd-dot-3"></div>
+            <div class="pwd-dot" id="pwd-dot-4"></div>
+            <div class="pwd-dot" id="pwd-dot-5"></div>
+        </div>
+        
+        <div class="pwd-keyboard">
+            <div class="pk-key" onclick="typePwd(1)">1</div>
+            <div class="pk-key" onclick="typePwd(2)">2</div>
+            <div class="pk-key" onclick="typePwd(3)">3</div>
+            <div class="pk-key" onclick="typePwd(4)">4</div>
+            <div class="pk-key" onclick="typePwd(5)">5</div>
+            <div class="pk-key" onclick="typePwd(6)">6</div>
+            <div class="pk-key" onclick="typePwd(7)">7</div>
+            <div class="pk-key" onclick="typePwd(8)">8</div>
+            <div class="pk-key" onclick="typePwd(9)">9</div>
+            <div class="pk-key bg" onclick="showSystemAlert('别乱点，输入6位密码就行')">.</div>
+            <div class="pk-key" onclick="typePwd(0)">0</div>
+            <div class="pk-key bg" onclick="delPwd()">←</div>
+        </div>
+    </div>
+</div>
 
         <div id="sub-page-creator" class="exp-theme-root" style="display: none;">
             <div class="exp-browser-top">
@@ -1331,7 +1317,56 @@
             </div>
         </div>
   </div>
-  </div>
+
+<div id="sub-page-post-creator" class="sub-page" style="background: #fff; z-index: 6000;">
+<div class="wx-post-header">
+    <div class="wx-post-cancel" onclick="closeSubPage('sub-page-post-creator')" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: flex-start;">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="#333">
+            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+        </svg>
+    </div>
+
+    <div class="wx-post-publish" onclick="publishPost()" style="padding: 6px 16px; border-radius: 4px; background: #07c160; color: #fff; font-weight: 600; margin-bottom: 4px;">
+        Post
+    </div>
+</div>
+
+    <div class="wx-post-content">
+        <textarea id="post-text-input" class="wx-post-input" placeholder="Say something..."></textarea>
+        
+        <div id="post-img-preview-area" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;">
+            <div onclick="triggerPostImgUpload()" style="width: 100px; height: 100px; background: #f7f7f7; display: flex; justify-content: center; align-items: center; cursor: pointer;">
+                <svg viewBox="0 0 24 24" width="30" height="30" fill="#ccc"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            </div>
+        </div>
+
+<div class="wx-options-list">
+    <div class="wx-opt-item" onclick="alert('定位ing...')">
+        <img src="https://i.postimg.cc/yWCzHdyK/wu-biao-ti117-20260110141805.png" class="wx-opt-icon" style="width: 24px; height: 24px;">
+        <div class="wx-opt-text">Location</div>
+        <div class="wx-opt-right"><span>Moon</span><svg class="wx-opt-arrow" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5v10z"/></svg></div>
+    </div>
+    
+    <div class="wx-opt-item">
+        <img src="https://i.postimg.cc/PNnkjxQn/wu-biao-ti117-20260110141818.png" class="wx-opt-icon" style="width: 24px; height: 24px;">
+        <div class="wx-opt-text">Mention</div>
+        <div class="wx-opt-right"><svg class="wx-opt-arrow" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5v10z"/></svg></div>
+    </div>
+    
+    <div class="wx-opt-item">
+        <img src="https://i.postimg.cc/xqVS2CyW/wu-biao-ti117-20260110141831.png" class="wx-opt-icon" style="width: 24px; height: 24px;">
+        <div class="wx-opt-text">Visible To</div>
+        <div class="wx-opt-right">
+            <select id="post-privacy-select" style="border:none;background:transparent;text-align:right;font-size:14px;color:#999;outline:none;">
+                <option value="public">All</option>
+                <option value="private">Private</option>
+            </select>
+            <svg class="wx-opt-arrow" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5v10z"/></svg>
+        </div>
+          </div>
+       </div>
+    </div>
+</div>
 
 <div id="sticker-picker-overlay" style="display: none;"class="sticker-picker-container">
     <div class="sticker-glass-panel">

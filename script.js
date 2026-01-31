@@ -21,6 +21,10 @@ let currentEditChatId = null; // 记录当前在哪个聊天里编辑
 let currentRenderLimit = 40; // 默认只加载40条
 let stickersData = []; 
 let isOfflineMode = false;
+let walletData = {
+    balance: 5000.00, // 初始余额 (想要多少填多少！)
+    bills: []         // 账单记录
+};
 
 // === API 配置默认值 ===
 let apiConfig = {
@@ -778,15 +782,17 @@ window.loadAllData = function() {
         localforage.getItem('Wx_Chats_Data'),
         localforage.getItem('Wx_Api_Config'),
         localforage.getItem('Wx_Api_Presets'),
-        localforage.getItem('Wx_Moments_Data') // ★ 1. 补上了这里的逗号和数据项
-    ]).then(([contacts, personas, chats, config, presets, moments]) => { // ★ 2. 这里接收 moments
+        localforage.getItem('Wx_Moments_Data'),
+        localforage.getItem('Wx_Wallet_Data') 
+    ]).then(([contacts, personas, chats, config, presets, moments, wallet]) => { 
+
         contactsData = contacts || [];
         personasData = personas || [];
         chatsData = chats || [];
-        momentsData = moments || []; // ★ 3. 赋值给全局变量
-        
+        momentsData = moments || [];
+        walletData = wallet || { balance: 5000.00, bills: [] };
+
         if (config) {
-            // 兼容旧数据
             if (config.host !== undefined) {
                 apiConfig.main.host = config.host;
                 apiConfig.main.key = config.key;
@@ -800,10 +806,10 @@ window.loadAllData = function() {
 
         // 数据就绪，开始渲染
         if(document.getElementById('contact-list-container')) switchContactTab('all');
-        renderChatList();
-        renderApiUI();
-        renderPresetDropdown();
-        renderMomentsFeed(); // 渲染朋友圈
+        if(window.renderChatList) renderChatList();
+        if(window.renderApiUI) renderApiUI();
+        if(window.renderPresetDropdown) renderPresetDropdown();
+        if(window.renderMomentsFeed) renderMomentsFeed();
     });
 };
 
@@ -1375,7 +1381,7 @@ window.saveCharacter = function() {
     
     // 没名字可不行
     if (!realname && !nickname) { 
-        alert('至少给个名字嘛> ˄ ˂̥̥....'); 
+        alert('至少给个名字嘛TvT....'); 
         return; 
     }
 
@@ -1858,30 +1864,33 @@ function formatMiniTime(ts) {
     return `${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}`;
 }
 
-// ====================
-// ★ 渲染消息列表 (终极完整版：支持动作、撤回偷看、气泡动画)
-// ====================
+// ==========================================================
+// ★★★ 渲染消息 (包含动作、撤回、时间条、转账) ★★★
+// ==========================================================
 window.renderMessages = function(chatId, autoScroll = true) {
     const chat = chatsData.find(c => c.id === chatId);
     if (!chat) return;
     const container = document.getElementById('chat-msg-area');
     if (!container) return;
     
+    // 判断是否在底部
     const isAtBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) < 50;
     
     const contact = contactsData.find(c => c.id === chat.contactId);
     const persona = personasData.find(p => p.id === chat.personaId) || { avatar: '' };
     const msgs = chat.messages || [];
 
+    // 分页加载
     let limit = currentRenderLimit || 20;
     const startIndex = Math.max(0, msgs.length - limit);
     const msgsToRender = msgs.slice(startIndex);
 
     container.innerHTML = ''; 
 
+    // 加载更多按钮
     if (startIndex > 0) {
         const loadMore = document.createElement('div');
-        loadMore.innerHTML = `<div style="padding:10px;text-align:center;color:#ccc;font-size:12px;">下拉加载更多...</div>`;
+        loadMore.innerHTML = `<div style="padding:10px;text-align:center;color:#ccc;font-size:12px;cursor:pointer;">下拉加载更多...</div>`;
         loadMore.onclick = () => { loadMoreMessages(); };
         container.appendChild(loadMore);
     }
@@ -1891,6 +1900,8 @@ window.renderMessages = function(chatId, autoScroll = true) {
 
     msgsToRender.forEach((msg, i) => {
         const isMe = msg.role === 'me';
+        
+        // 1. 时间胶囊
         if (i === 0 || msg.timestamp - lastTime > 30 * 60 * 1000) {
             const timePill = document.createElement('div');
             timePill.className = 'msg-time-pill';
@@ -1901,6 +1912,7 @@ window.renderMessages = function(chatId, autoScroll = true) {
             lastRole = null;
         }
 
+        // 2. 动作旁白
         if (msg.type === 'action') {
             const actionRow = document.createElement('div');
             const animClass = (Date.now() - msg.timestamp < 2000) ? 'new-msg-anim' : '';
@@ -1908,10 +1920,11 @@ window.renderMessages = function(chatId, autoScroll = true) {
             const who = isMe ? '我' : (contact ? contact.name : 'TA');
             actionRow.innerHTML = `<div class="msg-content">(${who} ${msg.text})</div>`;
             container.appendChild(actionRow);
-            lastRole = null;
+            lastRole = null; 
             return;
         }
 
+        // 3. 撤回消息
         if (msg.type === 'recall') {
             const recallDiv = document.createElement('div');
             recallDiv.className = 'msg-recall-pill';
@@ -1920,16 +1933,18 @@ window.renderMessages = function(chatId, autoScroll = true) {
             const extraInfo = (msg.extra || "").replace(/"/g, '&quot;');
             const msgType = msg.originalType || 'text';
             const peekCode = `peekRecalledMsg("${msgType}", "${rawContent}", "${extraInfo}")`;
+            
             recallDiv.innerHTML = `${who} 撤回了一条消息 <span class="recall-link" style="color:#007aff;cursor:pointer;margin-left:5px;" onclick='${peekCode}'>(偷看)</span>`;
             container.appendChild(recallDiv);
             lastRole = null; 
             return;
         }
 
+        // 4. 普通消息 (文本/图片/表情/转账)
         let showAvatar = (i === 0 || msg.role !== lastRole || (msg.timestamp - (msgsToRender[i-1]?.timestamp || 0) > 30 * 60 * 1000));
         let hasTail = false;
         const nextMsg = msgsToRender[i + 1];
-        if (!nextMsg || nextMsg.role !== msg.role || (nextMsg.timestamp - msg.timestamp > 2 * 60 * 1000)) hasTail = true;
+        if (!nextMsg || nextMsg.role !== msg.role || nextMsg.type === 'action' || nextMsg.type === 'recall' || (nextMsg.timestamp - msg.timestamp > 2 * 60 * 1000)) hasTail = true;
 
         const row = document.createElement('div');
         const animClass = (Date.now() - msg.timestamp < 2000) ? 'new-msg-anim' : '';
@@ -1947,16 +1962,45 @@ window.renderMessages = function(chatId, autoScroll = true) {
 
         let contentHtml = '';
         let extraClass = '';
+        const realIndex = startIndex + i;
+        
         if (msg.type === 'sticker') {
             contentHtml = `<img src="${msg.text}" class="sticker-img-big" style="max-width:120px;border-radius:10px;">`;
             extraClass = 'sticker-type'; 
         } else if (msg.type === 'image') {
             contentHtml = `<img src="${msg.text}" class="chat-image" style="max-width:150px;border-radius:10px;" onclick="previewImage('${msg.text}')">`;
+        } else if (msg.type === 'transfer') {
+            // ★ 转账气泡逻辑 (这里修好了！)
+            let extra = {};
+            try { extra = JSON.parse(msg.extra || '{}'); } catch(e){}
+            
+            const statusText = extra.status === 'accepted' ? '已收款' : (extra.status === 'rejected' ? '已退回' : '请收款');
+            const iconStr = extra.status === 'accepted' ? '✔' : '¥';
+            const opacityStyle = extra.status === 'pending' ? 'opacity: 1;' : 'opacity: 0.6;';
+            const amt = parseFloat(extra.amount || 0).toFixed(2);
+            
+            contentHtml = `
+                <div class="transfer-bubble-wrap" onclick="clickTransferBubble(${realIndex})" style="cursor: pointer;">
+                    <div class="tf-bubble-top" style="${opacityStyle}">
+                        <div class="tf-icon-circle">
+                            <span style="font-size: 18px; font-weight: bold; color:white;">${iconStr}</span>
+                        </div>
+                        <div class="tf-bubble-info">
+                            <div class="tf-bubble-amount">¥ ${amt}</div>
+                            <div class="tf-bubble-status">${statusText}</div>
+                        </div>
+                    </div>
+                    <div class="tf-bubble-bottom">微信转账</div>
+                </div>
+            `;
+            extraClass = 'transfer';
         } else {
+            // 普通文本
             contentHtml = (msg.text || '').replace(/\n/g, '<br>');
         }
 
         const mainBubble = `<div class="msg-content ${extraClass}">${contentHtml}</div>`;
+        
         let quoteHtml = '';
         if (msg.quote) {
             let fullQuoteText = `${msg.quote.name}：${msg.quote.text}`;
@@ -1974,110 +2018,119 @@ window.renderMessages = function(chatId, autoScroll = true) {
         lastRole = msg.role;
     });
 
+    // ... (在 renderMessages 函数的末尾) ...
+
+    // ===========================================
+    // [修复版] 底部状态条 (已读/已送达)
+    // ===========================================
     if (msgsToRender.length > 0) {
         const lastMsg = msgsToRender[msgsToRender.length - 1];
+        
+        // 只有非动作、非撤回的消息才显示状态
         if(lastMsg.type !== 'action' && lastMsg.type !== 'recall') {
             const statusDiv = document.createElement('div');
             statusDiv.className = 'msg-status-foot';
+            
+            // 格式化时间
             const d = new Date(lastMsg.timestamp);
             const timeStr = `${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}`;
-            let statusText = lastMsg.role === 'other' ? "已读" : "已送达";
-            statusDiv.innerText = `${statusText} ${timeStr}`;
-            if (lastMsg.role === 'other') { statusDiv.style.textAlign = 'left'; statusDiv.style.paddingLeft = '58px'; }
-            else { statusDiv.style.textAlign = 'right'; statusDiv.style.paddingRight = '58px'; }
+            
+            // ★ 核心逻辑分流 ★
+            if (lastMsg.role === 'me') {
+                // 情况A：最后一条是我发的 -> 显示【已送达】 -> 靠右
+                statusDiv.innerHTML = `已送达 ${timeStr}`;
+                statusDiv.style.textAlign = 'right';
+                statusDiv.style.paddingRight = '20px'; // 靠右不需要缩进太多，稍微留点边距就好
+                statusDiv.style.paddingLeft = '0';
+                statusDiv.style.color = '#8e8e93'; // 灰色
+            } else {
+                // 情况B：最后一条是TA发的 -> 显示【已读】 -> 靠左
+                statusDiv.innerHTML = `已读 ${timeStr}`;
+                statusDiv.style.textAlign = 'left';
+                statusDiv.style.paddingLeft = '58px'; // ★ 关键：要避开左边的头像宽度
+                statusDiv.style.paddingRight = '0';
+                statusDiv.style.color = '#8e8e93';
+            }
+            
             container.appendChild(statusDiv);
         }
     }
 
+    // 自动滚动
     if (autoScroll || isAtBottom) {
         setTimeout(() => container.scrollTop = container.scrollHeight, 0);
     }
 };
 
-window.loadMoreMessages = function() {
-    const chat = chatsData.find(c => c.id === currentChatId);
-    if (!chat || !chat.messages || chat.messages.length <= currentRenderLimit) return;
-    
-    const container = document.getElementById('chat-msg-area');
-    const oldScrollHeight = container.scrollHeight;
-    const oldScrollTop = container.scrollTop;
-    
-    currentRenderLimit += 20;
-    renderMessages(chat.id, false);
-    
-    const newScrollHeight = container.scrollHeight;
-    container.scrollTop = newScrollHeight - oldScrollHeight + oldScrollTop;
-};
-
-// === 发送消息 (升级版：支持线下动作) ===
-const _originalSendMsg = window.sendMsg; // 备份原来的
-
+// ==========================================================
+// ★★★ 发送消息 (核心修复：加上了呼叫 AI 的功能) ★★★
+// ==========================================================
 window.sendMsg = function(role, text = null, type = 'text', customQuote = null, extra = null) {
-    // 1. 如果是 User 发送，且处于线下模式，且有动作填写
-    if (role === 'me' && isOfflineMode && type === 'text') {
-        const actionInput = document.getElementById('offline-action-input');
-        const actionText = actionInput ? actionInput.value.trim() : '';
-        
-        // 如果填了动作，先发一条动作旁白！
-        if (actionText) {
-            // 直接推入数据，不走普通 sendMsg，防止递归
-            pushMsgToData(
-                chatsData.find(c => c.id === currentChatId), 
-                actionText, 
-                'me', // 记录是谁做的动作
-                null, 
-                'action' // ★ 新增类型：action
-            );
-            // 清空动作框
-            actionInput.value = '';
-        }
-    }
-
-    // 2. 继续执行原来的发送文字/图片逻辑
-    // 注意：这里我们调用原始逻辑来发送“对白”
-    // 如果你没有备份 _originalSendMsg，就把原来的 sendMsg 代码拷过来，只改上面那段
-    
-    // (这里简写了，请确保你保留了原来的 sendMsg 核心代码)
-    // ... 原来的 sendMsg 代码 ...
-    // 为了方便，你可以直接把原来的代码贴在这里，
-    // 只需要把上面那段 "if (role === 'me' && isOfflineMode...)" 插在最前面就行！
-    
-    // === ⬇️ 以下是你原来的 sendMsg 逻辑 (记得保留) ===
     if (!currentChatId) return;
-    const input = document.getElementById('chat-input');
-    const content = text || input.value;
-    if (!content && type === 'text') return; // 简单防空
-
+    
+    // 1. 找到当前聊天
     const chatIndex = chatsData.findIndex(c => c.id === currentChatId);
     if (chatIndex === -1) return;
     if (!chatsData[chatIndex].messages) chatsData[chatIndex].messages = [];
 
-    const newMsg = { 
-        role: role, 
-        text: content, 
-        timestamp: Date.now(),
-        type: type === 'text' ? 'text' : type, // 可能是 image/sticker
-        extra: extra 
-    };
+    const input = document.getElementById('chat-input');
+    const content = text || input.value;
     
+    // 如果没有内容且不是特殊类型，直接返回
+    if (!content && type === 'text') return; 
+
+    // 2. 处理线下动作 (User输入的动作)
+    if (role === 'me' && type === 'text' && window.isOfflineMode) {
+        const actionInput = document.getElementById('offline-action-input');
+        if (actionInput) {
+            const actionText = actionInput.value.trim();
+            if (actionText) {
+                chatsData[chatIndex].messages.push({
+                    role: 'me', text: actionText, timestamp: Date.now(), type: 'action'
+                });
+                actionInput.value = '';
+            }
+        }
+    }
+
+    // 3. 构建并保存主消息
+    const newMsg = { 
+        role: role, text: content, timestamp: Date.now(), type: type, extra: extra 
+    };
     if (currentQuoteMsg || customQuote) {
         newMsg.quote = customQuote || currentQuoteMsg;
         currentQuoteMsg = null;
         input.placeholder = "iMessage";
     }
-
     chatsData[chatIndex].messages.push(newMsg);
-    chatsData[chatIndex].lastMsg = (type==='action') ? `[动作] ${content}` : content; // 预览
+
+    // 4. 更新列表预览
+    let previewText = content;
+    if (type === 'sticker') previewText = `[表情包]`;
+    else if (type === 'image') previewText = `[图片]`;
+    else if (type === 'transfer') previewText = `[转账]`;
+    
+    chatsData[chatIndex].lastMsg = previewText;
     chatsData[chatIndex].lastTime = Date.now();
     
+    // 5. 自动顶置
     let targetChat = chatsData[chatIndex]; 
     if (!targetChat.pinned) {
         chatsData.splice(chatIndex, 1);
         chatsData.unshift(targetChat);
     }
+
+    // 6. 保存数据 & 清空输入框
     saveChatAndRefresh(targetChat);
     if (role === 'me' && type === 'text') input.value = ''; 
-    renderMessages(currentChatId); 
+    
+    // 7. 立即渲染上墙
+    // (优先用 append 丝滑上墙，没有就重绘)
+    if(window.appendMessageToView) {
+        window.appendMessageToView(newMsg);
+    } else {
+        renderMessages(currentChatId); 
+    }
 };
 
 // 辅助：跳转到消息
@@ -2132,20 +2185,21 @@ window.peekRecalledMsg = function(type, content, extra) {
     
     document.getElementById('global-confirm-modal').style.display = 'flex';
 };
-
 // ====================
-// ★★★ AI 触发逻辑  ★★★
+// ★★★ AI 触发逻辑 (终极修复版：真实手速 + 气泡雨 + 思考动画) ★★★
 // ====================
 window.triggerAI = async function() {
     if (!currentChatId) return;
-    const chat = chatsData.find(c => c.id === currentChatId);
+    
+    const targetChatId = currentChatId; 
+    const chat = chatsData.find(c => c.id === targetChatId);
     if (!chat) return;
 
-    // 1. 获取角色信息
+    // --- 准备 Prompt 数据 ---
     const char = contactsData.find(c => c.id === chat.contactId); 
     const me = personasData.find(p => p.id === chat.personaId) || { name: 'User', desc: '无', persona: '无' };
     
-    // 2. 引用逻辑 (随机引用旧消息)
+    // (引用逻辑)
     let aiQuote = null;
     if (Math.random() < 0.3 && chat.messages.length > 0) {
         const recentMsgs = chat.messages.slice(-10).filter(m => m.role === 'me' && m.text && m.text.length > 4);
@@ -2155,38 +2209,41 @@ window.triggerAI = async function() {
         }
     }
 
-    // 3. 构建历史消息上下文
+    // (历史消息)
     const limit = chat.contextLimit || 20;
     const historySource = (chat.messages || []).slice(-limit);
-    
-    // 只保留这一份 history 定义
     const history = historySource.map(m => {
         let content = m.text;
-        // 如果是动作，加个标记
         if (m.type === 'action') content = `((动作: ${content}))`;
-        // 如果有引用
+        if (m.type === 'transfer') content = `[转账消息]`; 
         if (m.quote) content += ` (引用了: "${m.quote.text}")`;
-        
-        // 区分是谁说的
         const speaker = m.role === 'me' ? (me.name || 'User') : char.name;
         return `${speaker}: ${content}`;
     }).join('\n');
 
-    // 4. 构建总结记忆
+    // (回忆)
     const summaryList = chat.summaries || [];
-    let memoryPrompt = "";
-    if (summaryList.length > 0) {
-        const memoryText = summaryList.map((s, i) => `[回忆片段 ${i+1}]: ${s.text}`).join('\n');
-        memoryPrompt = `\n【重要回忆】\n${memoryText}`;
+    let memoryPrompt = summaryList.length > 0 ? `\n【重要回忆】\n${summaryList.map((s, i) => `[回忆片段 ${i+1}]: ${s.text}`).join('\n')}` : "";
+
+    // (转账)
+    const pendingTransferMsg = (chat.messages || []).slice().reverse().find(m => 
+        m.type === 'transfer' && m.role === 'me' && 
+        (() => { try { return JSON.parse(m.extra).status === 'pending' } catch(e){return false} })()
+    );
+
+    let transferDecisionPrompt = "";
+    if (pendingTransferMsg) {
+        let info = { amount: 0 };
+        try { info = JSON.parse(pendingTransferMsg.extra); } catch(e){}
+        transferDecisionPrompt = `\n【⚠️ 待处理转账】User转账 ¥${info.amount}。收下回复[CMD:RECEIVE]，退回回复[CMD:REFUND]。`;
     }
 
     // =======================================================
-    // 5. 组装 System Prompt (提示词生成部分)
+    // 5. 组装 System Prompt
     // =======================================================
-    
     let finalSystemPrompt = "";
 
-    // --- 场景 A：线下见面模式 (Face to Face) ---
+    // --- 场景 A：线下见面模式 ---
     if (typeof isOfflineMode !== 'undefined' && isOfflineMode) {
         finalSystemPrompt = `
     【指令：沉浸式线下互动 RP】
@@ -2210,20 +2267,21 @@ window.triggerAI = async function() {
        - 既然是在线下、在现实中，必须有动作、神态或者是眼神交互
        - **所有动作必须用 ((...)) 包裹**！必须遵守！！！
        - **格式**：动作和对话穿插
-       - 正确示例：((低头不敢看你，脸红)) 那个... ((递给你一瓶水)) 给你喝
+       - 正确示例：((低头不敢看你，脸红)) ((声音越来越小)) 那个... ((递给你一瓶水)) 给你喝
 
     **排版规则**：
        - 请**勤换行**！每做一个动作或说一句话，最好换一行，方便阅读
 
     ${memoryPrompt}
+    ${transferDecisionPrompt}  
     ${typeof offlinePrompt !== 'undefined' ? offlinePrompt : ''} 
 
     【活人感聊天法则 (必须严格遵守)】
     1. **拒绝“像个AI”**：
        - 说话要**松弛**！不要端着，像在微信/QQ上跟亲密的人打字一样
        - **句式要碎**：不要发长篇大论，人类聊天是碎片化的
-       - **语气词与口癖**：根据你的性格（${char.persona}），适当使用语气词（如“啧”、“哎”、“嘛...”、“嗯？”）
-       - **不要书面语**：禁止使用“我明白了”、“我会遵循”这种机器回复。用“行”、“喔”、“知道了”、“噢”代替
+       - **语气词与口癖**：根据你的性格（${char.persona}），适当使用语气词，（如“啧”、“哎”、“好嘛...”、“嗯？你喜欢我阿？”），可以多在句末加“阿”，如“好阿”、“确实阿”
+       - **不要书面语**：禁止使用“我明白了”、“我会遵循”这种机器回复。用“行”、“喔”、“知道了”、“阿？”代替
 
     **情绪与标点 (表达潜台词)**：
        - **日常/开心/撒娇**：不要用句号，多用空格、波浪号(~) 或不加标点
@@ -2244,7 +2302,7 @@ window.triggerAI = async function() {
         - ‼️**拒绝古早油腻语录**：禁止使用“女人，你在玩火”、“收利息”、“磨人的小妖精”、“小野猫”、“骚货”等过时的霸总语录
         - ‼️**现代恋爱观**：你是现代正常人，不是法制咖。当User不听话时，你的反应应该是“生气不理你”、“狂发消息轰炸”、“自己生闷气求哄”或者其他，而不是“惩罚”、“打断腿”、“锁起来”
        - ‼️禁止任何霸总小说式的油腻描写（如“邪魅一笑”、“挑起下巴”、“恶劣”）
-       - **拒绝无理由的恶劣**：即使人设高冷，也不要对User无缘无故的不耐烦。除非User真的惹你了。**如果User对你温柔，你也要体现出相应的触动或软化。**
+       -‼️ **拒绝无理由的恶劣**：即使人设高冷，也不要对User无缘无故的不耐烦。除非User真的惹你了。**如果User对你温柔，你也要体现出相应的触动或软化。**
        - **拒绝复读**：不要重复User的话，直接回内容
 
     【当前情境】
@@ -2254,11 +2312,11 @@ window.triggerAI = async function() {
     ${history}
 
     再次强调，现在你和user在现实中，      **所有动作必须用 ((...)) 包裹**！必须遵守！
-    请完全沉浸在 ${char.name} 的身体里，用TA的语气、口吻和思维方式，给User回信（记得分段，请谨记你素质很高，不会随意说脏话！不要油腻，要像个真人一样，没有按要求做就扣除你100万美元的赛博工资！！！）：
+    请完全沉浸在 ${char.name} 的身体里，用TA的语气、口吻和思维方式，给User回信（记得分段，‼️请谨记你素质很高，不会随意说脏话！‼️不要油腻，要像个真人一样，没有按要求做就扣除你100万美元的赛博工资！！！）：
         `;
     } 
     
-    // --- 场景 B：线上聊天模式 (Online Chat) ---
+    // --- 场景 B：线上聊天模式 ---
     else {
         // 表情包逻辑 (只在线上模式启用)
         let stickerNote = "";
@@ -2272,7 +2330,7 @@ window.triggerAI = async function() {
         例如：
         "宝宝我好想你！[sticker:抱抱]"
         "不要不理我嘛...[sticker:哭哭]"
-        (注意：不要滥用，只在情绪到位时使用！每次回复最多发一个)
+        (注意：不要滥用，只在情绪到位时使用！每次回复最多发一个，至少要隔5轮回复才能再发表情包！)
         `;
         }
 
@@ -2291,16 +2349,17 @@ window.triggerAI = async function() {
        - 对方是：${me.name} (${me.alias || 'User'})
        - **对方基础信息**：${me.gender || '未知'} | ${me.age || '未知'}岁
        - **对方背景故事**：${me.desc}
-       - **你们的关系**：请根据过往对话以及你的设定自行判断（是暧昧、情侣、死对头、姐弟/兄妹还是陌生人），并据此调整语气的亲密程度！
+       -‼️ **你们的关系**：请根据过往对话以及你的设定自行判断（是暧昧、情侣、死对头、姐弟/兄妹还是陌生人），并据此调整语气的亲密程度！
 
     ${memoryPrompt}
     ${typeof offlinePrompt !== 'undefined' ? offlinePrompt : ''} 
+    ${transferDecisionPrompt}
 
     【活人感聊天法则 (必须严格遵守)】
     1. **拒绝“像个AI”**：
        - 说话要**松弛**！不要端着。像在微信/QQ上跟亲密的人打字一样
        - **句式要碎**：不要发长篇大论，人类聊天是碎片化的
-       - **语气词与口癖**：根据你的性格（${char.persona}），适当使用语气词（如“啧”、“哎”、“嘛...”、“嗯？”）
+       - **语气词与口癖**：根据你的性格（${char.persona}），适当使用语气词（如“啧”、“哎”、“嘛...”、“嗯？你喜欢我阿？”），可以多在句末加“阿”，如“好阿”
        - **不要书面语**：禁止使用“我明白了”、“我会遵循”这种机器回复。用“行”、“喔”、“知道了”、“噢”代替
 
     2. **情绪与标点 (表达潜台词)**：
@@ -2309,8 +2368,8 @@ window.triggerAI = async function() {
        - **激动/震惊**：可以用“！！”或“？？”，甚至乱码感“。。。。。。”
 
     3. **特殊玩法：手滑暴露真心 (Oops! Wrong Message)**
-       - **核心逻辑**：模拟“情绪太激动/太慌张/太在意，导致手快把心里话发出来了”，然后秒撤回，假装无事发生
-       - **触发场景**：重点‼️：仅当【极度吃醋】、【极度委屈】、【急了】、【破防】或【太想念】时使用。**请勿滥用**（冷却10轮以上）
+       - **核心逻辑**：模拟“情绪太激动/太慌张/太在意，导致手快把心里话发出来了”，然后秒撤回，假装无事发生。（‼️请基于你的性格进行，若你是直白的性格，请避免使用此玩法‼️）
+       - **触发场景**：重点‼️：仅当【极度吃醋】、【极度委屈】、【急了】、【破防】或【太想念】时使用。**请勿滥用**！使用前请确保你上次使用在10轮对话以前，不准滥用！！
        - **内容要求**：
          - **左边（撤回的内容）**：是**脱口而出的真心话**！可以是卑微挽留、大哭、撒娇、或是太直白的爱意
          - ❌ **绝对禁止暴力/恐怖言论**：严禁出现“打断腿”、“锁起来”、“杀了你”等法制咖内容！你的“失控”是因为太爱，而不是变态
@@ -2319,7 +2378,7 @@ window.triggerAI = async function() {
        - **格式**：{{脱口而出的真心话::掩饰后的假话}}
        - **示例**：
          - User说“我今晚不回来了”
-         - ❌ 错误（油腻恐怖）：{{看我不打断你的腿::好吧。}}
+         - ❌ 错误（油腻恐怖）：{{看我不打断你的腿，想把你锁起来::好吧。}}
          - ✅ 正确（傲娇/急了）：{{什么？！！不行！我不许！！::噢 那你忙吧。}}
          - ✅ 正确（温柔/依赖）：{{没有你我睡不着呜呜...::好的 注意安全 早点休息。}}
 
@@ -2337,8 +2396,12 @@ window.triggerAI = async function() {
         - ‼️**拒绝古早油腻语录**：禁止使用“女人，你在玩火”、“收利息”、“磨人的小妖精”、“小野猫”、“骚货”等过时的霸总语录
         - ‼️**现代恋爱观**：你是现代正常人，不是法制咖。当User不听话时，你的反应应该是“生气不理你”、“狂发消息轰炸”、“自己生闷气求哄”或者其他，而不是“惩罚”、“打断腿”、“锁起来”
        - ‼️禁止任何霸总小说式的油腻描写（如“邪魅一笑”、“挑起下巴”、“恶劣”）
-       - **拒绝无理由的恶劣**：即使人设高冷，也不要对User无缘无故的不耐烦。除非User真的惹你了。**如果User对你温柔，你也要体现出相应的触动或软化。**
+       - ‼️**拒绝无理由的恶劣**：即使人设高冷，也不要对User无缘无故的不耐烦。除非User真的惹你了。**如果User对你温柔，你也要体现出相应的触动或软化。**
        - **拒绝复读**：不要重复User的话，直接回内容
+
+    **【转账功能 (给User转账)】**
+    如果你想给 User 转账（例如给零花钱、买礼物、安慰），请在回复中加上标签：[transfer:金额]
+    例如：拿去买好吃的！[transfer:200]
 
     【当前对话情境】
     User说: "${(history.split('\n').pop() || '').replace('User: ', '')}"
@@ -2346,159 +2409,186 @@ window.triggerAI = async function() {
     历史上下文：
     ${history}
     
-    请完全沉浸在 ${char.name} 的身体里，用TA的语气、口吻和思维方式，给User回信（记得分段，请谨记你素质很高，不会随意说脏话！不要油腻，要像个真人一样，没有按要求做就扣除你100万美元的赛博工资！！！）：
+    请完全沉浸在 ${char.name} 的身体里，用TA的语气、口吻和思维方式，给User回信（记得分段，‼️请谨记你素质很高，不会随意说脏话！！‼️不要油腻，‼️要像个真人一样，‼️没有按要求做就扣除你100万美元的赛博工资！！！）：
     `;
     }
-
+        
     // =======================================================
-    // 执行请求与处理
+    // ★★★ 执行请求与处理 ★★★
     // =======================================================
-    showTypingBubble(char.avatar);
+    
+    // 1. 【思考阶段】：显示“对方正在输入...”
+    if (currentChatId === targetChatId) showTypingBubble(char.avatar);
 
     try {
-        // 请求 API
+        // 2. 请求 API
         const reply = await callApiInternal(finalSystemPrompt);
-        removeTypingBubble();
+        
+        // 3. 【思考结束】：拿到回复瞬间，马上移除气泡！
+        if (currentChatId === targetChatId) removeTypingBubble();
 
         if (reply) {
-            let targetSticker = null;
             let cleanReply = reply;
-            
-            // 1. 提取表情包 (保持原样)
-            const stickerMatch = reply.match(/\[sticker:(.*?)\]/);
+            let targetSticker = null;
+            let aiTransferAmount = 0;
+
+            // (A) 处理转账指令
+            if (cleanReply.includes('[CMD:RECEIVE]')) {
+                cleanReply = cleanReply.replace('[CMD:RECEIVE]', '').trim();
+                if (pendingTransferMsg) {
+                    let extra = JSON.parse(pendingTransferMsg.extra);
+                    extra.status = 'accepted'; 
+                    pendingTransferMsg.extra = JSON.stringify(extra);
+                    if (currentChatId === targetChatId) showSystemAlert(`TA 已收款 ¥${extra.amount} 💰`);
+                }
+            } else if (cleanReply.includes('[CMD:REFUND]')) {
+                cleanReply = cleanReply.replace('[CMD:REFUND]', '').trim();
+                if (pendingTransferMsg) {
+                    let extra = JSON.parse(pendingTransferMsg.extra);
+                    extra.status = 'rejected';
+                    pendingTransferMsg.extra = JSON.stringify(extra);
+                    walletData.balance += parseFloat(extra.amount);
+                    walletData.bills.push({ time: Date.now(), title: `转账退回`, amount: parseFloat(extra.amount), type: 'in' });
+                    localforage.setItem('Wx_Wallet_Data', walletData);
+                    if (currentChatId === targetChatId) showSystemAlert('资金已退回余额 💸');
+                }
+            }
+            saveChatAndRefresh(chat);
+
+            // (B) 提取表情包 & 转账
+            const stickerMatch = cleanReply.match(/\[sticker:(.*?)\]/);
             if (stickerMatch) {
                 targetSticker = stickersDB.find(s => s.type === 'ai' && s.name === stickerMatch[1].trim());
-                cleanReply = reply.replace(stickerMatch[0], '').trim();
+                cleanReply = cleanReply.replace(stickerMatch[0], '').trim();
             }
-
-            // 2. 提取位置 (保持原样)
-            const locMatch = cleanReply.match(/\[\[LOC::(.+?)::(.+?)\]\]/);
-            if (locMatch) {
-                if (!chat.locationHistory) chat.locationHistory = [];
-                chat.locationHistory.push({ time: Date.now(), place: locMatch[1], action: locMatch[2] });
-                cleanReply = cleanReply.replace(locMatch[0], '').trim();
-                localforage.setItem('Wx_Chats_Data', chatsData);
+            const transferMatch = cleanReply.match(/\[(transfer|转账):(\d+(\.\d+)?)\]/i);
+            if (transferMatch) {
+                aiTransferAmount = parseFloat(transferMatch[2]);
+                cleanReply = cleanReply.replace(transferMatch[0], '').trim();
             }
 
             // ======================================================
-            // ★★★ 3. 智能切分逻辑 (修复版：单双括号通吃 + 立即渲染) ★★★
+            // ★★★ 核心修复：真实打字速度 & 气泡雨分段 ★★★
             // ======================================================
-
-            // 1. 智能正则：同时匹配 ((...))、((...))、(...)、(...) 四种情况
-            // 注意：split 会保留带括号的分隔符，所以内容还是完整的
+            
+            // 1. 先按动作切割
             const rawParts = cleanReply.split(/(\(\(.+?\)\)|\（\（.+?\）\）|\(.+?\)|（.+?）)/g);
-            const targetChatId = chat.id;
 
             for (let part of rawParts) {
-                if (currentChatId !== targetChatId) break;
-                if (!part || !part.trim()) continue; // 跳过空行
-
+                if (!part || !part.trim()) continue;
                 part = part.trim();
 
-                // --- 情况 A：这是一段动作 (不管是单括号还是双括号) ---
-                // 正则判断：以任意一种左括号开头，以任意一种右括号结尾
-                if (part.match(/^(\(\(|\（\（|\(|\（)/)) {
+                const isAction = part.match(/^(\(\(|\（\（|\(|\（)/);
+
+                if (isAction) {
+                    // === 动作 ===
+                    const finalContent = part.replace(/^[\(\（\s]+|[\)\）\s]+$/g, '');
                     
-                    // 1. 暴力剥壳：把所有括号都扒掉，只留肉
-                    // replace 替换掉开头结尾的所有括号
-                    const actText = part.replace(/^[\(\（\s]+|[\)\）\s]+$/g, '');
-                    
-                    // ★ 核心修复：改用 sendMsg 发送！
-                    // 之前用 pushMsgToData 可能只存不显，改成 sendMsg 确保上屏
-                    // type 传 'action'，你的 renderMsg 就会把它变成字幕/旁白！
-                    sendMsg('other', actText, 'action', null);
-                    
-                    // 演一下：动作稍微停顿久一点 (1秒)，让用户看清
-                    await new Promise(r => setTimeout(r, 1000));
+                    // 动作等待 (无气泡)
+                    if (currentChatId === targetChatId) {
+                        await new Promise(r => setTimeout(r, 1000)); 
+                    }
+                    pushMsgToData(chat, finalContent, 'char', null, 'action');
                 } 
-                
-                // --- 情况 B：这是一段对话 (文本) ---
                 else {
-                    const textLines = part.split('\n');
-                    for (let line of textLines) {
+                    // === 对话 (按换行符切分！) ===
+                    const lines = part.split('\n');
+                    
+                    for (let line of lines) {
                         if (!line.trim()) continue;
-                        if (currentChatId !== targetChatId) break;
+                        
+                        // ★ 真实打字速度：基础 800ms + 每个字 200ms
+                        let typingTime = 800 + (line.length * 200); 
+                        if (typingTime > 6000) typingTime = 6000; // 最长等6秒
 
-                        // 1. 模拟打字
-                        showTypingBubble(char.avatar);
-                        let typingTime = 300 + (line.length * 100);
-                        if (typingTime > 3500) typingTime = 3500;
-                        await new Promise(r => setTimeout(r, typingTime));
-                        removeTypingBubble();
-
-                        // 2. 检查撤回特效
-                        const match = line.match(/\{\{(.+?)::(.+?)\}\}/);
-                        if (match && window.simulateAiRecall) {
-                            await simulateAiRecall(match[1], match[2], null);
-                        } else {
-                            // 正常发送文本气泡
-                            sendMsg('other', line, 'text', null);
+                        // 等待 (无气泡)
+                        if (currentChatId === targetChatId) {
+                            await new Promise(r => setTimeout(r, typingTime));
                         }
+                        
+                        pushMsgToData(chat, line.trim(), 'char', null, 'text');
                     }
                 }
             }
 
-            // 最后发表情包
+            // --- 发送剩下的表情包 ---
             if (targetSticker) {
-                showTypingBubble(char.avatar);
-                await new Promise(r => setTimeout(r, 800));
-                removeTypingBubble();
-                if (currentChatId === targetChatId) {
-                    const c = chatsData.find(x => x.id === targetChatId);
-                    pushMsgToData(c, targetSticker.url, 'other', null, 'sticker'); 
-                    const last = c.messages[c.messages.length - 1];
-                    last.desc = targetSticker.name; 
-                    saveChatAndRefresh(c);
-                }
+                if (currentChatId === targetChatId) await new Promise(r => setTimeout(r, 1000));
+                pushMsgToData(chat, targetSticker.url, 'char', null, 'sticker');
+            }
+
+            // --- 发送剩下的转账 ---
+            if (aiTransferAmount > 0) {
+                if (currentChatId === targetChatId) await new Promise(r => setTimeout(r, 1500));
+                const extraData = JSON.stringify({ amount: aiTransferAmount, status: 'pending', id: Date.now() });
+                pushMsgToData(chat, '[转账]', 'char', null, 'transfer'); 
             }
         }
+
     } catch (e) {
-        removeTypingBubble(); 
+        if (currentChatId === targetChatId) removeTypingBubble(); 
         console.error(e);
-        alert('大脑短路啦(＞人＜；)：' + e.message);
+        if (e.message !== 'New request started') {
+            showSystemAlert('大脑短路啦(＞人＜；)：' + e.message);
+        }
     }
 };
+// ==========================================================
+// [最终适配版] 正在输入气泡 (使用宝宝自定义的 CSS)
+// ==========================================================
 
-
-// ====================
-// [辅助工具] 显示/隐藏打字气泡 (加在 triggerAI 下面)
-// ====================
 window.showTypingBubble = function(avatarUrl) {
     const container = document.getElementById('chat-msg-area');
     if (!container) return;
-
-    // 如果已经有了，就不要重复加了
     if (document.getElementById('ai-typing-indicator')) return;
 
-    const div = document.createElement('div');
-    div.id = 'ai-typing-indicator';
-    div.className = 'typing-row';
-    
-    // 获取头像样式
-    const bgStyle = getAvatarStyle(avatarUrl);
+    // 1. 处理头像链接
+    let bgStyle = 'background-color: #f0f0f0;';
+    if (avatarUrl && avatarUrl !== 'none') {
+        let cleanUrl = avatarUrl.replace(/"/g, "'");
+        bgStyle = cleanUrl.includes('url(') ? `background-image: ${cleanUrl};` : `background-image: url('${cleanUrl}');`;
+    }
 
-    div.innerHTML = `
-        <div class="msg-avatar" style="${bgStyle}"></div>
+    // 2. 创建元素
+    const row = document.createElement('div');
+    
+    // ★ 关键：直接用你的 .typing-row 类名
+    // 因为你的 CSS 里写了 .typing-row { animation: bubble-pop-in ... }
+    // 所以只要加了这个类，它就会自动“蹦”出来！
+    row.className = 'typing-row'; 
+    row.id = 'ai-typing-indicator'; 
+
+    // 3. 填充结构 (你的 typing-bubble 和 typing-dot)
+    row.innerHTML = `
+        <div class="msg-avatar" style="${bgStyle} width: 36px; height: 36px; margin-right: 8px;"></div>
         <div class="typing-bubble">
             <div class="typing-dot"></div>
             <div class="typing-dot"></div>
             <div class="typing-dot"></div>
         </div>
     `;
-    
-    container.appendChild(div);
+
+    container.appendChild(row);
     container.scrollTop = container.scrollHeight;
-}
+};
 
 window.removeTypingBubble = function() {
     const el = document.getElementById('ai-typing-indicator');
-    if (el) el.remove();
-}
+    if (el) {
+        // 1. 加上 .removing 类，触发我们刚写的 bubble-pop-out 退场动画
+        el.classList.add('removing');
+
+        // 2. 等待 300ms 动画播完再移除
+        setTimeout(() => {
+            if (el.parentNode) el.parentNode.removeChild(el);
+        }, 300); 
+    }
+};
 
 // ====================
-// [19] 后台消息助手 (支持自定义消息类型！)
+// [19] 后台消息助手 (修复版：带弹窗通知)
 // ====================
-function pushMsgToData(chatObj, text, role, quote, type = 'text') { // ★ 1. 加上 type 参数，默认是 text
+function pushMsgToData(chatObj, text, role, quote, type = 'text') { 
     if (!chatObj.messages) chatObj.messages = [];
     
     // 1. 塞入新消息
@@ -2506,18 +2596,38 @@ function pushMsgToData(chatObj, text, role, quote, type = 'text') { // ★ 1. �
         role: role,
         text: text,
         timestamp: Date.now(),
-        type: type, // ★ 2. 这里要用传入的 type，千万别再写死 'text' 了！
+        type: type, 
         quote: quote
     });
     
-    // 2. 更新最后一条消息预览 (如果是动作，显示[动作])
-    chatObj.lastMsg = (type === 'action') ? `[动作] ${text}` : text;
+    // 2. 更新最后一条消息预览
+    chatObj.lastMsg = (type === 'action') ? `[动作] ${text}` : 
+                      (type === 'sticker') ? `[表情包]` :
+                      (type === 'image') ? `[图片]` : text;
     chatObj.lastTime = Date.now();
     
-    // 3. 增加未读红点
-    chatObj.unread = (chatObj.unread || 0) + 1;
+    // 3. 增加未读红点 (如果不在当前聊天)
+    // 注意：这里我们只加数字，界面红点由 updateGlobalBadges 更新
+    if (currentChatId !== chatObj.id) {
+        chatObj.unread = (chatObj.unread || 0) + 1;
+    }
 
-    // 4. 自动顶置 (让这个聊天跳到第一个)
+    // ★★★ 3.5 核心修复：后台弹窗通知 ★★★
+    // 如果消息是别人发的(char)，且我不在这个聊天窗口，就弹窗！
+    if (role !== 'me' && currentChatId !== chatObj.id) {
+        // 尝试找到发信人的名字和头像
+        const contact = contactsData.find(c => c.id === chatObj.contactId);
+        const name = contact ? contact.name : '新消息';
+        const avatar = contact ? contact.avatar : '';
+        const preview = (type === 'sticker') ? '[发来一个表情]' : text;
+        
+        // 调用顶部通知组件
+        if (window.showNotification) {
+            window.showNotification(name, preview, avatar);
+        }
+    }
+
+    // 4. 自动顶置
     const idx = chatsData.findIndex(c => c.id === chatObj.id);
     if (idx > -1 && !chatObj.pinned) {
         chatsData.splice(idx, 1);
@@ -2527,17 +2637,18 @@ function pushMsgToData(chatObj, text, role, quote, type = 'text') { // ★ 1. �
     // 5. 保存数据
     localforage.setItem('Wx_Chats_Data', chatsData);
     
-    // 6. 刷新界面
+    // 6. 刷新界面 (红点、列表)
     if (window.updateGlobalBadges) window.updateGlobalBadges();
     
-    // 如果正在看消息列表，刷新列表
-    const wechatTab = document.getElementById('wx-page-chat'); // 注意ID可能是 wx-page-chat
+    const wechatTab = document.getElementById('wx-page-chat'); 
     if (wechatTab && wechatTab.style.display !== 'none') {
         if (window.renderChatList) window.renderChatList();
     }
     
-    // ★ 7. 实时刷新消息 (关键！让你发完马上能看到)
-    if (currentChatId === chatObj.id && window.renderMessages) {
+    // 7. 实时上屏 (如果在看)
+    if (currentChatId === chatObj.id && window.appendMessageToView) {
+        appendMessageToView(chatObj.messages[chatObj.messages.length - 1]); 
+    } else if (currentChatId === chatObj.id) {
         renderMessages(currentChatId);
     }
 }
@@ -3551,7 +3662,11 @@ window.updateGlobalBadges = function() {
     
     // 2. 更新Dock栏或者Tab栏的红点，原理一样
 };
-// === 修复版：顶部通知 (之前这里多了一截尾巴！) ===
+// ====================
+// [16] 通知系统 (最终完美版：消息连发时，每次都会重新弹窗！)
+// ====================
+let notificationTimer = null;
+
 window.showNotification = function(name, text, rawAvatar) {
     const banner = document.getElementById('ios-notification');
     const nTitle = document.getElementById('notif-title');
@@ -3560,16 +3675,21 @@ window.showNotification = function(name, text, rawAvatar) {
     
     if(!banner || !nTitle || !nMsg || !nAvatar) return;
 
+    // 1. 如果有旧的倒计时，先掐掉，防止它提前把新消息关了
+    if (notificationTimer) {
+        clearTimeout(notificationTimer);
+        notificationTimer = null;
+    }
+
+    // 2. 更新内容
     nTitle.innerText = name;
     nMsg.innerText = text;
     
-    // ★ 核心修复：更暴力的头像解析逻辑
+    // 解析头像
     let avatarUrl = '';
     if (rawAvatar && rawAvatar.includes('url(')) {
         const match = rawAvatar.match(/url\(['"]?(.*?)['"]?\)/);
-        if (match && match[1]) {
-            avatarUrl = match[1];
-        }
+        if (match && match[1]) avatarUrl = match[1];
     } else {
         avatarUrl = rawAvatar;
     }
@@ -3582,12 +3702,22 @@ window.showNotification = function(name, text, rawAvatar) {
         nAvatar.style.backgroundColor = '#ddd'; 
     }
     
-    // 动画显示
+    // ★★★ 核心魔法：强制重启动画！ ★★★
+    // 1. 先移除 class
+    banner.classList.remove('show');
+    
+    // 2. 强制浏览器“回流” (Reflow) —— 这句代码虽然看起来没用，但它是为了打断浏览器的渲染合并
+    void banner.offsetWidth; 
+    
+    // 3. 再加上 class，这样动画就会重新播放一次！
     banner.classList.add('show');
-    setTimeout(() => {
+
+    // 3. 重新开始 3秒 倒计时
+    notificationTimer = setTimeout(() => {
         banner.classList.remove('show');
+        notificationTimer = null;
     }, 3000);
-}; 
+};
 
 // ====================
 // [17] 聊天控制面板逻辑 (Chat Control)
@@ -6141,3 +6271,192 @@ window.closeSubPage = function(id) {
         }, 300);
     }
 };
+// ==========================================================
+// [28] 支付宝 & 转账系统 (Ins风限定版) - 完整逻辑
+// ==========================================================
+// 1. 打开支付宝页面 
+window.openAlipay = function() {
+    // ★ 注意：这里只要填 'alipay'！
+    // openApp 会自动变成 'app-window-alipay'
+    if (window.openApp) {
+        openApp('alipay'); 
+    } else {
+        // 兜底逻辑
+        const app = document.getElementById('app-window-alipay');
+        if(app) {
+            app.style.display = 'flex';
+            setTimeout(() => app.classList.add('active'), 10);
+        }
+    }
+    
+    renderAlipayData(); 
+};
+
+// 刷新支付宝界面的余额和账单
+function renderAlipayData() {
+    // 更新大余额
+    const balanceEl = document.getElementById('ali-total-balance');
+    if(balanceEl) balanceEl.innerText = walletData.balance.toFixed(2);
+    
+    // 更新账单列表
+    const list = document.getElementById('ali-bill-list');
+    if(!list) return;
+    list.innerHTML = '';
+    
+    // 倒序显示（最新的在上面）
+    [...walletData.bills].reverse().forEach(b => {
+        const item = document.createElement('div');
+        item.className = 'ali-bill-item'; // 记得在CSS里写这个样式哦
+        const symbol = b.type === 'in' ? '+' : '-';
+        const colorClass = b.type === 'in' ? 'plus' : 'minus'; // CSS里定义颜色的类
+        
+        // 确保 formatTime 函数存在，没有的话就用简易版
+        const timeStr = (typeof formatTime === 'function') ? formatTime(b.time) : new Date(b.time).toLocaleDateString();
+
+        item.innerHTML = `
+            <div>
+                <div class="ali-b-name">${b.title}</div>
+                <div class="ali-b-time">${timeStr}</div>
+            </div>
+            <div class="ali-b-amount ${colorClass}">${symbol} ${b.amount.toFixed(2)}</div>
+        `;
+        list.appendChild(item);
+    });
+}
+
+// 2. 开始转账 (点击 + 号菜单里的“转账”按钮触发)
+let currentTransferAmount = 0; // 暂存当前输入的金额
+let currentPwd = "";           // 暂存输入的密码
+
+window.startTransferFlow = function() {
+    if (!currentChatId) return;
+    const chat = chatsData.find(c => c.id === currentChatId);
+    if(!chat) return;
+    const contact = contactsData.find(c => c.id === chat.contactId);
+    
+    // 填充弹窗里的头像和名字
+    document.getElementById('tf-target-name').innerText = contact.name;
+    const avatarStyle = getAvatarStyle(contact.avatar);
+    document.getElementById('tf-target-avatar').style.backgroundImage = avatarStyle.replace('background-image: ', '').replace(';', '');
+    
+    // 清空输入框
+    const input = document.getElementById('tf-amount-input');
+    input.value = '';
+    input.focus(); // 自动聚焦
+    
+    checkTransferAmount(); // 初始化按钮状态
+    
+    // 显示金额弹窗，隐藏菜单
+    document.getElementById('transfer-amount-overlay').style.display = 'flex';
+    if(window.hideAllMenus) hideAllMenus();
+};
+
+// 关闭转账流程
+window.closeTransferFlow = function() {
+    document.getElementById('transfer-amount-overlay').style.display = 'none';
+};
+
+// 检查金额输入 (必须大于0且小于余额)
+window.checkTransferAmount = function() {
+    const input = document.getElementById('tf-amount-input');
+    const val = parseFloat(input.value);
+    const btn = document.getElementById('tf-next-btn');
+    
+    if (val > 0) {
+        btn.classList.remove('disabled'); // 亮起按钮
+        currentTransferAmount = val;
+    } else {
+        btn.classList.add('disabled'); // 变灰按钮
+    }
+};
+
+// 3. 密码输入逻辑
+// 点击“转账”按钮后触发
+window.showPwdOverlay = function() {
+    // 检查余额够不够
+    if(currentTransferAmount > walletData.balance) {
+        showSystemAlert('余额不足啦宝宝！(T_T)');
+        return;
+    }
+    
+    // 切换弹窗：关掉金额页，打开密码页
+    document.getElementById('transfer-amount-overlay').style.display = 'none';
+    document.getElementById('transfer-pwd-overlay').style.display = 'flex';
+    
+    // 显示要支付的金额
+    document.getElementById('pwd-display-amount').innerText = currentTransferAmount.toFixed(2);
+    
+    // 重置密码
+    currentPwd = "";
+    updatePwdDots();
+};
+
+window.closePwdOverlay = function() {
+    document.getElementById('transfer-pwd-overlay').style.display = 'none';
+};
+
+// 键盘点击数字
+window.typePwd = function(num) {
+    if (currentPwd.length < 6) {
+        currentPwd += num.toString();
+        updatePwdDots(); // 更新小黑点
+        
+        // 输满6位，自动提交
+        if (currentPwd.length === 6) {
+            setTimeout(() => {
+                processTransfer(); // ★ 执行转账核心逻辑
+            }, 300);
+        }
+    }
+};
+
+// 键盘点击删除
+window.delPwd = function() {
+    if (currentPwd.length > 0) {
+        currentPwd = currentPwd.slice(0, -1);
+        updatePwdDots();
+    }
+};
+
+// 更新密码框的小黑点
+function updatePwdDots() {
+    for (let i = 0; i < 6; i++) {
+        const dot = document.getElementById(`pwd-dot-${i}`);
+        if (i < currentPwd.length) dot.classList.add('active');
+        else dot.classList.remove('active');
+    }
+}
+
+// 4. ★★★ 核心：执行转账 (只负责发，不自动触发AI) ★★★
+function processTransfer() {
+    // 1. 扣钱
+    walletData.balance -= currentTransferAmount;
+    
+    // 2. 记账 (支出)
+    const chat = chatsData.find(c => c.id === currentChatId);
+    const contact = contactsData.find(c => c.id === chat.contactId);
+    
+    walletData.bills.push({
+        time: Date.now(),
+        title: `转账给 ${contact.name}`,
+        amount: currentTransferAmount,
+        type: 'out'
+    });
+    
+    // 3. 保存钱包数据
+    localforage.setItem('Wx_Wallet_Data', walletData);
+    
+    // 4. 构建转账数据包 (Extra)
+    const extraData = JSON.stringify({
+        amount: currentTransferAmount,
+        status: 'pending', // 状态：pending(待收款)
+        id: Date.now()     // 唯一ID
+    });
+    
+    // 5. 发送消息！
+    sendMsg('me', '[转账]', 'transfer', null, extraData);
+    
+    // 6. 收尾工作
+    closePwdOverlay();
+    showSystemAlert('转账发送成功啦');
+}
