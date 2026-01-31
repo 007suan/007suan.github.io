@@ -6473,13 +6473,18 @@ const MusicState = {
     }
 };
 
-// (B) 歌词管理器 (修复版)
+// (B) 歌词管理器 (防抖动 + 丝滑版)
 const LyricManager = {
-    lrcData: [], 
+    lrcData: [],
+    lastActiveIdx: -1, // ★★★ 核心：记住上一行是谁，防止重复操作 ★★★
     
     load: async function(id) {
-        document.getElementById('lyric-content').innerHTML = '<p>正在加载歌词...</p>';
-        safeSetText('widget-lyric-line', '加载歌词中...');
+        // 重置状态
+        this.lastActiveIdx = -1;
+        document.getElementById('lyric-content').innerHTML = '<p style="margin-top:50%;">正在加载歌词...</p>';
+        safeSetText('widget-lyric-line', '加载中...');
+        safeSetText('mini-lrc-1', 'Loading...'); 
+        safeSetText('mini-lrc-2', '');
         
         try {
             const res = await fetch(`${API_BASE}/lyric?id=${id}`);
@@ -6487,7 +6492,7 @@ const LyricManager = {
             const lrcText = (data.lrc && data.lrc.lyric) ? data.lrc.lyric : "[00:00.00] 暂无歌词";
             this.parse(lrcText);
         } catch(e) {
-            document.getElementById('lyric-content').innerHTML = '<p>歌词加载失败 (T_T)</p>';
+            document.getElementById('lyric-content').innerHTML = '<p style="margin-top:50%;">歌词加载失败 (T_T)</p>';
             safeSetText('widget-lyric-line', '暂无歌词');
         }
     },
@@ -6511,45 +6516,88 @@ const LyricManager = {
     
     render: function() {
         const box = document.getElementById('lyric-content');
-        box.innerHTML = '';
+        box.innerHTML = ''; // 清空
+        
+        // 为了让第一句能居中，前面加个占位 (其实 CSS padding 已经处理了，这里保险)
+        // box.innerHTML += '<div style="height: 50%;"></div>';
+
         if(this.lrcData.length === 0) {
-            box.innerHTML = '<p>纯音乐 / 无歌词</p>';
-            safeSetText('widget-lyric-line', 'SODA MUSIC');
+            box.innerHTML = '<p style="margin-top:50%;">纯音乐 / 无歌词</p>';
+            safeSetText('mini-lrc-1', 'SODA MUSIC');
             return;
         }
+        
         this.lrcData.forEach((line, idx) => {
             const p = document.createElement('p');
             p.className = 'lrc-line';
             p.id = `lrc-${idx}`;
             p.innerText = line.text;
-            p.onclick = () => { document.getElementById('global-audio').currentTime = line.time; };
+            // 点击歌词跳转
+            p.onclick = () => { 
+                const audio = document.getElementById('global-audio');
+                if(audio) audio.currentTime = line.time; 
+            };
             box.appendChild(p);
         });
+        
+        // 后面也加个占位
+        // box.innerHTML += '<div style="height: 50%;"></div>';
     },
     
     sync: function(currentTime) {
+        // 1. 算出当前该唱哪一句
         let activeIdx = -1;
         for(let i = 0; i < this.lrcData.length; i++) {
-            if(currentTime >= this.lrcData[i].time) { activeIdx = i; } else { break; }
+            if(currentTime >= this.lrcData[i].time) { 
+                activeIdx = i; 
+            } else { 
+                break; 
+            }
         }
         
-        if(activeIdx !== -1) {
-            // A. 主App歌词滚动
-            document.querySelectorAll('.lrc-active').forEach(el => el.classList.remove('lrc-active'));
-            const activeLine = document.getElementById(`lrc-${activeIdx}`);
-            if(activeLine) {
-                activeLine.classList.add('lrc-active');
-                activeLine.scrollIntoView({ behavior: "smooth", block: "center" });
-            }
+        // ★★★ 核心防抖逻辑：只有行号变了，才执行更新 ★★★
+        if(activeIdx !== this.lastActiveIdx) {
+            this.lastActiveIdx = activeIdx; // 更新记忆
             
-            // B. 小组件单行歌词
-            const text = this.lrcData[activeIdx].text;
-            safeSetText('widget-lyric-line', text);
+            if(activeIdx !== -1) {
+                // A. 全屏歌词处理
+                // 去掉旧的高亮
+                const old = document.querySelector('.lrc-active');
+                if(old) old.classList.remove('lrc-active');
+                
+                // 加新的高亮
+                const activeLine = document.getElementById(`lrc-${activeIdx}`);
+                if(activeLine) {
+                    activeLine.classList.add('lrc-active');
+                    // 丝滑滚动到中间 (smooth)
+                    activeLine.scrollIntoView({ behavior: "smooth", block: "center" });
+                }
+                
+                // B. 获取文字内容
+                const text = this.lrcData[activeIdx].text;
+                const nextText = this.lrcData[activeIdx + 1] ? this.lrcData[activeIdx + 1].text : "";
 
-            // C. ★★★ 悬浮歌词同步 (这里修好啦！) ★★★
-            const floatText = document.querySelector('#float-lyric-bar .fl-text');
-            if(floatText) {
-                floatText.innerText = text;
+                // C. 更新各种组件
+                safeSetText('widget-lyric-line', text); // 小组件
+                
+                const floatText = document.querySelector('#float-lyric-bar .fl-text');
+                if(floatText) floatText.innerText = text; // 悬浮条
+
+                // D. 中间两行同步 (带动画)
+                const mini1 = document.getElementById('mini-lrc-1');
+                const mini2 = document.getElementById('mini-lrc-2');
+                
+                if(mini1 && mini1.innerText !== text) {
+                    // 淡出 -> 换字 -> 淡入
+                    mini1.style.opacity = 0;
+                    mini1.style.transform = "translateY(5px)";
+                    setTimeout(() => {
+                        mini1.innerText = text;
+                        mini1.style.opacity = 1;
+                        mini1.style.transform = "translateY(0)";
+                    }, 100);
+                }
+                if(mini2) mini2.innerText = nextText;
             }
         }
     }
@@ -7116,17 +7164,21 @@ window.toggleFavorite = function() {
     checkIfLiked(song.id);
 };
 
-// 8. 检查是否收藏 (更新爱心图标)
+// 8. 检查是否收藏 (同时更新主界面和小组件)
 function checkIfLiked(songId) {
-    const img = document.getElementById('like-btn-img');
-    if(!img) return;
-    
     const isLiked = myFavorites.some(s => s.id === songId);
-    if(isLiked) {
-        img.src = ICONS.liked; // 实心红心
-    } else {
-        img.src = ICONS.unlike; // 空心爱心
-    }
+    
+    // 图标资源
+    const iconLiked = ICONS.liked;   // 实心
+    const iconUnlike = ICONS.unlike; // 空心
+
+    // 1. 更新主界面大图
+    const mainImg = document.getElementById('like-btn-img');
+    if(mainImg) mainImg.src = isLiked ? iconLiked : iconUnlike;
+
+    // 2. ★★★ 更新小组件按钮 ★★★
+    const widgetImg = document.getElementById('widget-like-btn');
+    if(widgetImg) widgetImg.src = isLiked ? iconLiked : iconUnlike;
 }
 
 // 9. 小组件进度条拖动支持

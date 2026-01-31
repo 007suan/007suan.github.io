@@ -125,40 +125,62 @@
                 <div class="app-name">地图</div>
             </div>
         </div>
-<div class="ios-music-widget-lg">
-    <div class="imw-top">
-        <div class="imw-cover-box">
-            <img id="widget-cover-2" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" 
-                 style="background-color: #ccc;"> </div>
+<div class="ios-music-widget-flat">
+    
+    <div class="imw-top-flat">
+        <div onclick="openApp('kugou')" class="ios-click-anim" style="flex-shrink:0;">
+            <img id="widget-cover-2" class="imw-cover-flat" 
+                 src="https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1756312261242_qdqqd_g0eriz.jpeg">
+        </div>
         
-        <div class="imw-info">
-            <div id="widget-title-2" class="imw-title">Not Playing</div>
-            <div id="widget-artist-2" class="imw-artist">SODA MUSIC</div>
-            <div id="widget-lyric-line" class="imw-lyric">点击播放音乐...</div>
+        <div onclick="openApp('kugou')" style="flex:1; overflow:hidden; display:flex; flex-direction:column; justify-content:center; margin-left: 2px;">
+            <div id="widget-title-2" style="font-size:15px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Not Playing</div>
+            <div id="widget-artist-2" style="font-size:12px; color:rgba(255,255,255,0.6); margin-top:1px;">SODA MUSIC</div>
+            <div id="widget-lyric-line" style="font-size:11px; color:#fce76d; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:0.9;">𐌉𐌌 𐌔𐌏 𐌔𐌀𐌃！</div>
         </div>
     </div>
 
-    <div class="imw-progress">
-        <div class="imw-bar-bg" onclick="seekFromWidget(event)">
+    <div style="display:flex; flex-direction:column; gap:4px; margin-top:2px;">
+        <div class="imw-bar-bg" onclick="seekFromWidget(event)" style="height:3px;">
             <div id="widget-prog-fill" class="imw-bar-fill" style="width: 0%;"></div>
         </div>
-        <div class="imw-time">
+        <div class="imw-time" style="font-size:9px; opacity:0.5;">
             <span id="widget-curr-time">0:00</span>
             <span id="widget-total-time">0:00</span>
         </div>
     </div>
 
-    <div class="imw-controls">
-        <img src="https://i.postimg.cc/FRPWbGSC/wu-biao-ti118-20260116221202.png" 
-             onclick="playPrev()" class="imw-btn sm">
+    <div class="imw-controls-flat">
         
-        <img id="widget-play-btn-2" 
-             src="https://i.postimg.cc/ydYqzL6F/wu-biao-ti119-20260131105300.png" 
-             onclick="toggleMusic()" class="imw-btn lg">
-        
-        <img src="https://i.postimg.cc/d1WHRnC5/wu-biao-ti118-20260117003643.png" 
-             onclick="playNext()" class="imw-btn sm">
-    </div>
+        <img id="widget-like-btn" 
+             src="https://i.postimg.cc/C1vPCJ8s/wu-biao-ti118-20260117003824.png" 
+             onclick="toggleFavorite()" 
+             class="ios-click-anim" 
+             style="width:30px; height:30px;">
+
+        <div class="imw-center-group">
+            <img src="https://i.postimg.cc/FRPWbGSC/wu-biao-ti118-20260116221202.png" 
+                 onclick="playPrev()" 
+                 class="ios-click-anim" 
+                 style="width:36px; height:36px;">
+            
+            <img id="widget-play-btn-2" 
+                 src="https://i.postimg.cc/ydYqzL6F/wu-biao-ti119-20260131105300.png" 
+                 onclick="toggleMusic()" 
+                 class="ios-click-anim" 
+                 style="width:40px; height:40px;">
+            
+            <img src="https://i.postimg.cc/d1WHRnC5/wu-biao-ti118-20260117003643.png" 
+                 onclick="playNext()" 
+                 class="ios-click-anim" 
+                 style="width:36px; height:36px;">
+        </div>
+
+        <img src="https://i.postimg.cc/rmhnGg4Q/wu-biao-ti118-20260117003704.png" 
+             onclick="openApp('kugou'); setTimeout(toggleMusicList, 300);" 
+             class="ios-click-anim" 
+             style="width:30px; height:30px;">
+             </div>
 </div>
         </div>
 </div>
@@ -243,124 +265,126 @@
 
 <div id="app-kugou" class="app-window" style="display:none; flex-direction:column; background: #222; color: #fff; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5000; overflow: hidden;">
 
-    <div class="music-header" style="display:flex; justify-content:space-between; align-items:center; padding:15px; margin-top:30px; position:relative; z-index:10;">
+    <div class="music-header" style="display:flex; justify-content:space-between; align-items:center; padding: 50px 20px 10px 20px; position:relative; z-index:10;">
         
         <div onclick="closeApp('kugou')" style="font-size:24px; cursor:pointer; padding:5px;">﹀</div>
         
-        <div style="font-size:16px; font-weight:bold; margin-left:20px;">SODA MUSIC</div>
+        <div style="font-size:16px; font-weight:bold; margin-left:10px;">SODA MUSIC</div>
         
-        <div style="display:flex; align-items:center; gap:12px;">
-    
-    <div onclick="triggerBgChange()" style="font-size:20px; cursor:pointer; text-shadow: 0 2px 5px rgba(0,0,0,0.3);">🎨</div>
-    <input type="file" id="bg-image-input" accept="image/*" style="display:none;" onchange="handleBgChange(this)">
+        <div style="display:flex; align-items:center; gap:15px;">
+            
+            <div onclick="triggerBgChange()" style="cursor:pointer; display:flex; align-items:center;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 5px rgba(255,255,255,0.5));">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+            </div>
+            <input type="file" id="bg-image-input" accept="image/*" style="display:none;" onchange="handleBgChange(this)">
 
             <div onclick="toggleFloatLyric()" 
-                 style="font-size:12px; font-weight:bold; color: #fff; border: 1.5px solid rgba(255,255,255,0.4); padding: 3px 9px; border-radius: 12px; cursor: pointer; letter-spacing: 1px; transition: 0.2s;"
-                 onmouseover="this.style.borderColor='#fff';this.style.background='rgba(255,255,255,0.1)'"
-                 onmouseout="this.style.borderColor='rgba(255,255,255,0.4)';this.style.background='transparent'">
+                 style="font-size:12px; font-weight:bold; color: #fff; border: 1.5px solid rgba(255,255,255,0.4); padding: 2px 8px; border-radius: 10px; cursor: pointer; letter-spacing: 1px;">
                 词
             </div>
 
-            <img src="https://i.postimg.cc/rmhnGg4Q/wu-biao-ti118-20260117003704.png" 
-                 onclick="toggleMusicSearch()" 
-                 style="width:28px; height:28px; cursor:pointer;">
+            <div onclick="toggleMusicSearch()" style="cursor:pointer; display:flex;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+            </div>
         </div>
     </div>
 
-<div class="music-main" style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; z-index:10; overflow:hidden;">
-    
-    <div id="disk-view" style="display:flex; flex-direction:column; align-items:center; transition: opacity 0.3s;">
-        <div class="disk-container" onclick="toggleLyricView()" style="width:260px; height:260px; border-radius:50%; background:#000; display:flex; justify-content:center; align-items:center; box-shadow: 0 0 30px rgba(0,0,0,0.6); border: 4px solid rgba(255,255,255,0.1); cursor:pointer;">
-            <img id="app-album-cover" src="https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1756312261242_qdqqd_g0eriz.jpeg" 
-                 style="width:260px; height:260px; border-radius:50%; object-fit:cover;">
+    <div class="music-main" style="flex:1; display:flex; flex-direction:column; align-items:center; position:relative; z-index:10; overflow:hidden;">
+        
+        <div id="disk-view" style="flex: 1; display:flex; flex-direction:column; align-items:center; justify-content: center; transition: opacity 0.3s; margin-top: -20px;">
+            <div class="disk-container" onclick="toggleLyricView()" style="width:260px; height:260px; border-radius:50%; background:#000; display:flex; justify-content:center; align-items:center; box-shadow: 0 0 30px rgba(0,0,0,0.6); border: 4px solid rgba(255,255,255,0.1); cursor:pointer;">
+                <img id="app-album-cover" src="https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1756312261242_qdqqd_g0eriz.jpeg" 
+                     style="width:260px; height:260px; border-radius:50%; object-fit:cover;">
+            </div>
+            
+            <div id="wave-visualizer" style="display:flex; align-items:flex-end; gap:4px; height:30px; margin-top:20px; opacity:0.8;">
+                <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+            </div>
+
+            <div id="mini-lyrics-container" style="margin-top: 25px; height: 50px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; color:rgba(255,255,255,0.7); font-size:14px; font-weight:500; gap: 5px;">
+                <div id="mini-lrc-1">Waiting for music...</div>
+                <div id="mini-lrc-2" style="opacity: 0.6; font-size: 12px;">SODA MUSIC</div>
+            </div>
+        </div>
+
+        <div id="lyric-view" onclick="toggleLyricView()" style="display:none; width:100%; height:100%; overflow-y:auto; text-align:center; padding:20px 0; mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);">
+            <div id="lyric-content" style="transition: transform 0.3s ease-out; color:rgba(255,255,255,0.6); line-height:2.5; font-size:15px;">
+                <p>点击唱片加载歌词...</p>
+            </div>
         </div>
         
-        <div id="wave-visualizer" style="display:flex; align-items:flex-end; gap:4px; height:30px; margin-top:20px; opacity:0.8;">
-            <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-            <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-        </div>
-    </div>
-
-    <div id="lyric-view" onclick="toggleLyricView()" style="display:none; width:100%; height:350px; overflow-y:auto; text-align:center; padding:20px 0; mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);">
-        <div id="lyric-content" style="transition: transform 0.3s ease-out; color:rgba(255,255,255,0.6); line-height:2.5; font-size:15px;">
-            <p>点击唱片加载歌词...</p>
-        </div>
-    </div>
-    
-    <div style="margin-top:20px; text-align:center; width: 100%; padding: 0 20px;">
-        <div style="display:flex; align-items:center; justify-content:space-between;">
-            <div style="text-align:left; overflow:hidden; flex:1;">
-                <div id="app-song-title" style="font-size:22px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">暂无播放...{{(>_<)}}</div>
-                <div style="display:flex; gap:10px; align-items:center;">
-                    <span id="app-song-artist" style="color:#888; font-size:14px;">i was only temporary 2 u</span>
-                    <span id="quality-indicator" style="font-size:10px; border:1px solid #666; color:#888; padding:0 4px; border-radius:4px;">SQ</span>
+        <div style="width: 100%; padding: 0 25px; margin-bottom: 10px;">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div style="text-align:left; overflow:hidden; flex:1;">
+                    <div id="app-song-title" style="font-size:24px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">暂无播放</div>
+                    <div style="display:flex; gap:10px; align-items:center; margin-top: 4px;">
+                        <span id="app-song-artist" style="color:rgba(255,255,255,0.6); font-size:14px;">i was only temporary 2 u</span>
+                        <span id="quality-indicator" style="font-size:9px; border:1px solid rgba(255,255,255,0.4); color:rgba(255,255,255,0.6); padding:0 3px; border-radius:3px;">SQ</span>
+                    </div>
                 </div>
+                <img id="like-btn-img" 
+                     src="https://i.postimg.cc/C1vPCJ8s/wu-biao-ti118-20260117003824.png" 
+                     onclick="toggleFavorite()" 
+                     style="width:26px; height:26px; cursor:pointer; transition: transform 0.2s;">
             </div>
-            <img id="like-btn-img" 
-                 src="https://i.postimg.cc/C1vPCJ8s/wu-biao-ti118-20260117003824.png" 
-                 onclick="toggleFavorite()" 
-                 style="width:28px; height:28px; cursor:pointer; transition: transform 0.2s;">
         </div>
     </div>
-</div>
 
-    <div class="music-controls" style="padding:20px 25px 50px 25px; position:relative; z-index:10;">
-        <div style="display:flex; align-items:center; font-size:12px; color:#888; margin-bottom:25px;">
-            <span id="curr-time">00:00</span>
-            <input type="range" id="prog-bar" value="0" min="0" max="100" style="flex:1; margin:0 12px; accent-color: #fff;">
-            <span id="total-time">00:00</span>
+    <div class="music-controls" style="padding:10px 25px 50px 25px; position:relative; z-index:10;">
+        <div style="display:flex; align-items:center; font-size:11px; color:rgba(255,255,255,0.5); margin-bottom:25px;">
+            <span id="curr-time" style="width: 35px;">0:00</span>
+            <input type="range" id="prog-bar" value="0" min="0" max="100" style="flex:1; margin:0 10px; accent-color: #fff;">
+            <span id="total-time" style="width: 35px; text-align: right;">0:00</span>
         </div>
 
         <div style="display:flex; justify-content:space-between; align-items:center;">
-<img id="play-mode-btn" 
-     src="https://i.postimg.cc/KzptZwYK/wu-biao-ti119-20260131195925.png" 
-     onclick="togglePlayMode()" 
-     style="width:28px; height:28px; cursor:pointer; opacity: 0.8;">
+            <img id="play-mode-btn" 
+                 src="https://i.postimg.cc/KzptZwYK/wu-biao-ti119-20260131195925.png" 
+                 onclick="togglePlayMode()" 
+                 style="width:26px; height:26px; cursor:pointer; opacity: 0.8;">
             
             <img src="https://i.postimg.cc/FRPWbGSC/wu-biao-ti118-20260116221202.png" 
                  onclick="playPrev()" 
-                 style="width:32px; height:32px; cursor:pointer;">
+                 style="width:40px; height:40px; cursor:pointer;">
             
             <img id="app-play-btn-img" 
                  src="https://i.postimg.cc/ydYqzL6F/wu-biao-ti119-20260131105300.png" 
                  onclick="toggleMusic()" 
-                 style="width:72px; height:72px; cursor:pointer;">
+                 style="width:70px; height:70px; cursor:pointer;">
             
             <img src="https://i.postimg.cc/d1WHRnC5/wu-biao-ti118-20260117003643.png" 
                  onclick="playNext()" 
-                 style="width:32px; height:32px; cursor:pointer;">
+                 style="width:40px; height:40px; cursor:pointer;">
             
-            <div onclick="toggleMusicList()" style="font-size:24px; color:#fff; cursor:pointer;">≣</div> 
+            <img src="https://i.postimg.cc/rmhnGg4Q/wu-biao-ti118-20260117003704.png" 
+                 onclick="toggleMusicList()" 
+                 style="width:26px; height:26px; cursor:pointer; opacity: 0.9;">
         </div>
     </div>
 
     <div class="kugou-bg" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none;"></div>
-    <div class="kugou-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:1; pointer-events:none;"></div>
+    <div class="kugou-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.3); z-index:1; pointer-events:none;"></div>
 
-<div id="search-drawer" style="position:absolute; top:-100%; left:0; width:100%; height:100%; background:rgba(20, 20, 20, 0.95); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); transition: top 0.4s cubic-bezier(0.32, 1, 0.23, 1); z-index:20; display:flex; flex-direction:column;">
-    
-    <div style="padding: 50px 20px 10px 20px; display:flex; align-items:center; gap:12px;">
-        <div style="flex:1; height:36px; background:rgba(255,255,255,0.12); border-radius:10px; display:flex; align-items:center; padding:0 10px;">
-            <span style="color:rgba(255,255,255,0.4); font-size:14px;">🔍</span>
-            <input type="text" id="music-search-keyword" placeholder="Search" 
-                   style="flex:1; background:transparent; border:none; color:#fff; font-size:15px; margin-left:6px; outline:none; height:100%;">
+    <div id="search-drawer" style="position:absolute; top:-100%; left:0; width:100%; height:100%; background:rgba(20, 20, 20, 0.95); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); transition: top 0.4s cubic-bezier(0.32, 1, 0.23, 1); z-index:20; display:flex; flex-direction:column;">
+        <div style="padding: 50px 20px 10px 20px; display:flex; align-items:center; gap:12px;">
+            <div style="flex:1; height:36px; background:rgba(255,255,255,0.12); border-radius:10px; display:flex; align-items:center; padding:0 10px;">
+                <span style="color:rgba(255,255,255,0.4); font-size:14px;">🔍</span>
+                <input type="text" id="music-search-keyword" placeholder="Search" style="flex:1; background:transparent; border:none; color:#fff; font-size:15px; margin-left:6px; outline:none; height:100%;">
+            </div>
+            <div onclick="searchMusicCloud()" style="color:#fce76d; font-size:15px; font-weight:600; cursor:pointer;">搜索</div>
         </div>
-        
-        <div onclick="searchMusicCloud()" style="color:#fce76d; font-size:15px; font-weight:600; cursor:pointer;">搜索</div>
-    </div>
-
-    <div style="height:1px; background:rgba(255,255,255,0.08); margin: 0 20px;"></div>
-
-    <div id="music-search-results" style="flex:1; overflow-y:auto; padding:10px 20px;">
-        <div style="text-align:center; color:rgba(255,255,255,0.3); margin-top:50px; font-size:13px;">
-            ★ 於你而言我是一顆星嗎？
+        <div style="height:1px; background:rgba(255,255,255,0.08); margin: 0 20px;"></div>
+        <div id="music-search-results" style="flex:1; overflow-y:auto; padding:10px 20px;">
+            <div style="text-align:center; color:rgba(255,255,255,0.3); margin-top:50px; font-size:13px;">★ 於你而言我是一顆星嗎？</div>
         </div>
+        <div onclick="toggleMusicSearch()" style="padding:20px; text-align:center; cursor:pointer;"><div style="width:40px; height:5px; background:rgba(255,255,255,0.2); border-radius:3px; margin:0 auto;"></div></div>
     </div>
-
-    <div onclick="toggleMusicSearch()" style="padding:20px; text-align:center; cursor:pointer;">
-        <div style="width:40px; height:5px; background:rgba(255,255,255,0.2); border-radius:3px; margin:0 auto;"></div>
-    </div>
-</div>
 
     <div id="playlist-drawer" style="position:absolute; bottom:-100%; left:0; width:100%; height:60%; background:rgba(30,30,30,0.98); transition: bottom 0.3s; z-index:20; display:flex; flex-direction:column; border-top-left-radius:24px; border-top-right-radius:24px;">
         <div style="padding:20px; border-bottom:1px solid #333; display:flex; justify-content:space-between;">
@@ -370,6 +394,7 @@
         <div id="playlist-content" style="flex:1; overflow-y:auto; padding:0 20px;"></div>
         <div onclick="toggleMusicList()" style="padding:20px; text-align:center; color:#888;">关闭 ∨</div>
     </div>
+
 </div>
 
 <audio id="global-audio" style="display:none;"></audio>
