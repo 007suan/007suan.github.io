@@ -3174,7 +3174,7 @@ body, button, input, textarea, select, .edit-text {
     /* ★ 视觉风格：纯白 + 细线 */
     background: #ffffff !important; 
     /* 这一行是那条细细的线 */
-    border-bottom: 0.5px solid rgba(0, 0, 0, 0.1) !important; 
+    border-bottom: 1px solid rgba(0, 0, 0, 0.15) !important; 
     
     /* 定位：永远吸顶 */
     position: fixed !important;
@@ -3283,7 +3283,7 @@ body, button, input, textarea, select, .edit-text {
 .sub-page .ali-scroll-content,
 .sub-page .ins-form-page 
 {
-    padding-top: 106px !important; /* 稍微调整，紧贴细线 */
+    padding-top: 120px !important; /* 稍微调整，紧贴细线 */
     margin-top: 0 !important;
 }
 #sub-page-creator {
@@ -3297,10 +3297,10 @@ body, button, input, textarea, select, .edit-text {
     padding-top: 55px !important; /* 保持原有的位置 */
     
     /* ★ 1. 背景改成纯白 */
-    background: #ffffff !important; 
+    background: #FEFEFC !important; 
     
     /* ★ 2. 加一条底部的细线 (可选) */
-    border-bottom: 0.5px solid rgba(0, 0, 0, 0.1) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.15) !important;
     box-shadow: none !important;
     
     position: fixed !important;
@@ -3329,3 +3329,19 @@ body, button, input, textarea, select, .edit-text {
    background: rgba(255, 255, 255, 0.95) !important;
    backdrop-filter: blur(20px) !important;
 */
+/* === ⬆️ 微调：所有通用页面的箭头往上提 === */
+.sub-header .back-btn {
+    /* 1. 整体位置上移 */
+    top: 50px !important; /* 之前大概是55px，现在往上提 */
+    
+    /* 2. 内部微调 (专门针对 ‹ 符号) */
+    /* 给屁股下面垫点东西，让它被迫往上跑 */
+    padding-bottom: 12px !important; 
+    
+    /* 3. 确保对齐方式 */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 44px !important;
+    line-height: 1 !important;
+}
