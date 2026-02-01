@@ -2100,7 +2100,7 @@ window.renderMessages = function(chatId, autoScroll = true) {
             if (lastMsg.role === 'me') {
                 statusDiv.innerHTML = `已送达 ${timeStr}`;
                 statusDiv.style.textAlign = 'right';
-                statusDiv.style.paddingRight = '10px';
+                statusDiv.style.paddingRight = '50px';
                 statusDiv.style.color = '#8e8e93';
             } else {
                 statusDiv.innerHTML = `已读 ${timeStr}`;

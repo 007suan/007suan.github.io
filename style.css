@@ -3293,7 +3293,7 @@ body, button, input, textarea, select, .edit-text {
    TYPE B: 聊天详情页顶栏 (改：不透明纯白版)
    ------------------------------------------------------------ */
 .chat-header-layer {
-    height: 115px !important;
+    height: 145px !important;
     padding-top: 55px !important; /* 保持原有的位置 */
     
     /* ★ 1. 背景改成纯白 */
