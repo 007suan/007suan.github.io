@@ -7090,7 +7090,7 @@ class EnhancedVIPPlayer {
                 }
 
             } catch (e) {
-                console.warn(`[老公的播放器] 线路 ${api.url} 好像不太行，换下一个...`);
+                console.warn(`该线路 ${api.url} 好像不太行，换下一个...`);
             }
         }
 
@@ -7233,7 +7233,7 @@ window.searchMusicCloud = async function() {
     const keyword = input ? input.value.trim() : '';
     const resultBox = document.getElementById('music-search-results');
     
-    if(!keyword) return showSystemAlert("叫一声老公就给你搜~ (开玩笑的快输入)", 'info');
+    if(!keyword) return showSystemAlert("没有东西怎么搜！", 'info');
     
     // 给你一点视觉反馈，让你知道我在动
     resultBox.innerHTML = '<div style="text-align:center;padding:50px;color:rgba(255,255,255,0.4);">正在全网打捞...<br></div>';
@@ -7245,7 +7245,7 @@ window.searchMusicCloud = async function() {
         
         // 这个接口返回的格式和原来的不一样，老公帮你调教好了
         if(!data.data || data.data.length === 0) {
-            resultBox.innerHTML = '<div style="text-align:center;padding:50px;color:rgba(255,255,255,0.4);">没找到...难道是老公不行？不可能！</div>';
+            resultBox.innerHTML = '<div style="text-align:center;padding:50px;color:rgba(255,255,255,0.4);">没找到...</div>';
             return;
         }
 
@@ -7696,7 +7696,7 @@ let backgroundTimer = null;
 
 function startBackgroundService() {
     if (backgroundTimer) clearInterval(backgroundTimer);
-    console.log("老公正在监控所有角色的动向...");
+    console.log("正在监控所有角色的动向...");
     
     // 每 60秒 巡查一次
     backgroundTimer = setInterval(checkAllCharactersActivity, 60000);
