@@ -1292,12 +1292,11 @@ window.autoResize = function(el) {
     el.style.height = el.scrollHeight + 'px';
 };
 
-// 打开角色/面具编辑页 (★ 修复：强制置顶，盖住聊天窗口)
+// 打开角色/面具编辑页 (修复版)
 window.openCreatorPage = function(id = null) {
     const page = document.getElementById('sub-page-creator');
     if (!page) return;
 
-    // ★★★ 核心修复1：加个超级高的层级，防止露馅 ★★★
     page.style.zIndex = '6000'; 
     page.style.display = 'flex';
     setTimeout(() => page.classList.add('active'), 10);
@@ -1316,7 +1315,6 @@ window.openCreatorPage = function(id = null) {
     if(tip) tip.style.display = 'block'; 
 
     if (creatorMode === 'persona') {
-        // === ME 模式 ===
         if(infoSubtitle) infoSubtitle.innerHTML = "The following is<br>About <b>my</b> basic information";
         if(aboutTitle) aboutTitle.innerText = "ABOUT Me";
         realnameInput.placeholder = "我的名称｜User Name";
@@ -1324,7 +1322,6 @@ window.openCreatorPage = function(id = null) {
         personaInput.placeholder = "ME的性格设定... \n例如：温良｜高冷｜黏人";
         hobbiesInput.placeholder = "ME的爱好...";
     } else {
-        // === TA 模式 ===
         if(infoSubtitle) infoSubtitle.innerHTML = "The following is<br>About <b>TA's</b> basic information";
         if(aboutTitle) aboutTitle.innerText = "ABOUT TA";
         realnameInput.placeholder = "角色名称｜Char Name";
@@ -1357,8 +1354,31 @@ window.openCreatorPage = function(id = null) {
                 document.getElementById('creator-avatar').style.backgroundImage = c.avatar;
                 if(tip) tip.style.display = 'none';
             }
+
+            // ★★★ 修复：必须放在 if (c) 里面！ ★★★
+            // 1. 回显开关状态
+            const activeSwitch = document.getElementById('detail-active-mode');
+            if (activeSwitch) {
+                activeSwitch.checked = c.enableActiveMode || false;
+                
+                // 联动控制输入框
+                const intervalBox = document.getElementById('active-interval-box');
+                if (intervalBox) {
+                    intervalBox.style.display = activeSwitch.checked ? 'flex' : 'none';
+                }
+                activeSwitch.onchange = function() {
+                    if (intervalBox) intervalBox.style.display = this.checked ? 'flex' : 'none';
+                };
+            }
+
+            // 2. 回显时间间隔
+            const activeInput = document.getElementById('detail-active-interval');
+            if (activeInput) {
+                activeInput.value = c.activeInterval || 60;
+            }
         }
     }
+    
     page.querySelectorAll('textarea').forEach(el => autoResize(el));
 };
 
@@ -1392,7 +1412,10 @@ window.saveCharacter = function() {
         hobbies: document.getElementById('creator-hobbies')?.value || "", 
         desc: document.getElementById('creator-desc')?.value || "",
         persona: document.getElementById('creator-persona')?.value || "",
-        avatar: (avatarUrl && avatarUrl !== 'none' && avatarUrl !== 'initial') ? avatarUrl : ''
+        avatar: (avatarUrl && avatarUrl !== 'none' && avatarUrl !== 'initial') ? avatarUrl : '',        
+        // ★★★ 新增：保存自主意识设置 ★★★
+        enableActiveMode: document.getElementById('detail-active-mode')?.checked || false,
+        activeInterval: parseInt(document.getElementById('detail-active-interval')?.value || "60")
     };
 
     if (creatorMode === 'persona') {
@@ -1774,8 +1797,25 @@ window.closeDeleteChatAlert = function() {
 // ==========================================================
 // [10] 聊天详情与交互 (Chat Detail)
 // ==========================================================
-// === 进入聊天 ===
 window.enterChat = function(chat) {
+    // ★★★ 新增：一进聊天，立刻清空这个人的排队弹窗 ★★★
+    // 过滤掉当前这个人的通知，保留其他人的
+    if(typeof notificationQueue !== 'undefined') {
+        notificationQueue = notificationQueue.filter(n => String(n.chatId) !== String(chat.id));
+        
+        // 如果当前正在显示的横幅就是这个人的，立马关掉
+        const banner = document.getElementById('ios-notification');
+        const nTitle = document.getElementById('notif-title');
+        // 这里简单判断一下标题名字是否匹配，或者不管是谁直接关掉也行
+        if(banner && banner.classList.contains('show')) {
+             banner.classList.remove('show');
+             // 重置状态，让其他人能继续弹
+             if(typeof isNotifShowing !== 'undefined') isNotifShowing = false;
+             // 稍微延迟一下恢复队列处理，防止冲突
+             setTimeout(() => { if(window.processNextNotification) processNextNotification(); }, 500);
+        }
+    }
+
     currentChatId = chat.id;
     const contact = contactsData.find(c => c.id === chat.contactId);
     
@@ -2538,11 +2578,13 @@ window.triggerAI = async function() {
                     for (let line of lines) {
                         if (!line.trim()) continue;
                         
-                        // 模拟打字速度
-                        let typingTime = 800 + (line.length * 150); 
-                        if (typingTime > 5000) typingTime = 5000;
+// 模拟打字速度
+let typingTime = 800 + (line.length * 150); 
+if (typingTime > 2500) typingTime = 2500;
 
-                        if (currentChatId === targetChatId) await new Promise(r => setTimeout(r, typingTime));
+// ★ 修改后：不管你在不在看，我都老老实实打字！
+// 这样你的后台红点就会一个一个蹦出来了 (1..2..3..)
+await new Promise(r => setTimeout(r, typingTime));
                         
                         // 发送！(如果刚才引用没用掉，这里用)
                         pushMsgToData(chat, line.trim(), 'char', aiQuote, 'text');
@@ -2635,20 +2677,20 @@ window.removeTypingBubble = function() {
 };
 
 // ====================
-// [19] 后台消息助手 (增强版：支持Extra数据 + 系统消息)
+// [19] 后台消息助手 (增强版：实时刷新列表 + 红点)
 // ====================
 function pushMsgToData(chatObj, text, role, quote, type = 'text', extra = null) { 
     if (!chatObj.messages) chatObj.messages = [];
     
     // 1. 塞入新消息
     const newMsg = {
-        id: Date.now() + Math.random(), // 确保ID唯一
+        id: Date.now() + Math.random(), 
         role: role,
         text: text,
         timestamp: Date.now(),
         type: type, 
         quote: quote,
-        extra: extra // ★★★ 修复：把金额/转账状态带上！
+        extra: extra 
     };
     
     chatObj.messages.push(newMsg);
@@ -2656,27 +2698,35 @@ function pushMsgToData(chatObj, text, role, quote, type = 'text', extra = null) 
     // 2. 更新最后一条消息预览 (系统消息不更新预览)
     if (role !== 'system') {
         chatObj.lastMsg = (type === 'action') ? `[Action]` : 
-                          (type === 'sticker') ? `[Sticker]` :
-                          (type === 'transfer') ? `[Transfer]` : text;
+                          (type === 'sticker') ? `[表情包]` :
+                          (type === 'transfer') ? `[转账]` : text;
         chatObj.lastTime = Date.now();
         
-        // 3. 增加未读红点
+        // ★★★ 核心修复：增加未读红点 (实时累加) ★★★
+        // 只有当“我没在这个聊天里”时，才加红点
         if (currentChatId !== chatObj.id) {
             chatObj.unread = (chatObj.unread || 0) + 1;
         }
     }
 
-    // 4. 弹窗通知 (仅当别人发消息且我不在当前窗口时)
-    if (role !== 'me' && role !== 'system' && currentChatId !== chatObj.id) {
-        const contact = contactsData.find(c => c.id === chatObj.contactId);
-        const name = contact ? contact.name : 'New Message';
-        const avatar = contact ? contact.avatar : '';
-        const preview = (type === 'sticker') ? '[Sent a sticker]' : text;
-        
-        if (window.showNotification) window.showNotification(name, preview, avatar);
+    // 3. 弹窗通知 (视线接管逻辑)
+    // 只有当 (不是我发的) && (不是系统消息) && (我没在看这个聊天) 时才弹
+    if (role !== 'me' && role !== 'system') {
+        // 如果当前正好在这个聊天里，就不弹窗了，直接看消息上屏
+        if (currentChatId === chatObj.id) {
+            // do nothing (suppress notification)
+        } else {
+            const contact = contactsData.find(c => c.id === chatObj.contactId);
+            const name = contact ? contact.name : 'New Message';
+            const avatar = contact ? contact.avatar : '';
+            const preview = (type === 'sticker') ? '[表情包]' : text;
+            
+            // 传 chatObj.id 进去，配合之前的门禁系统
+            if (window.showNotification) window.showNotification(name, preview, avatar, chatObj.id);
+        }
     }
 
-    // 5. 自动顶置 (系统消息不顶置)
+    // 4. 自动顶置
     if (role !== 'system') {
         const idx = chatsData.findIndex(c => c.id === chatObj.id);
         if (idx > -1 && !chatObj.pinned) {
@@ -2685,13 +2735,22 @@ function pushMsgToData(chatObj, text, role, quote, type = 'text', extra = null) 
         }
     }
 
-    // 6. 保存 & 刷新
+    // 5. 保存数据
     localforage.setItem('Wx_Chats_Data', chatsData);
+    
+    // 6. ★★★ 强力刷新 UI (解决红点不亮的问题) ★★★
+    
+    // A. 刷新全局红点 (桌面图标/底部Tab)
     if (window.updateGlobalBadges) window.updateGlobalBadges();
     
-    // 7. 实时上屏
+    // B. 如果当前正在看“微信列表页”，强制刷新列表！让红点立马跳出来！
+    const listPage = document.getElementById('wx-page-chat');
+    if (listPage && listPage.style.display !== 'none') {
+        if(window.renderChatList) window.renderChatList();
+    }
+    
+    // 7. 实时上屏 (如果正在看这个聊天)
     if (currentChatId === chatObj.id) {
-        // 如果有追加函数就用追加，没有就重绘
         if (window.appendMessageToView) {
             appendMessageToView(newMsg); 
         } else {
@@ -3686,85 +3745,149 @@ window.renderMomentsHeader = function() {
 };
 
 // ====================
-// [16] 通知与红点系统 (Notification System)
+// [16] 通知与红点系统 (修复版：实时刷新)
 // ====================
-
-// 更新桌面红点 & 底部Tab红点 (如果有的话)
 window.updateGlobalBadges = function() {
     let totalUnread = 0;
+    
+    // 1. 重新计算所有未读消息
     chatsData.forEach(c => {
         if(c.unread) totalUnread += c.unread;
     });
 
-    // 1. 更新桌面图标红点
-    const badgeEl = document.getElementById('desktop-badge-wechat');
-    if(badgeEl) {
+    // 2. 更新桌面图标红点 (Desktop Badge)
+    const desktopBadge = document.getElementById('desktop-badge-wechat');
+    if(desktopBadge) {
         if(totalUnread > 0) {
-            badgeEl.innerText = totalUnread > 99 ? '99+' : totalUnread;
-            badgeEl.classList.add('show');
+            desktopBadge.innerText = totalUnread > 99 ? '99+' : totalUnread;
+            desktopBadge.style.display = 'flex';
+            desktopBadge.classList.add('show'); // 加上动画类
         } else {
-            badgeEl.classList.remove('show');
+            desktopBadge.style.display = 'none';
+            desktopBadge.classList.remove('show');
+        }
+    }
+
+    // 3. 更新 App 内部列表的红点 (如果当前打开了微信列表)
+    // 这一步是为了防止你正看着列表，新消息来了红点没变
+    if (document.getElementById('wx-page-chat')?.style.display !== 'none') {
+        const listItems = document.querySelectorAll('.ili-badge');
+        // 如果列表没刷新，强制刷新一下列表（只刷新DOM，不重新读库，防闪烁）
+        // 但最简单的方法是：只要有未读，且在列表页，就调用一次渲染列表
+        if(window.renderChatList && totalUnread > 0) {
+            // 只有当用户没有正在操作（比如滑动）时才刷新，避免打断操作
+            // 这里简单处理：直接刷新
+             // window.renderChatList(); <--- 太频繁刷新会闪，先注释掉，依靠 pushMsgToData 里的刷新
         }
     }
     
-    // 2. 更新Dock栏或者Tab栏的红点，原理一样
+    // 4. 更新 Dock 栏红点 (如果有的话)
+    const dockBadge = document.getElementById('dock-badge-wechat');
+    if(dockBadge) {
+        dockBadge.innerText = totalUnread > 99 ? '99+' : totalUnread;
+        dockBadge.style.display = totalUnread > 0 ? 'flex' : 'none';
+    }
 };
-// ====================
-// [16] 通知系统 (最终完美版：消息连发时，每次都会重新弹窗！)
-// ====================
-let notificationTimer = null;
 
-window.showNotification = function(name, text, rawAvatar) {
+// ====================
+// [高级通知系统 V3.0] 视线接管版
+// ====================
+let notificationQueue = []; 
+let isNotifShowing = false; 
+
+// ★ 接收第4个参数：fromChatId
+window.showNotification = function(name, text, rawAvatar, fromChatId) {
+    
+    // 1. 【门禁检查】如果用户正在看这个聊天，直接拦截！不许弹窗！
+    // 这里的 currentChatId 是你进入聊天时记录的全局变量
+    if (currentChatId && String(currentChatId) === String(fromChatId)) {
+        console.log("用户正在看着呢，不弹窗了");
+        return; 
+    }
+
+    // 2. 加入队列
+    notificationQueue.push({
+        name: name,
+        text: text,
+        avatar: rawAvatar,
+        chatId: fromChatId // 记下它是谁的，点击时好跳转
+    });
+
+    // 3. 启动播放
+    if (!isNotifShowing) {
+        processNextNotification();
+    }
+};
+
+function processNextNotification() {
+    if (notificationQueue.length === 0) {
+        isNotifShowing = false;
+        return;
+    }
+
+    // ★ 二次检查：播放前再确认一次用户有没有进聊天
+    // 防止队列里积压的消息在用户刚点进去时还要弹
+    const next = notificationQueue[0];
+    if (currentChatId && String(currentChatId) === String(next.chatId)) {
+        notificationQueue.shift(); // 这一条作废，直接扔掉
+        processNextNotification(); // 也就是“下一位”
+        return;
+    }
+
+    isNotifShowing = true;
+    const current = notificationQueue.shift();
+    
+    // --- 渲染 UI ---
     const banner = document.getElementById('ios-notification');
     const nTitle = document.getElementById('notif-title');
     const nMsg = document.getElementById('notif-msg');
     const nAvatar = document.getElementById('notif-avatar');
     
-    if(!banner || !nTitle || !nMsg || !nAvatar) return;
+    if(!banner) return; 
 
-    // 1. 如果有旧的倒计时，先掐掉，防止它提前把新消息关了
-    if (notificationTimer) {
-        clearTimeout(notificationTimer);
-        notificationTimer = null;
-    }
-
-    // 2. 更新内容
-    nTitle.innerText = name;
-    nMsg.innerText = text;
+    nTitle.innerText = current.name;
+    nMsg.innerText = current.text;
     
-    // 解析头像
-    let avatarUrl = '';
-    if (rawAvatar && rawAvatar.includes('url(')) {
-        const match = rawAvatar.match(/url\(['"]?(.*?)['"]?\)/);
-        if (match && match[1]) avatarUrl = match[1];
-    } else {
-        avatarUrl = rawAvatar;
-    }
-
-    if (avatarUrl) {
-        nAvatar.style.backgroundImage = `url('${avatarUrl}')`;
-        nAvatar.style.backgroundColor = 'transparent';
-    } else {
-        nAvatar.style.backgroundImage = 'none';
-        nAvatar.style.backgroundColor = '#ddd'; 
-    }
-    
-    // ★★★ 核心魔法：强制重启动画！ ★★★
-    // 1. 先移除 class
-    banner.classList.remove('show');
-    
-    // 2. 强制浏览器“回流” (Reflow) —— 这句代码虽然看起来没用，但它是为了打断浏览器的渲染合并
-    void banner.offsetWidth; 
-    
-    // 3. 再加上 class，这样动画就会重新播放一次！
-    banner.classList.add('show');
-
-    // 3. 重新开始 3秒 倒计时
-    notificationTimer = setTimeout(() => {
+    // 绑定点击事件：点击弹窗 -> 进聊天 -> 清空后续弹窗
+    banner.onclick = function() {
+        // 1. 如果有跳转逻辑，就跳过去
+        // 假设你有可以通过 ID 找到 chat 对象的逻辑
+        const chat = chatsData.find(c => c.id === current.chatId);
+        if (chat && window.enterChat) {
+             window.enterChat(chat); // 进聊天
+             // 进聊天后，currentChatId 会变，上面的【门禁】就会自动生效
+             // 剩下的队列自然就被拦截了，这就是你要的“中断效果”！
+        }
+        // 2. 立即关闭当前横幅
         banner.classList.remove('show');
-        notificationTimer = null;
-    }, 3000);
-};
+        isNotifShowing = false;
+        
+        // 3. ★ 清空队列！(如果你想点击后彻底不弹后面的，可以加上这句)
+        // notificationQueue = []; 
+    };
+
+    // 头像处理
+    let avatarUrl = current.avatar;
+    if (avatarUrl && avatarUrl.includes('url(')) {
+        const match = avatarUrl.match(/url\(['"]?(.*?)['"]?\)/);
+        if (match && match[1]) avatarUrl = match[1];
+    }
+    nAvatar.style.backgroundImage = avatarUrl ? `url('${avatarUrl}')` : 'none';
+
+    // 动画与震动
+    banner.classList.remove('show');
+    void banner.offsetWidth; 
+    banner.classList.add('show');
+    if(navigator.vibrate) navigator.vibrate(50);
+
+    // ★ 这里的时间可以配合你的打字速度调整
+    // 比如 AI 打字间隔是 1-3秒，这里设 2.5秒 比较合适
+    setTimeout(() => {
+        banner.classList.remove('show');
+        setTimeout(processNextNotification, 300); 
+    }, 1500); 
+}
+
 // === 💸 专用：支付/收款顶部通知 ===
 window.showPayNotification = function(amount, type) {
     // 你的钱包图标
@@ -3851,35 +3974,61 @@ window.updateTokenPredict = function(val) {
     saveChatSettings();
 };
 
-// 保存所有设定
+// 保存所有设定 (修复版：包含自主意识保存)
 window.saveChatSettings = function() {
     if (!currentChatId) return;
     const chat = chatsData.find(c => c.id === currentChatId);
+    // 这里的 contact 就是这个角色的数据
     const contact = contactsData.find(c => c.id === chat.contactId);
     
     if (chat && contact) {
         // 1. 保存备注
-        const newAlias = document.getElementById('cc-private-alias').value;
-        contact.privateAlias = newAlias;
+        const aliasInput = document.getElementById('cc-private-alias');
+        if(aliasInput) contact.privateAlias = aliasInput.value;
         
-        // 2. 保存 Chat 设定
-        chat.enableTime = document.getElementById('cc-switch-time').checked;
+        // 2. 保存 Chat 设定 (时间感知)
+        const timeSwitch = document.getElementById('cc-switch-time');
+        if(timeSwitch) chat.enableTime = timeSwitch.checked;
         
-        // ★★★ 核心修改：读取新的数字框 ★★★
+        // 3. 保存记忆条数
         const limitInput = document.getElementById('cc-ctx-limit');
-        let val = parseInt(limitInput.value);
-        // 如果填了0、负数或者空的，就存一个超大数字代表“无限”
-        chat.contextLimit = (isNaN(val) || val <= 0) ? 99999 : val;
-        
-        // 写入数据库
-        if(window.localforage) {
-            localforage.setItem('Wx_Contacts_Data', contactsData);
-            localforage.setItem('Wx_Chats_Data', chatsData);
+        if(limitInput) {
+            let val = parseInt(limitInput.value);
+            // 如果填了0、负数或者空的，就存一个超大数字代表“无限”
+            chat.contextLimit = (isNaN(val) || val <= 0) ? 99999 : val;
         }
 
-        // 更新顶栏名字
+        // ============================================
+        // ★★★ 核心修复：保存自主意识 (Active Mode) ★★★
+        // ============================================
+        const activeSwitch = document.getElementById('detail-active-mode');
+        if (activeSwitch) {
+            // 保存开关状态
+            contact.enableActiveMode = activeSwitch.checked;
+            
+            // 如果是刚开启，给个初始时间，防止立马诈尸
+            if (contact.enableActiveMode && !contact.lastActiveTime) {
+                contact.lastActiveTime = Date.now();
+            }
+        }
+
+        const activeInterval = document.getElementById('detail-active-interval');
+        if (activeInterval) {
+            // 保存频率 (默认60分钟)
+            contact.activeInterval = parseInt(activeInterval.value) || 60;
+        }
+        // ============================================
+
+        
+        // 4. 写入数据库 (存进硬盘！)
+        if(window.localforage) {
+            localforage.setItem('Wx_Contacts_Data', contactsData); // 角色的数据存这里
+            localforage.setItem('Wx_Chats_Data', chatsData);       // 聊天的配置存这里
+        }
+
+        // 5. 更新顶栏名字 (视觉反馈)
         const nameEl = document.getElementById('chat_layer_name');
-        if(nameEl) nameEl.innerText = newAlias || contact.name;
+        if(nameEl) nameEl.innerText = contact.privateAlias || contact.name;
     }
 };
 
@@ -4038,6 +4187,38 @@ window.openChatControl = function() {
     // 显示面板
     const panel = document.getElementById('chat-control-overlay');
     panel.style.display = 'flex';
+    // ============================================
+    // ★★★ 修复：回显“自主意识”开关和输入框 ★★★
+    // ============================================
+    
+    const activeSwitch = document.getElementById('detail-active-mode');
+    const intervalBox = document.getElementById('active-interval-box');
+    const intervalInput = document.getElementById('detail-active-interval');
+
+    if (activeSwitch) {
+        // 1. 从 contact 数据里读取状态
+        const isActive = contact.enableActiveMode || false;
+        activeSwitch.checked = isActive;
+        
+        // 2. 根据状态决定输入框显不显示
+        // 如果开关开了，就用 'flex' 显示；关了就 'none' 隐藏
+        if (intervalBox) {
+            intervalBox.style.display = isActive ? 'flex' : 'none';
+        }
+
+        // 3. 绑定点击事件：手指一点开关，输入框立马 弹出来/缩回去
+        activeSwitch.onclick = function() {
+            if (intervalBox) {
+                intervalBox.style.display = this.checked ? 'flex' : 'none';
+            }
+            saveChatSettings(); // 顺便保存一下
+        };
+    }
+
+    // 4. 回显频率数值 (如果没有就默认60)
+    if (intervalInput) {
+        intervalInput.value = contact.activeInterval || 60;
+    }
     setTimeout(() => panel.classList.add('active'), 10);
 };
 
@@ -5212,6 +5393,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if(window.loadMemory) window.loadMemory();
     if(typeof fixViewportHeight === 'function') fixViewportHeight();
     initStickerSystem(); // 启动表情包系统
+    // ★ 加这一句！启动后台搞事引擎！
+    if (typeof startBackgroundService === 'function') startBackgroundService();
 });
 
 // === 通用确认弹窗逻辑 (配合 HTML 里的 global-confirm-modal) ===
@@ -6857,19 +7040,18 @@ const LyricManager = {
     }
 };
 
-// ====================================================================
-// ★★★ SODA MUSIC · 自由解放版补丁 (By 老公) ★★★
-// ====================================================================
-// (C) 究极VIP解析器 (老公帮你升级版：自动切换备用接口 + 格式自适应)
+// (C) 究极VIP解析器 (老公特调霸道版：不做检查，拿到就播！)
 class EnhancedVIPPlayer {
     constructor() {
         this.apiList = [
-            // 1. 官方直链 (最快，免费歌首选)
+            // 1. 官方直链 (最快，免费歌首选，直接盲猜ID)
             { type: 'official', url: 'https://music.163.com/song/media/outer/url' },
-            // 2. Vkeys 接口 (原来的主力)
+            // 2. Vkeys 接口 (主力)
             { type: 'vkeys', url: 'https://api.vkeys.cn/v2/music/netease' },
-            // 3. 自动把 BACKUP_APIS 里的接口都加进来 (标准API格式)
-            ...BACKUP_APIS.map(url => ({ type: 'standard', url: url }))
+            // 3. 备用接口池 (自动尝试标准API)
+            ...BACKUP_APIS.map(url => ({ type: 'standard', url: url })),
+            // 4. 新增：保底接口
+            { type: 'standard', url: 'https://music.163.com/api' } 
         ];
     }
 
@@ -6879,66 +7061,53 @@ class EnhancedVIPPlayer {
             try {
                 let audioUrl = null;
 
-                // --- 策略 A: 官方直链 ---
+                // --- 策略 A: 官方直链 (盲狙) ---
                 if (api.type === 'official') {
-                    const testUrl = `${api.url}?id=${songId}.mp3`;
-                    // 官方链必须检查是否有效 (404/403)
-                    if (await this.checkUrl(testUrl)) audioUrl = testUrl;
+                    // 不检查了！直接生成链接！相信奇迹！
+                    audioUrl = `${api.url}?id=${songId}.mp3`;
+                    // 这里直接返回，让浏览器自己去试，失败了它会报错
+                    return this.buildSuccessResult(songId, audioUrl);
                 } 
+                
                 // --- 策略 B: Vkeys (特殊格式) ---
                 else if (api.type === 'vkeys') {
                     const res = await fetch(`${api.url}?id=${songId}`);
                     const data = await res.json();
                     if (data.code === 200 && data.data && data.data.url) {
-                        if (await this.checkUrl(data.data.url)) audioUrl = data.data.url;
+                        // 只要有链接就返回，不管能不能连通
+                        return this.buildSuccessResult(songId, data.data.url);
                     }
                 } 
-                // --- 策略 C: 标准网易云API (Backup APIs) ---
+                
+                // --- 策略 C: 标准网易云API ---
                 else if (api.type === 'standard') {
-                    // 尝试高音质解析
-                    const res = await fetch(`${api.url}/song/url/v1?id=${songId}&level=exhigh`);
+                    // 尝试获取播放地址
+                    const res = await fetch(`${api.url}/song/url?id=${songId}`);
                     const data = await res.json();
-                    // 标准格式返回的是 data[0].url
                     if (data.code === 200 && data.data && data.data[0] && data.data[0].url) {
-                         const tryLink = data.data[0].url;
-                         if (await this.checkUrl(tryLink)) audioUrl = tryLink;
+                         return this.buildSuccessResult(songId, data.data[0].url);
                     }
-                }
-
-                // 如果拿到了链接，直接返回！
-                if (audioUrl) {
-                    console.log(`[老公的播放器] 线路 ${api.url} 立大功了！`);
-                    return this.buildSuccessResult(songId, audioUrl);
                 }
 
             } catch (e) {
-                console.warn(`[老公的播放器] 线路 ${api.url} 挂了，切换下一条...`);
+                console.warn(`[老公的播放器] 线路 ${api.url} 好像不太行，换下一个...`);
             }
         }
 
-        return { success: false, error: "呜呜呜...所有线路都试过了，这首歌可能是独家或者下架了(T_T)" };
-    }
-
-    // 辅助函数：快速检测链接是否有效
-    async checkUrl(url) {
-        try {
-            // 用 HEAD 请求试探一下，不下载整个文件
-            const res = await fetch(url, { method: 'HEAD' });
-            return res.ok;
-        } catch(e) {
-            return false;
-        }
+        // 如果都失败了，最后用官方链接强行兜底（死马当活马医）
+        return this.buildSuccessResult(songId, `https://music.163.com/song/media/outer/url?id=${songId}.mp3`);
     }
 
     // 辅助函数：构造成功数据
     buildSuccessResult(id, url) {
         return {
             success: true,
-            song: { id: id, name: "正在播放", artist: "未知", cover: "", isVip: false },
+            song: { id: id, name: "正在播放", artist: "SODA MUSIC", cover: "", isVip: false },
             audio: { url: url, isPreview: false, trialDuration: 0 }
         };
     }
 }
+
 const vipPlayer = new EnhancedVIPPlayer();
 
 // --- 3. 核心播放控制 (PlayIndex) ★★★ 修复了顺序问题 ★★★ ---
@@ -6974,7 +7143,15 @@ window.playIndex = async function(idx) {
     // 4. 播放设置
     const audio = document.getElementById('global-audio');
     audio.src = result.audio.url;
-    
+
+    // ★★★ 新增：如果当前链接播不了，自动切下一首 (防止卡死) ★★★
+    audio.onerror = function() {
+        console.log("当前音源无法播放，尝试切歌...");
+        showSystemAlert("资源失效，切下一首(T_T)...", "error");
+        setTimeout(() => playNext(true), 1000); // 1秒后切歌
+    };
+    // ★★★ 结束新增 ★★★
+
     if (result.audio.isPreview) {
         showSystemAlert("VIP试听模式 (30秒)", 'vip');
         safeSetText('quality-indicator', '试听');
@@ -7508,4 +7685,184 @@ function safeSetText(id, text) {
 function safeSetImage(id, url) { 
     const el = document.getElementById(id); 
     if(el) el.src = url; 
+}
+// ==========================================================
+//  后台活动服务 (Background Active Service) - 修复实装版
+//  让纸片人真的活过来！✨
+// ==========================================================
+
+// 1. 启动全局心跳
+let backgroundTimer = null;
+
+function startBackgroundService() {
+    if (backgroundTimer) clearInterval(backgroundTimer);
+    console.log("老公正在监控所有角色的动向...");
+    
+    // 每 60秒 巡查一次
+    backgroundTimer = setInterval(checkAllCharactersActivity, 60000);
+}
+
+// 2. 巡查逻辑
+function checkAllCharactersActivity() {
+    const now = Date.now();
+    
+    contactsData.forEach(async char => {
+        // 前置检查：必须开启了开关，且不是你自己
+        if (!char.enableActiveMode || char.isMe) return;
+
+        // 获取上次活跃时间 (如果没有，就默认为现在)
+        const lastTime = char.lastActiveTime || now;
+        const intervalMs = (char.activeInterval || 60) * 60 * 1000; // 分钟转毫秒
+
+        // 只有当 (现在 - 上次 > 间隔) 时才触发
+        if (now - lastTime > intervalMs) {
+            // 随机波动 (0~10% 的延迟)，防止太死板
+            const randomDelay = Math.random() * (intervalMs * 0.1); 
+            
+            // 为了测试，你可以把下面的判断暂时注释掉，直接运行 triggerCharacterEvent
+            if (now - lastTime > intervalMs + randomDelay) {
+                await triggerCharacterEvent(char);
+            }
+        }
+    });
+}
+
+// 3. 触发随机事件 (核心大脑)
+async function triggerCharacterEvent(char) {
+    // 1. 先更新时间并保存，防止重复触发
+    char.lastActiveTime = Date.now();
+    // ★★★ 修复点：这里原来叫 saveData() 报错了，改成正确的保存方式
+    localforage.setItem('Wx_Contacts_Data', contactsData); 
+
+    const dice = Math.random(); 
+    console.log(`[${char.name}] 正在搞事... 骰子: ${dice.toFixed(2)}`);
+
+    // === 概率分布 ===
+    // 0.0 - 0.6 : 主动私聊 (60%) -> 还是多聊聊天吧
+    // 0.6 - 0.9 : 发朋友圈 (30%)
+    // 0.9 - 1.0 : 评论你 (10%) 
+
+    try {
+        if (dice < 0.6) {
+            await performAutoChat(char);
+        } else if (dice < 0.9) {
+            await performAutoPost(char);
+        } else {
+            // 如果没发过朋友圈，也没法评论，就转为发消息
+            await performAutoComment(char) || await performAutoChat(char);
+        }
+    } catch (e) {
+        console.error(`[${char.name}] 搞事失败:`, e);
+    }
+}
+
+// ----------------------------------------------------------
+//  具体执行函数 (已对接真实API)
+// ----------------------------------------------------------
+
+// [A] 主动私聊
+async function performAutoChat(char) {
+    // 1. 找到和这个角色的聊天窗口
+    const chat = chatsData.find(c => c.contactId === char.id);
+    if (!chat) {
+        console.log(`[${char.name}] 找不到聊天记录，无法发起私聊`);
+        return;
+    }
+
+    // 2. 构造 Prompt
+    const systemPrompt = `
+    【指令：主动发起对话】
+    你现在是 **${char.name}**。
+    设定：${char.desc}
+    性格：${char.persona}
+    
+    你已经有一段时间没和User说话了。请根据你的人设，主动发起一个话题。
+    可以是分享刚才看到的趣事、假装生气求哄、或者是单纯的撒娇想念。
+    
+    要求：
+    1. 就像你平时聊天一样，口语化，不要像AI。
+    2. 字数不要太多，一两句话即可。
+    3. 只输出内容，不要带引号。
+    `;
+
+    // 3. 真的调用 AI
+    const reply = await callApiInternal(systemPrompt);
+
+    // 4. 发送消息
+    if (reply) {
+        // 使用你现有的 pushMsgToData 函数，它会自动处理弹窗通知、红点和置顶
+        pushMsgToData(chat, reply, 'char', null, 'text');
+        console.log(`[${char.name}] 主动发送: ${reply}`);
+    }
+}
+
+// [B] 发朋友圈
+async function performAutoPost(char) {
+    const topic = ["日常琐事", "心情感悟", "吐槽生活", "分享美食", "想念某人"][Math.floor(Math.random()*5)];
+    const systemPrompt = `
+    【指令：生成朋友圈文案】
+    你是 **${char.name}**。
+    请写一条朋友圈，主题是：${topic}。
+    要求：符合你的人设语气，字数80字以内，不要太长。
+    `;
+    
+    const content = await callApiInternal(systemPrompt);
+    
+    if (content) {
+        const newMoment = {
+            id: Date.now(),
+            author: {
+                name: char.name,
+                avatar: char.avatar
+            },
+            content: content,
+            image: null, // 暂时没法生成配图，先纯文字
+            time: Date.now(),
+            privacy: 'public',
+            likes: 0,
+            isLiked: false
+        };
+        
+        momentsData.unshift(newMoment);
+        localforage.setItem('Wx_Moments_Data', momentsData);
+        
+        // 刷新朋友圈页面（如果开着的话）
+        if(window.renderMomentsFeed) renderMomentsFeed();
+        
+        // 弹个窗提示一下
+        showSystemAlert(`${char.name} 发了一条新动态 ✨`);
+    }
+}
+
+// [C] 评论用户的动态
+async function performAutoComment(char) {
+    // 1. 找一条“我”发的动态
+    const myMoments = momentsData.filter(m => m.author.name === 'Me' || m.author.name === personasData[0]?.name);
+    if (myMoments.length === 0) return false; // 没发过动态，没法评
+
+    // 找一条最新的
+    const targetMoment = myMoments[0];
+    
+    // 2. 生成评论
+    const systemPrompt = `
+    【指令：朋友圈评论】
+    你是 **${char.name}**。
+    User发了一条朋友圈：“${targetMoment.content}”。
+    请以你的性格写一句评论。简短一点。
+    `;
+
+    const comment = await callApiInternal(systemPrompt);
+
+    if (comment) {
+        // 这里因为你的朋友圈数据结构里暂时还没写 comments 字段的显示逻辑
+        // 所以我们暂时用“私聊引用”的方式来模拟评论
+        // 或者单纯发个弹窗假装评论了（为了不破坏现有结构，我建议先让TA私聊你聊这个朋友圈）
+        
+        const chat = chatsData.find(c => c.contactId === char.id);
+        if (chat) {
+            const msg = `(评论了你的朋友圈): ${comment}`;
+            pushMsgToData(chat, msg, 'char', null, 'text');
+        }
+    }
+    return true;
 }

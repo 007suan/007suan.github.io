@@ -250,9 +250,13 @@
 </div>
 
 <div class="dock" id="dockGrid">
-    <div class="app-item" style="margin-bottom: 0;" onclick="openApp('wechat')">
-        <div class="app-icon" id="wechat" style="background-image: url('https://i.postimg.cc/HxnxmVjP/wu-biao-ti119-20260117102207.png');"></div>
+<div class="app-item" style="margin-bottom: 0;" onclick="openApp('wechat')">
+    <div class="app-icon" id="wechat" style="background-image: url('https://i.postimg.cc/HxnxmVjP/wu-biao-ti119-20260117102207.png');">
+        
+        <div id="desktop-badge-wechat" class="badge">0</div>
+        
     </div>
+</div>
     <div class="app-item" style="margin-bottom: 0;" onclick="openApp('qq')">
         <div class="app-icon" id="QQ" style="background-image: url('https://i.postimg.cc/QtCtDHVz/wu-biao-ti119-20260117102253.png');"></div>
     </div>
@@ -422,7 +426,7 @@
                                 </svg>
                             </div>
                             <div id="wx-header-menu" class="wx-dropdown-menu">
-                                <div class="wx-dd-item" onclick="alert('即将推出：发起群聊')">
+                                <div class="wx-dd-item" onclick="alert('下次一定搓群聊功能....')">
                                     <svg viewBox="0 0 24 24"><path d="M21 6h-2v9H6v2c0 .55.45 1 1 1h11l4 4V7c0-.55-.45-1-1-1zm-4 6V3c0-.55-.45-1-1-1H3c-.55 0-1 .45-1 1v14l4-4h10c.55 0 1-.45 1-1z"/></svg>
                                     <span>发起群聊</span>
                                 </div>
@@ -1192,7 +1196,42 @@
             </div>
             <div class="ins-arrow">›</div>
         </div>
+        <div class="ins-menu-item">
+            <div class="ins-menu-left">
+                <div class="ins-point">✦</div>
+                <div class="ins-menu-text">
+                    <div class="title">自主意识 (Active Mode)</div>
+                    <div class="desc">允许Ta主动找你聊天或发动态</div>
+                </div>
+            </div>
+            <label class="ios-switch">
+                <input type="checkbox" id="detail-active-mode" onchange="saveChatSettings()">
+                <span class="slider"></span>
+            </label>
+        </div>
 
+        <div class="ins-menu-item" id="active-interval-box" style="justify-content: space-between; align-items: center; padding-right: 15px; display:none;">
+            <div class="ins-menu-left" style="flex: 1;">
+                <div class="ins-point" style="color: transparent;">✦</div> <div class="ins-menu-text">
+                    <div class="title" style="font-size: 15px; color: #666;">心动频率 (分钟)</div>
+                    <div class="desc" style="font-size: 10px;">间隔多久搞一次事 (Min 30m)</div>
+                </div>
+            </div>
+
+            <input type="number" id="detail-active-interval" 
+                   value="60" min="30"
+                   class="ios-input-number"
+                   onchange="saveChatSettings()"
+                   style="
+                       width: 80px; height: 36px; 
+                       background: #f2f2f7; 
+                       border: 1px solid rgba(0,0,0,0.05); 
+                       border-radius: 8px; 
+                       text-align: center; 
+                       font-weight: 600; font-size: 16px; 
+                       outline: none; color: #ff2d55;
+                   ">
+        </div>
         <div class="ins-menu-item" onclick="requestDeleteChat(currentChatId); closeChatControl();">
             <div class="ins-menu-left">
                 <div class="ins-point" style="color: #ff3b30;">✖</div>

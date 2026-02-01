@@ -141,7 +141,11 @@ body {
         inset 0 1px 0 rgba(255, 255, 255, 0.25), 
         inset 0 -1px 0 rgba(0, 0, 0, 0.05);         
     transition: transform 0.1s ease, filter 0.2s;
-    background-color: #000; }
+    background-color: #000; 
+    
+    /* ★★★ 加这两句！ ★★★ */
+    position: relative;  /* 让红点贴着我，别乱跑 */
+    overflow: visible;   /* 允许红点凸出去，别被切掉了 */}
 /* 图标光泽感 */
 .app-name { font-size: 11px; color: #333; text-align: center; cursor: pointer; }
 .search-pill { margin: 10px auto 0; background: rgba(255,255,255,0.5); padding: 4px 12px; border-radius: 20px; display: flex; align-items: center; gap: 5px; font-size: 11px; color: #555; backdrop-filter: blur(10px); cursor: pointer; width: fit-content; }
@@ -1560,6 +1564,23 @@ body.offline-active #chat-msg-area {
 .ins-menu-item:active { background: rgba(0, 0, 0, 0.05); border-radius: 8px; }
 .ins-menu-item.danger { color: #ff3b30; }
 
+/* 详细设定页的小标题样式微调 */
+.ins-menu-text .title {
+    font-weight: 600;
+    color: #333;
+}
+
+/* 那个频率输入框被选中时的样子 */
+.ios-input-number:focus {
+    background: #fff !important;
+    border-color: #007aff !important;
+    box-shadow: 0 0 0 3px rgba(0,122,255,0.1);
+}
+
+/* 针对 Active Mode 开关的特殊微调，让它看起来跟上面的一致 */
+#active-interval-box {
+    transition: all 0.3s ease; /* 丝滑的展开动画 */
+}
 /* ------------------------------------------------------------
    6.6. 聊天总结/故事页 (Summary / Stories)
    ------------------------------------------------------------ */
@@ -2270,7 +2291,54 @@ body, button, input, textarea, select, .edit-text {
     pointer-events: none; 
 }
 .app-badge.show { display: flex; }
+/* ========================================== */
+/* ★★★ 高仿 iOS 原生红点样式 (Pro Max 版) ★★★ */
+/* ========================================== */
+.badge {
+    position: absolute;
+    /* 位置微调，因为它变大了，要往右上角再挪一点 */
+    top: -6px;
+    right: -6px;
+    
+    /* 【大】&【圆】的核心 */
+    min-width: 24px; /* 变大！(之前是18px) */
+    height: 24px;    /* 变大！ */
+    /* 只要这个值大于等于高度，单数字时就是正圆，多数字时就是胶囊圆 */
+    border-radius: 24px; 
+    padding: 0 6px;      /* 给两位数留点呼吸空间 */
+    box-sizing: border-box;
+    
+    /* 颜色与字体 */
+    background-color: #ff3b30; /* 苹果官方红 */
+    color: white;
+    font-size: 14px;    /* 字也大一点 */
+    font-weight: 600;   /* 半粗体，更有质感 */
+    /* 尽可能使用系统原文字体 */
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    
+    /* 居中对齐 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* 【去白边】&【加阴影】 */
+    border: none; /* 拜拜了白边！ */
+    /* 加一点点淡淡的阴影，立体感瞬间出来了！ */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15); 
+    z-index: 10;
 
+    /* 默认隐藏 (不要动这个) */
+    display: none; 
+}
+.badge.show {
+    display: flex !important;
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+    0% { transform: scale(0); }
+    100% { transform: scale(1); }
+}
 /* ==========================================================================
    9. 酷狗音乐全套样式 
    ========================================================================== */
@@ -3080,162 +3148,184 @@ body, button, input, textarea, select, .edit-text {
 }
 
 /* ==========================================================================
-   ★ 10. 全局统一顶栏与布局系统 (终极合并版)
+   ★ 10. 全局统一顶栏与布局系统 (User 定制版)
    整理时间：2026/01/30
    ========================================================================== */
 
 /* ------------------------------------------------------------
-   1. 顶栏容器 (The Shell) - 所有页面的公共地基
+   1. 顶栏容器 (The Shell)
    ------------------------------------------------------------ */
 .sub-header,
-#sub-api-config .sub-header,        /* API设置页 */
-#sub-page-summary .sub-header,      /* 聊天总结页 */
-.settings-header-area .sub-header,  /* 设置子页面 */
-.chat-header-layer,                 /* 聊天详情页 (背景图版) */
-.chat-header-ios                    /* 聊天详情页 (iOS版) */
+#sub-api-config .sub-header,
+#sub-page-summary .sub-header,
+.settings-header-area .sub-header,
+.chat-header-layer,
+.chat-header-ios 
 {
     /* 统一高度 */
     height: 105px !important; 
     
     /* 避让刘海 */
     padding-top: 50px !important;    
-    padding-bottom: 0 !important;
     padding-left: 0 !important;
     padding-right: 0 !important;
     box-sizing: border-box !important;
     
-    /* 视觉风格：毛玻璃 */
-    background: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    
-    /* 边框 */
-    box-shadow: none !important; 
-    border-bottom: 0.5px solid rgba(0, 0, 0, 0.15) !important; 
-    background-clip: padding-box;
+    /* ★ 视觉风格：纯白 + 细线 */
+    background: #ffffff !important; 
+    /* 这一行是那条细细的线 */
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.1) !important; 
     
     /* 定位：永远吸顶 */
     position: fixed !important;
     top: 0; left: 0; width: 100%;
     z-index: 9999;
-    
-    /* 布局方式：绝对定位控制 */
-    display: block !important; 
+    display: flex !important; /* 改用 Flex 布局，方便对齐 */
+    align-items: center !important; /* 垂直居中 */
+    justify-content: space-between !important; /* 左右两端对齐 */
 }
 
-/* 特殊修正：背景图模式不需要白色背景 */
+/* 背景图模式特殊处理 (透明) */
 .chat-header-layer {
-    background: transparent !important; /* 透明 */
-    border-bottom: none !important;     /* 无边框 */
-    height: 115px !important;           /* 稍微高一点 */
+    background: transparent !important;
+    border-bottom: none !important;
+    height: 115px !important;
     padding-top: 55px !important;
+    display: block !important; /* 背景图模式保持绝对定位布局 */
 }
 
 /* ------------------------------------------------------------
-   2. 顶栏元素 (Elements) - 强制把内容按下来
+   2. 顶栏元素：左侧组合 (返回键 + 标题)
    ------------------------------------------------------------ */
 
-/* 2.1 标题 / 名字 (绝对居中) */
-.sub-header span,
-.sub-header .title,
-#sub-api-config .sub-header span,
-.wx-h-title,
-.chat-header-ios .c-h-center,
-.chat-header-ios .title,
-.chat-header-layer .chl-name
-{
-    position: absolute !important;
-    top: 55px !important; /* ★ 核心：控制垂直位置 */
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    width: auto !important;
-    height: 40px !important;
-    line-height: 40px !important;
-    
-    text-align: center !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    
-    color: #000 !important;
-    font-size: 17px !important;
-    font-weight: 600 !important;
-    letter-spacing: -0.5px;
-    z-index: 1 !important; 
+/* 包裹层：把返回键和标题捆在一起 */
+.header-left-group {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding-left: 5px; /* 稍微留点边距 */
+    padding-top: 10px; /* 这一行是为了修正垂直居中，因为父容器padding-top了50px */
 }
-/* 背景图模式的名字是白色的 */
-.chat-header-layer .chl-name { color: #fff !important; }
 
-/* 2.2 左侧返回按钮 */
+/* 返回按钮 */
 .sub-header .back-btn,
 .chat-header-ios .c-h-left,
-.chat-header-ios .icon-back,
-.chat-header-layer .chl-back-btn
+.header-left-group .back-btn
 {
-    position: absolute !important;
-    left: 10px !important;
-    top: 55px !important; /* ★ 核心：和标题对齐 */
-    bottom: auto !important;
-    
     height: 40px !important;
-    width: 60px !important;
-    
+    width: 40px !important; /* 稍微改小一点，紧凑 */
     display: flex !important;
     align-items: center !important;
-    justify-content: flex-start !important; /* 靠左 */
-    
-    font-size: 24px !important;
-    color: #000 !important;
+    justify-content: center !important;
     z-index: 10 !important;
-    margin: 0 !important;
-    transform: none !important;
+    cursor: pointer;
 }
-/* 背景图模式返回按钮白色 */
-.chat-header-layer .chl-back-btn { color: #fff !important; }
+/* 强制图标黑色 */
+.sub-header .back-btn svg,
+.header-left-group .back-btn svg {
+    fill: #000 !important;
+}
 
-/* 2.3 右侧功能按钮 */
+/* ★ 标题 (现在跟在返回键屁股后面) */
+.sub-header .left-title,
+.header-left-group .left-title {
+    font-size: 18px !important;
+    font-weight: 700 !important; /* 加粗 */
+    color: #000 !important;      /* 黑色 */
+    margin-left: 5px !important; /* 离返回键一点距离 */
+    letter-spacing: -0.5px;
+}
+
+/* 兼容旧的居中标题 (其他页面可能还在用) */
+.sub-header > span:not(.left-title),
+.sub-header .title,
+.chat-header-ios .title {
+    position: absolute !important;
+    top: 55px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    font-size: 17px !important;
+    font-weight: 600 !important;
+    color: #000 !important;
+    z-index: 1;
+}
+
+/* ------------------------------------------------------------
+   3. 顶栏元素：右侧按钮
+   ------------------------------------------------------------ */
+.header-right-btn,
 .sub-header .header-right-btn,
-.chat-header-ios .c-h-right,
-.chat-header-layer .chl-menu
+.chat-header-ios .c-h-right
 {
     position: absolute !important;
     right: 15px !important;
-    top: 55px !important; /* ★ 核心：和标题对齐 */
-    bottom: auto !important;
-    
+    top: 55px !important; 
     height: 40px !important;
     display: flex !important;
     align-items: center !important;
+    justify-content: center !important;
     z-index: 10 !important;
 }
+/* 强制右侧图标黑色 */
+.header-right-btn svg {
+    fill: #000 !important;
+}
+
+/* 背景图模式的特殊覆盖 (白色字) */
+.chat-header-layer .chl-name,
+.chat-header-layer .chl-back-btn { color: #fff !important; }
 
 /* ------------------------------------------------------------
-   3. 内容避让 (Body Padding) - 防止被顶栏遮挡
+   4. 内容避让 (Body Padding)
    ------------------------------------------------------------ */
-
-/* 3.1 通用子页面 */
 .sub-page .settings-list,
 .sub-page .sub-content,
 .sub-page .ali-scroll-content,
 .sub-page .ins-form-page 
 {
-    padding-top: 120px !important; /* 105px顶栏 + 15px间距 */
+    padding-top: 106px !important; /* 稍微调整，紧贴细线 */
     margin-top: 0 !important;
 }
-
-/* 3.2 聊天内容区 */
-.chat-body-ios {
-    padding-top: 130px !important; /* 聊天记录要多留一点 */
-}
-#sub-page-chat-detail .sub-content {
-    padding-top: 130px !important;
-}
-
-/* 3.3 资料卡页 (Creator) - 全屏模式无需避让 */
 #sub-page-creator {
     padding-top: 0 !important;
-    height: 100% !important;
 }
-#sub-page-creator .exp-browser-top {
+/* ------------------------------------------------------------
+   TYPE B: 聊天详情页顶栏 (改：不透明纯白版)
+   ------------------------------------------------------------ */
+.chat-header-layer {
+    height: 115px !important;
+    padding-top: 55px !important; /* 保持原有的位置 */
+    
+    /* ★ 1. 背景改成纯白 */
+    background: #ffffff !important; 
+    
+    /* ★ 2. 加一条底部的细线 (可选) */
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.1) !important;
+    box-shadow: none !important;
+    
+    position: fixed !important;
+    top: 0; left: 0; width: 100%;
+    z-index: 2000;
     display: block !important;
-    padding-top: 50px !important; /* 只要避开刘海即可 */
 }
+
+/* ★ 3. 所有的文字变黑色 */
+.chat-header-layer .chl-name { 
+    color: #000 !important; 
+}
+.chat-header-layer .chl-status {
+    color: #999 !important; /* 状态文字浅灰 */
+}
+
+/* ★ 4. 所有的图标变黑色 */
+.chl-back-btn svg {
+    fill: #000 !important;
+}
+.chl-menu-btn svg {
+    fill: #000 !important;
+}
+
+/* (可选) 如果你想保留一点点毛玻璃效果，可以用这个背景：
+   background: rgba(255, 255, 255, 0.95) !important;
+   backdrop-filter: blur(20px) !important;
+*/
