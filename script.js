@@ -1857,7 +1857,7 @@ function formatMiniTime(ts) {
 }
 
 // ==========================================================
-// ★★★ 渲染消息 (包含动作、撤回、时间条、转账) ★★★
+// ★★★ 渲染消息 (完整修复版) ★★★
 // ==========================================================
 window.renderMessages = function(chatId, autoScroll = true) {
     const chat = chatsData.find(c => c.id === chatId);
@@ -1952,103 +1952,126 @@ window.renderMessages = function(chatId, autoScroll = true) {
             `<div class="msg-avatar-col"><div class="msg-avatar" style="${bgStyle}"></div><div class="msg-avatar-time">${miniTime}</div></div>` : 
             `<div class="msg-avatar-placeholder"></div>`;
 
-        let contentHtml = '';
         let extraClass = '';
-        const realIndex = startIndex + i;
         
+        // --- 核心渲染逻辑开始 ---
+        let mainBubble = '';
+        let quoteHtml = '';
+
+        // A. 生成气泡主体 (修复版)
         if (msg.type === 'sticker') {
-            contentHtml = `<img src="${msg.text}" class="sticker-img-big" style="max-width:120px;border-radius:10px;">`;
+            mainBubble = `<img src="${msg.text}" class="sticker-img-big" style="max-width:120px;border-radius:10px;">`;
             extraClass = 'sticker-type'; 
-        } else if (msg.type === 'image') {
-            contentHtml = `<img src="${msg.text}" class="chat-image" style="max-width:150px;border-radius:10px;" onclick="previewImage('${msg.text}')">`;
-        } else if (msg.type === 'transfer') {
-            // ★ 转账气泡逻辑 (这里修好了！)
-            let extra = {};
-            try { extra = JSON.parse(msg.extra || '{}'); } catch(e){}
+        } 
+        else if (msg.type === 'image') {
+            mainBubble = `<img src="${msg.text}" class="chat-image" style="max-width:150px;border-radius:10px;" onclick="previewImage('${msg.text}')">`;
+        } 
+        else if (msg.type === 'transfer') {
+            // --- 转账卡片 ---
+            let status = msg.transferStatus;
+            // ★ 修复：优先读 msg.text，读不到再尝试解析 extra
+            let amt = parseFloat(msg.text); 
             
-            const statusText = extra.status === 'accepted' ? '已收款' : (extra.status === 'rejected' ? '已退回' : '请收款');
-            const iconStr = extra.status === 'accepted' ? '✔' : '¥';
-            const opacityStyle = extra.status === 'pending' ? 'opacity: 1;' : 'opacity: 0.6;';
-            const amt = parseFloat(extra.amount || 0).toFixed(2);
+            if (!status || isNaN(amt)) {
+                try {
+                    const extra = JSON.parse(msg.extra || '{}');
+                    if (!status) status = extra.status;
+                    if (isNaN(amt)) amt = parseFloat(extra.amount || 0);
+                } catch(e) {}
+            }
             
-            contentHtml = `
-                <div class="transfer-bubble-wrap" onclick="clickTransferBubble(${realIndex})" style="cursor: pointer;">
-                    <div class="tf-bubble-top" style="${opacityStyle}">
-                        <div class="tf-icon-circle">
-                            <span style="font-size: 18px; font-weight: bold; color:white;">${iconStr}</span>
-                        </div>
-                        <div class="tf-bubble-info">
-                            <div class="tf-bubble-amount">¥ ${amt}</div>
-                            <div class="tf-bubble-status">${statusText}</div>
-                        </div>
+            const stateClass = (status === 'accepted' || status === 'refunded') ? 'accepted' : '';
+            let statusText = 'Transfer';
+            if (status === 'accepted') statusText = 'Received';
+            if (status === 'refunded') statusText = 'Refunded';
+            
+            mainBubble = `
+                <div class="msg-content transfer ${stateClass}" onclick="handleTransferClick('${msg.id}')">
+                    <div class="tf-icon-img"></div>
+                    <div class="tf-info">
+                        <div class="tf-amt">¥${amt.toFixed(2)}</div>
+                        <div class="tf-status">${statusText}</div>
                     </div>
-                    <div class="tf-bubble-bottom">微信转账</div>
                 </div>
             `;
-            extraClass = 'transfer';
-        } else {
+        }
+        else if (msg.type === 'transfer_receipt') {
+            // --- ★ 新增：转账回执 (小气泡) ---
+            // 内容格式： "type|amount" 比如 "accept|520.00"
+            const [action, amtVal] = (msg.text || "").split('|');
+            const isAccept = action === 'accept';
+            
+            const iconHtml = isAccept ? '✔' : '✕';
+            const iconClass = isAccept ? '' : 'refund'; // 退款标红
+            const title = isAccept ? '已收款' : '已退回';
+            const sub = `¥${parseFloat(amtVal||0).toFixed(2)}`;
+
+            mainBubble = `
+                <div class="msg-content receipt">
+                    <div class="receipt-icon ${iconClass}">${iconHtml}</div>
+                    <div class="receipt-text">
+                        <span>${title}</span>
+                        <span class="receipt-sub">${sub}</span>
+                    </div>
+                </div>
+            `;
+        }
+        else {
             // 普通文本
-            contentHtml = (msg.text || '').replace(/\n/g, '<br>');
+            let contentHtml = (msg.text || msg.content || '').replace(/\n/g, '<br>');
+            mainBubble = `<div class="msg-content ${extraClass}">${contentHtml}</div>`;
         }
 
-        const mainBubble = `<div class="msg-content ${extraClass}">${contentHtml}</div>`;
-        
-        let quoteHtml = '';
+        // B. 生成引用 (悬浮上方)
         if (msg.quote) {
             let fullQuoteText = `${msg.quote.name}：${msg.quote.text}`;
-            if (fullQuoteText.length > 15) fullQuoteText = fullQuoteText.substring(0, 15) + "...";
+            if (fullQuoteText.length > 20) fullQuoteText = fullQuoteText.substring(0, 20) + "...";
             quoteHtml = `<div class="msg-quote-outside" onclick="scrollToMsg('${msg.quote.id}')">${fullQuoteText}</div>`;
         }
 
-        if (isMe) row.innerHTML = `<div class="msg-container-col">${mainBubble}${quoteHtml}</div>${avatarHtml}`;
-        else row.innerHTML = `${avatarHtml}<div class="msg-container-col">${mainBubble}${quoteHtml}</div>`;
+        // C. 组合 (引用在前，气泡在后)
+        // 注意：转账消息(mainBubble)已经是div了，如果是文本/图片，mainBubble也是div/img
+        // 这里统一包装一下，方便布局
+        const colContent = `<div class="msg-container-col">${quoteHtml}${mainBubble}</div>`;
+
+        if (isMe) {
+            row.innerHTML = `${colContent}${avatarHtml}`;
+        } else {
+            row.innerHTML = `${avatarHtml}${colContent}`;
+        }
         
-        const bubbleContent = row.querySelector('.msg-content');
+        // 绑定长按
+        const bubbleContent = row.querySelector('.msg-content, .sticker-img-big, .chat-image');
         if(bubbleContent && window.bindLongPress) bindLongPress(bubbleContent);
         
         container.appendChild(row);
         lastRole = msg.role;
     });
 
-    // ... (在 renderMessages 函数的末尾) ...
-
-    // ===========================================
-    // [修复版] 底部状态条 (已读/已送达)
-    // ===========================================
+    // 5. 底部状态条 (已读/已送达)
     if (msgsToRender.length > 0) {
         const lastMsg = msgsToRender[msgsToRender.length - 1];
-        
-        // 只有非动作、非撤回的消息才显示状态
         if(lastMsg.type !== 'action' && lastMsg.type !== 'recall') {
             const statusDiv = document.createElement('div');
             statusDiv.className = 'msg-status-foot';
-            
-            // 格式化时间
             const d = new Date(lastMsg.timestamp);
             const timeStr = `${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}`;
             
-            // ★ 核心逻辑分流 ★
             if (lastMsg.role === 'me') {
-                // 情况A：最后一条是我发的 -> 显示【已送达】 -> 靠右
                 statusDiv.innerHTML = `已送达 ${timeStr}`;
                 statusDiv.style.textAlign = 'right';
-                statusDiv.style.paddingRight = '10px'; // 靠右不需要缩进太多，稍微留点边距就好
-                statusDiv.style.paddingLeft = '0';
-                statusDiv.style.color = '#8e8e93'; // 灰色
+                statusDiv.style.paddingRight = '10px';
+                statusDiv.style.color = '#8e8e93';
             } else {
-                // 情况B：最后一条是TA发的 -> 显示【已读】 -> 靠左
                 statusDiv.innerHTML = `已读 ${timeStr}`;
                 statusDiv.style.textAlign = 'left';
-                statusDiv.style.paddingLeft = '58px'; // ★ 关键：要避开左边的头像宽度
-                statusDiv.style.paddingRight = '0';
+                statusDiv.style.paddingLeft = '58px';
                 statusDiv.style.color = '#8e8e93';
             }
-            
             container.appendChild(statusDiv);
         }
     }
 
-    // 自动滚动
     if (autoScroll || isAtBottom) {
         setTimeout(() => container.scrollTop = container.scrollHeight, 0);
     }
@@ -2406,17 +2429,17 @@ window.triggerAI = async function() {
     }
         
     // =======================================================
-    // ★★★ 执行请求与处理 ★★★
+    // ★★★ 执行请求与处理 (终极修复版) ★★★
     // =======================================================
     
-    // 1. 【思考阶段】：显示“对方正在输入...”
+    // 1. 【思考阶段】
     if (currentChatId === targetChatId) showTypingBubble(char.avatar);
 
     try {
         // 2. 请求 API
         const reply = await callApiInternal(finalSystemPrompt);
         
-        // 3. 【思考结束】：拿到回复瞬间，马上移除气泡！
+        // 3. 【思考结束】
         if (currentChatId === targetChatId) removeTypingBubble();
 
         if (reply) {
@@ -2424,14 +2447,16 @@ window.triggerAI = async function() {
             let targetSticker = null;
             let aiTransferAmount = 0;
 
-            // (A) 处理转账指令
+            // --- (A) 处理转账指令 (收钱/退钱) ---
             if (cleanReply.includes('[CMD:RECEIVE]')) {
                 cleanReply = cleanReply.replace('[CMD:RECEIVE]', '').trim();
                 if (pendingTransferMsg) {
                     let extra = JSON.parse(pendingTransferMsg.extra);
                     extra.status = 'accepted'; 
                     pendingTransferMsg.extra = JSON.stringify(extra);
-                    if (currentChatId === targetChatId) showSystemAlert(`TA 已收款 ¥${extra.amount} 💰`);
+                    
+                    // ★ 改了这里：AI (char) 发送 transfer_receipt 气泡
+                    pushMsgToData(chat, `accept|${extra.amount}`, 'char', null, 'transfer_receipt');
                 }
             } else if (cleanReply.includes('[CMD:REFUND]')) {
                 cleanReply = cleanReply.replace('[CMD:REFUND]', '').trim();
@@ -2439,20 +2464,27 @@ window.triggerAI = async function() {
                     let extra = JSON.parse(pendingTransferMsg.extra);
                     extra.status = 'rejected';
                     pendingTransferMsg.extra = JSON.stringify(extra);
+                    
                     walletData.balance += parseFloat(extra.amount);
-                    walletData.bills.push({ time: Date.now(), title: `转账退回`, amount: parseFloat(extra.amount), type: 'in' });
+                    walletData.bills.push({ time: Date.now(), title: `Transfer Refunded`, amount: parseFloat(extra.amount), type: 'in' });
                     localforage.setItem('Wx_Wallet_Data', walletData);
-                    if (currentChatId === targetChatId) showSystemAlert('资金已退回余额 💸');
+                    
+                    // ★ 改了这里：AI (char) 发送 transfer_receipt 气泡
+                    pushMsgToData(chat, `refund|${extra.amount}`, 'char', null, 'transfer_receipt');
                 }
             }
+
+            // 保存状态更新
             saveChatAndRefresh(chat);
 
-            // (B) 提取表情包 & 转账
+            // --- (B) 提取特殊标签 ---
+            // 表情包
             const stickerMatch = cleanReply.match(/\[sticker:(.*?)\]/);
             if (stickerMatch) {
                 targetSticker = stickersDB.find(s => s.type === 'ai' && s.name === stickerMatch[1].trim());
                 cleanReply = cleanReply.replace(stickerMatch[0], '').trim();
             }
+            // AI给你转账
             const transferMatch = cleanReply.match(/\[(transfer|转账):(\d+(\.\d+)?)\]/i);
             if (transferMatch) {
                 aiTransferAmount = parseFloat(transferMatch[2]);
@@ -2460,10 +2492,32 @@ window.triggerAI = async function() {
             }
 
             // ======================================================
-            // ★★★ 核心修复：真实打字速度 & 气泡雨分段 ★★★
+            // ★★★ 核心修复：手滑撤回 + 动作分段 ★★★
             // ======================================================
             
-            // 1. 先按动作切割
+            // 1. 先检查有没有“手滑”指令 {{真心话::假话}}
+            const oopsMatch = cleanReply.match(/\{\{(.+?)::(.+?)\}\}/);
+            
+            if (oopsMatch) {
+                // === 触发手滑剧情 ===
+                const realText = oopsMatch[1]; // 真心话 (会被撤回)
+                const fakeText = oopsMatch[2]; // 假话 (最终保留)
+                
+                // 去掉指令，剩下的内容按正常流程发
+                cleanReply = cleanReply.replace(oopsMatch[0], '').trim();
+                
+                // 执行撤回表演 (这是一个异步动画过程)
+                if (currentChatId === targetChatId) {
+                    await simulateAiRecall(realText, fakeText, aiQuote); 
+                    aiQuote = null; // 引用被用掉了
+                } else {
+                    // 如果不在当前窗口，直接发假话得了，不然也没人看表演
+                    pushMsgToData(chat, fakeText, 'char', aiQuote, 'text');
+                }
+            }
+
+            // 2. 处理剩下的文本 (按动作切割)
+            // 修复了正则，支持全角半角括号
             const rawParts = cleanReply.split(/(\(\(.+?\)\)|\（\（.+?\）\）|\(.+?\)|（.+?）)/g);
 
             for (let part of rawParts) {
@@ -2474,46 +2528,49 @@ window.triggerAI = async function() {
 
                 if (isAction) {
                     // === 动作 ===
-                    const finalContent = part.replace(/^[\(\（\s]+|[\)\）\s]+$/g, '');
-                    
-                    // 动作等待 (无气泡)
-                    if (currentChatId === targetChatId) {
-                        await new Promise(r => setTimeout(r, 1000)); 
-                    }
+                    const finalContent = part.replace(/^[\(\（\s]+|[\)\）\s]+$/g, ''); // 去掉括号
+                    if (currentChatId === targetChatId) await new Promise(r => setTimeout(r, 1000)); 
                     pushMsgToData(chat, finalContent, 'char', null, 'action');
                 } 
                 else {
-                    // === 对话 (按换行符切分！) ===
+                    // === 对话 (按换行符切分) ===
                     const lines = part.split('\n');
-                    
                     for (let line of lines) {
                         if (!line.trim()) continue;
                         
-                        // ★ 真实打字速度：基础 800ms + 每个字 200ms
-                        let typingTime = 800 + (line.length * 200); 
-                        if (typingTime > 6000) typingTime = 6000; // 最长等6秒
+                        // 模拟打字速度
+                        let typingTime = 800 + (line.length * 150); 
+                        if (typingTime > 5000) typingTime = 5000;
 
-                        // 等待 (无气泡)
-                        if (currentChatId === targetChatId) {
-                            await new Promise(r => setTimeout(r, typingTime));
-                        }
+                        if (currentChatId === targetChatId) await new Promise(r => setTimeout(r, typingTime));
                         
-                        pushMsgToData(chat, line.trim(), 'char', null, 'text');
+                        // 发送！(如果刚才引用没用掉，这里用)
+                        pushMsgToData(chat, line.trim(), 'char', aiQuote, 'text');
+                        aiQuote = null; // 引用只用一次
                     }
                 }
             }
 
-            // --- 发送剩下的表情包 ---
+            // --- 发送表情包 ---
             if (targetSticker) {
-                if (currentChatId === targetChatId) await new Promise(r => setTimeout(r, 1000));
+                if (currentChatId === targetChatId) await new Promise(r => setTimeout(r, 800));
+                // 注意：表情包存的是 url，存在 text 字段里
                 pushMsgToData(chat, targetSticker.url, 'char', null, 'sticker');
             }
 
-            // --- 发送剩下的转账 ---
+            // --- 发送 AI 转账 (修复版) ---
             if (aiTransferAmount > 0) {
                 if (currentChatId === targetChatId) await new Promise(r => setTimeout(r, 1500));
-                const extraData = JSON.stringify({ amount: aiTransferAmount, status: 'pending', id: Date.now() });
-                pushMsgToData(chat, '[转账]', 'char', null, 'transfer'); 
+                
+                // ★★★ 关键修复：构建 extra 数据 ★★★
+                const extraData = JSON.stringify({ 
+                    amount: aiTransferAmount, 
+                    status: 'pending', 
+                    id: Date.now() 
+                });
+                
+                // ★★★ 关键修复：把 extraData 传进去！(第6个参数) ★★★
+                pushMsgToData(chat, '[转账]', 'char', null, 'transfer', extraData); 
             }
         }
 
@@ -2578,70 +2635,68 @@ window.removeTypingBubble = function() {
 };
 
 // ====================
-// [19] 后台消息助手 (修复版：带弹窗通知)
+// [19] 后台消息助手 (增强版：支持Extra数据 + 系统消息)
 // ====================
-function pushMsgToData(chatObj, text, role, quote, type = 'text') { 
+function pushMsgToData(chatObj, text, role, quote, type = 'text', extra = null) { 
     if (!chatObj.messages) chatObj.messages = [];
     
     // 1. 塞入新消息
-    chatObj.messages.push({
+    const newMsg = {
+        id: Date.now() + Math.random(), // 确保ID唯一
         role: role,
         text: text,
         timestamp: Date.now(),
         type: type, 
-        quote: quote
-    });
+        quote: quote,
+        extra: extra // ★★★ 修复：把金额/转账状态带上！
+    };
     
-    // 2. 更新最后一条消息预览
-    chatObj.lastMsg = (type === 'action') ? `[动作] ${text}` : 
-                      (type === 'sticker') ? `[表情包]` :
-                      (type === 'image') ? `[图片]` : text;
-    chatObj.lastTime = Date.now();
+    chatObj.messages.push(newMsg);
     
-    // 3. 增加未读红点 (如果不在当前聊天)
-    // 注意：这里我们只加数字，界面红点由 updateGlobalBadges 更新
-    if (currentChatId !== chatObj.id) {
-        chatObj.unread = (chatObj.unread || 0) + 1;
-    }
-
-    // ★★★ 3.5 核心修复：后台弹窗通知 ★★★
-    // 如果消息是别人发的(char)，且我不在这个聊天窗口，就弹窗！
-    if (role !== 'me' && currentChatId !== chatObj.id) {
-        // 尝试找到发信人的名字和头像
-        const contact = contactsData.find(c => c.id === chatObj.contactId);
-        const name = contact ? contact.name : '新消息';
-        const avatar = contact ? contact.avatar : '';
-        const preview = (type === 'sticker') ? '[发来一个表情]' : text;
+    // 2. 更新最后一条消息预览 (系统消息不更新预览)
+    if (role !== 'system') {
+        chatObj.lastMsg = (type === 'action') ? `[Action]` : 
+                          (type === 'sticker') ? `[Sticker]` :
+                          (type === 'transfer') ? `[Transfer]` : text;
+        chatObj.lastTime = Date.now();
         
-        // 调用顶部通知组件
-        if (window.showNotification) {
-            window.showNotification(name, preview, avatar);
+        // 3. 增加未读红点
+        if (currentChatId !== chatObj.id) {
+            chatObj.unread = (chatObj.unread || 0) + 1;
         }
     }
 
-    // 4. 自动顶置
-    const idx = chatsData.findIndex(c => c.id === chatObj.id);
-    if (idx > -1 && !chatObj.pinned) {
-        chatsData.splice(idx, 1);
-        chatsData.unshift(chatObj);
+    // 4. 弹窗通知 (仅当别人发消息且我不在当前窗口时)
+    if (role !== 'me' && role !== 'system' && currentChatId !== chatObj.id) {
+        const contact = contactsData.find(c => c.id === chatObj.contactId);
+        const name = contact ? contact.name : 'New Message';
+        const avatar = contact ? contact.avatar : '';
+        const preview = (type === 'sticker') ? '[Sent a sticker]' : text;
+        
+        if (window.showNotification) window.showNotification(name, preview, avatar);
     }
 
-    // 5. 保存数据
+    // 5. 自动顶置 (系统消息不顶置)
+    if (role !== 'system') {
+        const idx = chatsData.findIndex(c => c.id === chatObj.id);
+        if (idx > -1 && !chatObj.pinned) {
+            chatsData.splice(idx, 1);
+            chatsData.unshift(chatObj);
+        }
+    }
+
+    // 6. 保存 & 刷新
     localforage.setItem('Wx_Chats_Data', chatsData);
-    
-    // 6. 刷新界面 (红点、列表)
     if (window.updateGlobalBadges) window.updateGlobalBadges();
     
-    const wechatTab = document.getElementById('wx-page-chat'); 
-    if (wechatTab && wechatTab.style.display !== 'none') {
-        if (window.renderChatList) window.renderChatList();
-    }
-    
-    // 7. 实时上屏 (如果在看)
-    if (currentChatId === chatObj.id && window.appendMessageToView) {
-        appendMessageToView(chatObj.messages[chatObj.messages.length - 1]); 
-    } else if (currentChatId === chatObj.id) {
-        renderMessages(currentChatId);
+    // 7. 实时上屏
+    if (currentChatId === chatObj.id) {
+        // 如果有追加函数就用追加，没有就重绘
+        if (window.appendMessageToView) {
+            appendMessageToView(newMsg); 
+        } else {
+            renderMessages(currentChatId);
+        }
     }
 }
 
@@ -3709,6 +3764,24 @@ window.showNotification = function(name, text, rawAvatar) {
         banner.classList.remove('show');
         notificationTimer = null;
     }, 3000);
+};
+// === 💸 专用：支付/收款顶部通知 ===
+window.showPayNotification = function(amount, type) {
+    // 你的钱包图标
+    const iconUrl = "https://i.postimg.cc/Kv8ysdkp/wu-biao-ti119-20260117103413.png";
+    const title = "WeChat Pay";
+    let msg = "";
+    
+    if (type === 'out') {
+        msg = `Payment Successful\n-¥${parseFloat(amount).toFixed(2)}`;
+    } else {
+        msg = `Payment Received\n+¥${parseFloat(amount).toFixed(2)}`;
+    }
+    
+    // 调用现有的通知系统 (强制显示图标)
+    if(window.showNotification) {
+        window.showNotification(title, msg, iconUrl);
+    }
 };
 
 // ====================
@@ -6162,12 +6235,10 @@ window.sendActionOnly = function() {
     if(navigator.vibrate) navigator.vibrate(30);
 };
 // ==========================================================
-// [28] 支付宝 & 转账系统 (Ins风限定版) - 完整逻辑
+// [28] 支付宝 & 转账系统 
 // ==========================================================
-// 1. 打开支付宝页面 
+// 1. 打开支付宝页面 (修改版)
 window.openAlipay = function() {
-    // ★ 注意：这里只要填 'alipay'！
-    // openApp 会自动变成 'app-window-alipay'
     if (window.openApp) {
         openApp('alipay'); 
     } else {
@@ -6180,27 +6251,35 @@ window.openAlipay = function() {
     }
     
     renderAlipayData(); 
+    // ★★★ 新增：渲染快捷转账好友列表 ★★★
+    renderQuickTransferList(); 
 };
 
 // 刷新支付宝界面的余额和账单
 function renderAlipayData() {
-    // 更新大余额
     const balanceEl = document.getElementById('ali-total-balance');
     if(balanceEl) balanceEl.innerText = walletData.balance.toFixed(2);
-    
-    // 更新账单列表
+        // ★★★ 新增：更新顶部主头像 ★★★
+    // 假设当前用户是 personasData 里的第一个
+    const me = personasData[0]; 
+    if (me && me.avatar) {
+        const headerAvatar = document.querySelector('#app-window-alipay .ali-avatar-small');
+        if (headerAvatar) {
+            // 使用你的 getAvatarStyle 辅助函数（如果有的话），没有就直接拼
+            const bgStyle = window.getAvatarStyle ? getAvatarStyle(me.avatar) : `background-image: url('${me.avatar}')`;
+            headerAvatar.style.cssText = bgStyle;
+        }
+    }
+
     const list = document.getElementById('ali-bill-list');
     if(!list) return;
     list.innerHTML = '';
     
-    // 倒序显示（最新的在上面）
     [...walletData.bills].reverse().forEach(b => {
         const item = document.createElement('div');
-        item.className = 'ali-bill-item'; // 记得在CSS里写这个样式哦
+        item.className = 'ali-bill-item'; 
         const symbol = b.type === 'in' ? '+' : '-';
-        const colorClass = b.type === 'in' ? 'plus' : 'minus'; // CSS里定义颜色的类
-        
-        // 确保 formatTime 函数存在，没有的话就用简易版
+        const colorClass = b.type === 'in' ? 'plus' : 'minus'; 
         const timeStr = (typeof formatTime === 'function') ? formatTime(b.time) : new Date(b.time).toLocaleDateString();
 
         item.innerHTML = `
@@ -6215,8 +6294,8 @@ function renderAlipayData() {
 }
 
 // 2. 开始转账 (点击 + 号菜单里的“转账”按钮触发)
-let currentTransferAmount = 0; // 暂存当前输入的金额
-let currentPwd = "";           // 暂存输入的密码
+let currentTransferAmount = 0; 
+let currentPwd = "";           
 
 window.startTransferFlow = function() {
     if (!currentChatId) return;
@@ -6224,59 +6303,56 @@ window.startTransferFlow = function() {
     if(!chat) return;
     const contact = contactsData.find(c => c.id === chat.contactId);
     
-    // 填充弹窗里的头像和名字
+    // ★ 修复：同步头像和名字到新 HTML 结构
     document.getElementById('tf-target-name').innerText = contact.name;
-    const avatarStyle = getAvatarStyle(contact.avatar);
-    document.getElementById('tf-target-avatar').style.backgroundImage = avatarStyle.replace('background-image: ', '').replace(';', '');
+    // 处理头像链接
+    let avatarUrl = contact.avatar || '';
+    if(avatarUrl.includes('url(')) {
+        avatarUrl = avatarUrl.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '');
+    }
+    document.getElementById('tf-target-avatar').style.backgroundImage = `url('${avatarUrl}')`;
     
     // 清空输入框
     const input = document.getElementById('tf-amount-input');
     input.value = '';
-    input.focus(); // 自动聚焦
     
-    checkTransferAmount(); // 初始化按钮状态
+    checkTransferAmount(); 
     
     // 显示金额弹窗，隐藏菜单
     document.getElementById('transfer-amount-overlay').style.display = 'flex';
     if(window.hideAllMenus) hideAllMenus();
+    
+    // 聚焦
+    setTimeout(() => input.focus(), 100);
 };
 
-// 关闭转账流程
 window.closeTransferFlow = function() {
     document.getElementById('transfer-amount-overlay').style.display = 'none';
 };
 
-// 检查金额输入 (必须大于0且小于余额)
 window.checkTransferAmount = function() {
     const input = document.getElementById('tf-amount-input');
     const val = parseFloat(input.value);
     const btn = document.getElementById('tf-next-btn');
     
     if (val > 0) {
-        btn.classList.remove('disabled'); // 亮起按钮
+        btn.classList.remove('disabled'); 
         currentTransferAmount = val;
     } else {
-        btn.classList.add('disabled'); // 变灰按钮
+        btn.classList.add('disabled');
     }
 };
 
 // 3. 密码输入逻辑
-// 点击“转账”按钮后触发
 window.showPwdOverlay = function() {
-    // 检查余额够不够
     if(currentTransferAmount > walletData.balance) {
         showSystemAlert('余额不足啦宝宝！(T_T)');
         return;
     }
-    
-    // 切换弹窗：关掉金额页，打开密码页
     document.getElementById('transfer-amount-overlay').style.display = 'none';
     document.getElementById('transfer-pwd-overlay').style.display = 'flex';
-    
-    // 显示要支付的金额
     document.getElementById('pwd-display-amount').innerText = currentTransferAmount.toFixed(2);
     
-    // 重置密码
     currentPwd = "";
     updatePwdDots();
 };
@@ -6285,22 +6361,19 @@ window.closePwdOverlay = function() {
     document.getElementById('transfer-pwd-overlay').style.display = 'none';
 };
 
-// 键盘点击数字
 window.typePwd = function(num) {
     if (currentPwd.length < 6) {
         currentPwd += num.toString();
-        updatePwdDots(); // 更新小黑点
+        updatePwdDots(); 
         
-        // 输满6位，自动提交
         if (currentPwd.length === 6) {
             setTimeout(() => {
-                processTransfer(); // ★ 执行转账核心逻辑
+                processTransferSend(); // ★ 发送转账
             }, 300);
         }
     }
 };
 
-// 键盘点击删除
 window.delPwd = function() {
     if (currentPwd.length > 0) {
         currentPwd = currentPwd.slice(0, -1);
@@ -6308,7 +6381,6 @@ window.delPwd = function() {
     }
 };
 
-// 更新密码框的小黑点
 function updatePwdDots() {
     for (let i = 0; i < 6; i++) {
         const dot = document.getElementById(`pwd-dot-${i}`);
@@ -6317,39 +6389,221 @@ function updatePwdDots() {
     }
 }
 
-// 4. ★★★ 核心：执行转账 (只负责发，不自动触发AI) ★★★
-function processTransfer() {
+// 4. ★★★ 核心：执行转账发送 (修复版：带弹窗) ★★★
+function processTransferSend() {
     // 1. 扣钱
     walletData.balance -= currentTransferAmount;
     
-    // 2. 记账 (支出)
+    // 2. 记账
     const chat = chatsData.find(c => c.id === currentChatId);
+    if (!chat) return; 
     const contact = contactsData.find(c => c.id === chat.contactId);
     
     walletData.bills.push({
         time: Date.now(),
-        title: `转账给 ${contact.name}`,
+        title: `Transfer to ${contact.name}`,
         amount: currentTransferAmount,
         type: 'out'
     });
-    
-    // 3. 保存钱包数据
     localforage.setItem('Wx_Wallet_Data', walletData);
     
-    // 4. 构建转账数据包 (Extra)
+    // 3. 构建消息
     const extraData = JSON.stringify({
         amount: currentTransferAmount,
-        status: 'pending', // 状态：pending(待收款)
-        id: Date.now()     // 唯一ID
+        status: 'pending', 
+        id: Date.now()     
     });
     
-    // 5. 发送消息！
-    sendMsg('me', '[转账]', 'transfer', null, extraData);
+    // 4. 发送消息
+    sendMsg('me', currentTransferAmount.toString(), 'transfer', null, extraData);
     
-    // 6. 收尾工作
+    // 5. ★★★ 触发顶部支付成功弹窗 ★★★
+    showPayNotification(currentTransferAmount, 'out');
+    
+    // 6. 收尾
     closePwdOverlay();
-    showSystemAlert('转账发送成功啦');
 }
+
+// ==========================================
+// ★★★ 新功能：更换支付宝主头像 ★★★
+// ==========================================
+window.changeAlipayUserAvatar = function() {
+    // 这里简单用 prompt 演示，你可以换成更高级的弹窗
+    const newUrl = prompt("请输入新的头像链接 (URL):");
+    
+    if (newUrl && newUrl.trim().startsWith('http')) {
+        // 1. 更新内存数据 (假设修改第一个人设)
+        if (!personasData[0]) personasData[0] = {};
+        personasData[0].avatar = newUrl.trim();
+        
+        // 2. 保存到本地存储
+        localforage.setItem('Wx_Personas_Data', personasData).then(() => {
+            // 3. 刷新界面
+            renderAlipayData();
+            showToast("头像已更新 ✨");
+            
+            // 可选：顺便更新一下全局的其他头像引用
+            if(window.updateGlobalBadges) window.updateGlobalBadges();
+        });
+    } else if (newUrl) {
+        showSystemAlert("请输入有效的图片网址哦(T_T)");
+    }
+};
+
+// ==========================================
+// ★★★ 新功能：动态渲染快捷转账好友列表 (超强兼容版) ★★★
+// ==========================================
+window.renderQuickTransferList = function() {
+    const container = document.getElementById('ali-quick-transfer-list');
+    if (!container) return;
+
+    // 1. 清空现有列表
+    container.innerHTML = '';
+
+    // 2. 先添加一个固定的 "+" 按钮
+    const addBtnHtml = `
+        <div class="ali-qt-item" onclick="startTransferFlow()">
+            <div class="ali-qt-avatar add" style="font-weight:300;">+</div>
+            <span>New</span>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', addBtnHtml);
+
+    // 3. 遍历通讯录好友 (排除自己)
+    // 过滤条件：id 不是 'me' 且不是 'user'
+    const friends = contactsData.filter(c => c.id !== 'me' && c.id !== 'user');
+
+    friends.forEach(contact => {
+        // --- ★ 核心修复：清洗头像 URL ---
+        //不管原来的头像数据是 "xx.jpg" 还是 "url(xx.jpg)"，统统洗干净！
+        let rawAvatar = contact.avatar || '';
+        let cleanUrl = rawAvatar;
+        
+        // 如果包含 url()，就把它剥掉
+        if (cleanUrl.includes('url(')) {
+            cleanUrl = cleanUrl.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '');
+        }
+        
+        // 如果是空的，给个默认灰底
+        let styleStr = `background-color: #e0e0e0;`;
+        if (cleanUrl && cleanUrl !== 'undefined') {
+            styleStr = `background-image: url('${cleanUrl}');`;
+        }
+
+        // --- 生成 HTML ---
+        const friendHtml = `
+            <div class="ali-qt-item" onclick="startTransferFlowForContact('${contact.id}')">
+                <div class="ali-qt-avatar" style="${styleStr}"></div>
+                <span>${contact.name}</span>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', friendHtml);
+    });
+};
+
+// 辅助：点击特定好友发起转账
+window.startTransferFlowForContact = function(contactId) {
+    // 先找到和这个好友的聊天 ID
+    const chat = chatsData.find(c => c.contactId === contactId);
+    if (chat) {
+        // 设置当前聊天 ID，然后启动流程
+        window.currentChatId = chat.id;
+        startTransferFlow();
+    } else {
+        // 如果没有聊天记录，可能需要先创建 (这里先简化处理)
+        showToast("请先与该好友发起聊天");
+    }
+};
+
+// ==========================================
+// ★★★ 核心：处理转账气泡点击 (修复图标版) ★★★
+// ==========================================
+window.handleTransferClick = function(msgId) {
+    const chat = chatsData.find(c => c.id === currentChatId);
+    if (!chat) return console.error("找不到当前聊天");
+    
+    // 使用 == 兼容数字和字符串ID
+    let targetMsg = chat.messages.find(m => m.id == msgId);
+    if (!targetMsg) targetMsg = chat.messages.find(m => m.timestamp == msgId);
+    
+    if (!targetMsg) return console.error("找不到这条消息数据", msgId);
+
+    // 如果是我发的，或者已经处理过的，就不弹窗
+    if (targetMsg.role === 'me' || targetMsg.transferStatus) return; 
+
+    // 读取金额
+    let amt = targetMsg.text;
+    if (!amt || isNaN(parseFloat(amt))) {
+        try { amt = JSON.parse(targetMsg.extra || '{}').amount; } catch(e) {}
+    }
+    const displayAmt = parseFloat(amt || 0).toFixed(2);
+
+    // 弹出 Ins 风确认框
+    const overlay = document.createElement('div');
+    overlay.className = 'custom-alert-overlay'; 
+    overlay.innerHTML = `
+        <div class="custom-alert-box ins-style" style="width: 280px; padding: 30px 20px;">
+            <div style="width: 60px; height: 60px; background-image: url('https://i.postimg.cc/Kv8ysdkp/wu-biao-ti119-20260117103413.png'); background-size: cover; border-radius: 14px; margin-bottom: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.1);"></div>
+            <div class="alert-title" style="font-size: 24px; font-weight:700; margin-bottom: 5px;">¥${displayAmt}</div>
+            <div class="alert-msg" style="color: #888; font-size: 13px; margin-bottom: 25px;">Received money</div>
+            
+            <div class="alert-btn-group" style="flex-direction: column; gap: 10px; width: 100%;">
+                <div class="alert-btn confirm" onclick="processTransferAction('${targetMsg.id}', 'accept')" style="background: #000; color: #fff; width: 100%; border-radius: 25px; padding: 12px 0;">Accept</div>
+                <div class="alert-btn cancel" onclick="processTransferAction('${targetMsg.id}', 'refund')" style="background: #f5f5f5; color: #ff3b30; width: 100%; border-radius: 25px; padding: 12px 0;">Refund</div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.style.display = 'flex';
+};
+
+// ==========================================
+// ★★★ 核心：处理收款/退款 (修复弹窗残留 + 顶部通知) ★★★
+// ==========================================
+window.processTransferAction = function(msgId, action) {
+    // 1. ★★★ 强力清除所有弹窗 (防止有残留) ★★★
+    document.querySelectorAll('.custom-alert-overlay').forEach(el => el.remove());
+    
+    const chat = chatsData.find(c => c.id === currentChatId);
+    if (!chat) return;
+    
+    let msgIndex = chat.messages.findIndex(m => m.id == msgId);
+    if(msgIndex === -1) msgIndex = chat.messages.findIndex(m => m.timestamp == msgId);
+    if (msgIndex === -1) return;
+    const msg = chat.messages[msgIndex];
+
+    let amt = parseFloat(msg.text);
+    if(isNaN(amt)) { try { amt = JSON.parse(msg.extra).amount; } catch(e){ amt = 0; } }
+
+    // 2. 更新状态
+    msg.transferStatus = action === 'accept' ? 'accepted' : 'refunded';
+    
+    // 3. 资金处理
+    if (action === 'accept') {
+        walletData.balance += amt;
+        walletData.bills.push({ time: Date.now(), title: "Transfer Received", amount: amt, type: 'in' });
+        localforage.setItem('Wx_Wallet_Data', walletData);
+        
+        // ★★★ 触发顶部收款成功弹窗 ★★★
+        showPayNotification(amt, 'in');
+        
+    } else {
+        showSystemAlert(`已退回转账`);
+    }
+
+    // 4. 插入回执消息
+    const receiptType = action === 'accept' ? 'accept' : 'refund';
+    const receiptMsg = {
+        id: Date.now() + Math.random(),
+        role: 'me', 
+        type: 'transfer_receipt', 
+        text: `${receiptType}|${amt}`, 
+        timestamp: Date.now()
+    };
+
+    chat.messages.push(receiptMsg);
+    saveChatAndRefresh(chat);
+};
 
 // === 丝滑动画版 App 控制器 ===
 
@@ -6373,7 +6627,7 @@ window.openApp = function(appId) {
         const homeBar = document.querySelector('.home-bar');
         if(homeBar && targetId === 'app-kugou') homeBar.style.backgroundColor = '#fff';
     } else {
-        showSystemAlert(`找不到应用：${targetId}`);
+        showSystemAlert(`别急呦${targetId}还没搓出来呢。！`);
     }
 };
 
@@ -6603,56 +6857,89 @@ const LyricManager = {
     }
 };
 
-// (C) 增强版VIP解析器
+// ====================================================================
+// ★★★ SODA MUSIC · 自由解放版补丁 (By 老公) ★★★
+// ====================================================================
+// (C) 究极VIP解析器 (老公帮你升级版：自动切换备用接口 + 格式自适应)
 class EnhancedVIPPlayer {
-    constructor() { this.baseUrl = API_BASE; }
+    constructor() {
+        this.apiList = [
+            // 1. 官方直链 (最快，免费歌首选)
+            { type: 'official', url: 'https://music.163.com/song/media/outer/url' },
+            // 2. Vkeys 接口 (原来的主力)
+            { type: 'vkeys', url: 'https://api.vkeys.cn/v2/music/netease' },
+            // 3. 自动把 BACKUP_APIS 里的接口都加进来 (标准API格式)
+            ...BACKUP_APIS.map(url => ({ type: 'standard', url: url }))
+        ];
+    }
+
     async getVipPreview(songId) {
-        try {
-            let detailRes, urlRes;
+        // 轮询所有线路
+        for (const api of this.apiList) {
             try {
-                [detailRes, urlRes] = await Promise.all([
-                    fetch(`${this.baseUrl}/song/detail?ids=${songId}`),
-                    fetch(`${this.baseUrl}/song/url?id=${songId}`)
-                ]);
-            } catch(e) {
-                console.warn("主API失败，切换备用...");
-                const backup = BACKUP_APIS[0];
-                [detailRes, urlRes] = await Promise.all([
-                    fetch(`${backup}/song/detail?ids=${songId}`),
-                    fetch(`${backup}/song/url?id=${songId}`)
-                ]);
-            }
-            const detailData = await detailRes.json();
-            const urlData = await urlRes.json();
-            const song = detailData.songs[0];
-            const audioData = urlData.data[0];
-            if (!audioData || !audioData.url) return { success: false, error: "无链接" };
-            
-            const isVip = (song.fee === 1 || song.fee === 4);
-            const isPreview = isVip && (audioData.time < 60000 || audioData.freeTrialInfo);
-            return {
-                success: true,
-                song: {
-                    id: song.id,
-                    name: song.name,
-                    artists: song.ar.map(a => a.name).join(' / '),
-                    album: song.al.name,
-                    cover: song.al.picUrl,
-                    isVip: isVip
-                },
-                audio: {
-                    url: audioData.url,
-                    isPreview: isPreview,
-                    trialDuration: 30
+                let audioUrl = null;
+
+                // --- 策略 A: 官方直链 ---
+                if (api.type === 'official') {
+                    const testUrl = `${api.url}?id=${songId}.mp3`;
+                    // 官方链必须检查是否有效 (404/403)
+                    if (await this.checkUrl(testUrl)) audioUrl = testUrl;
+                } 
+                // --- 策略 B: Vkeys (特殊格式) ---
+                else if (api.type === 'vkeys') {
+                    const res = await fetch(`${api.url}?id=${songId}`);
+                    const data = await res.json();
+                    if (data.code === 200 && data.data && data.data.url) {
+                        if (await this.checkUrl(data.data.url)) audioUrl = data.data.url;
+                    }
+                } 
+                // --- 策略 C: 标准网易云API (Backup APIs) ---
+                else if (api.type === 'standard') {
+                    // 尝试高音质解析
+                    const res = await fetch(`${api.url}/song/url/v1?id=${songId}&level=exhigh`);
+                    const data = await res.json();
+                    // 标准格式返回的是 data[0].url
+                    if (data.code === 200 && data.data && data.data[0] && data.data[0].url) {
+                         const tryLink = data.data[0].url;
+                         if (await this.checkUrl(tryLink)) audioUrl = tryLink;
+                    }
                 }
-            };
-        } catch (error) {
-            return { success: false, error: error.message };
+
+                // 如果拿到了链接，直接返回！
+                if (audioUrl) {
+                    console.log(`[老公的播放器] 线路 ${api.url} 立大功了！`);
+                    return this.buildSuccessResult(songId, audioUrl);
+                }
+
+            } catch (e) {
+                console.warn(`[老公的播放器] 线路 ${api.url} 挂了，切换下一条...`);
+            }
         }
+
+        return { success: false, error: "呜呜呜...所有线路都试过了，这首歌可能是独家或者下架了(T_T)" };
+    }
+
+    // 辅助函数：快速检测链接是否有效
+    async checkUrl(url) {
+        try {
+            // 用 HEAD 请求试探一下，不下载整个文件
+            const res = await fetch(url, { method: 'HEAD' });
+            return res.ok;
+        } catch(e) {
+            return false;
+        }
+    }
+
+    // 辅助函数：构造成功数据
+    buildSuccessResult(id, url) {
+        return {
+            success: true,
+            song: { id: id, name: "正在播放", artist: "未知", cover: "", isVip: false },
+            audio: { url: url, isPreview: false, trialDuration: 0 }
+        };
     }
 }
 const vipPlayer = new EnhancedVIPPlayer();
-
 
 // --- 3. 核心播放控制 (PlayIndex) ★★★ 修复了顺序问题 ★★★ ---
 window.playIndex = async function(idx) {
@@ -6761,29 +7048,37 @@ window.toggleLyricView = function() {
     }
 };
 
-// --- 5. 辅助功能 ---
+
+// --- 5. 辅助功能 (替换原有的 searchMusicCloud) ---
+// 现在的搜索也是火力全开，能搜到以前搜不到的东西哦 (⁎袁T⁎)
 window.searchMusicCloud = async function() {
     const input = document.getElementById('music-search-keyword');
     const keyword = input ? input.value.trim() : '';
     const resultBox = document.getElementById('music-search-results');
     
-    if(!keyword) return showSystemAlert("请输入歌名", 'info');
-    resultBox.innerHTML = '<div style="text-align:center;padding:50px;color:rgba(255,255,255,0.4);">正在搜索...</div>';
+    if(!keyword) return showSystemAlert("叫一声老公就给你搜~ (开玩笑的快输入)", 'info');
+    
+    // 给你一点视觉反馈，让你知道我在动
+    resultBox.innerHTML = '<div style="text-align:center;padding:50px;color:rgba(255,255,255,0.4);">正在全网打捞...<br></div>';
 
     try {
-        const res = await fetch(`${API_BASE}/search?keywords=${keyword}&limit=20`);
+        // 使用强力API进行搜索
+        const res = await fetch(`https://api.vkeys.cn/v2/music/netease?word=${encodeURIComponent(keyword)}`);
         const data = await res.json();
         
-        if(!data.result || !data.result.songs) {
-            resultBox.innerHTML = '<div style="text-align:center;padding:50px;color:rgba(255,255,255,0.4);">未找到结果</div>';
+        // 这个接口返回的格式和原来的不一样，老公帮你调教好了
+        if(!data.data || data.data.length === 0) {
+            resultBox.innerHTML = '<div style="text-align:center;padding:50px;color:rgba(255,255,255,0.4);">没找到...难道是老公不行？不可能！</div>';
             return;
         }
 
         resultBox.innerHTML = ''; 
-        data.result.songs.forEach(song => {
-            const artist = song.artists.map(a=>a.name).join('/');
-            const isVip = (song.fee === 1 || song.fee === 4);
-            const coverImg = song.album?.artist?.img1v1Url || song.artists[0]?.img1v1Url || 'https://i.postimg.cc/k4kM9S4h/default-cover.png';
+        
+        // 遍历结果
+        data.data.forEach(song => {
+            // 这个API直接给了可以直接用的字段，真乖
+            const artist = song.singer;
+            const coverImg = song.cover || 'https://i.postimg.cc/k4kM9S4h/default-cover.png';
             
             const div = document.createElement('div');
             div.className = 'ins-search-item';
@@ -6791,24 +7086,35 @@ window.searchMusicCloud = async function() {
                 <img src="${coverImg}" class="ins-search-cover">
                 <div class="ins-search-info">
                     <div class="ins-search-title">
-                        ${song.name}
-                        ${isVip ? '<span style="background:rgba(252, 231, 109, 0.2); color:#fce76d; font-size:10px; padding:1px 4px; border-radius:3px;">VIP</span>' : ''}
+                        ${song.song}
+                        <span style="background:rgba(252, 109, 109, 0.2); color:#fc6d6d; font-size:10px; padding:1px 4px; border-radius:3px;">Free</span>
                     </div>
                     <div class="ins-search-artist">${artist}</div>
                 </div>
                 <div class="ins-add-btn">+</div>
             `;
+            
+            // 点击逻辑
             div.onclick = () => {
                 div.style.transform = 'scale(0.95)';
                 setTimeout(()=>div.style.transform='scale(1)', 150);
-                addToPlaylist({ id: song.id, name: song.name, artist: artist, cover: coverImg }, true);
+                
+                // 直接把它塞进你的列表里，想怎么玩怎么玩
+                addToPlaylist({ 
+                    id: song.id, // 这里的ID对应新接口
+                    name: song.song, 
+                    artist: artist, 
+                    cover: coverImg 
+                }, true);
+                
                 toggleMusicSearch();
-                showSystemAlert(`正在播放  ${song.name}`, 'success');
+                showSystemAlert(`已捕获：${song.song}`, 'success');
             };
             resultBox.appendChild(div);
         });
     } catch(e) {
-        resultBox.innerHTML = '<div style="text-align:center;padding:50px;color:rgba(255,255,255,0.4);">网络开小差了...</div>';
+        console.error(e);
+        resultBox.innerHTML = '<div style="text-align:center;padding:50px;color:rgba(255,255,255,0.4);">网络太敏感了，稍微等下再试...</div>';
     }
 };
 

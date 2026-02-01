@@ -9,6 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="format-detection" content="telephone=no">
     <meta name="theme-color" content="#f2f2f7">
+    <meta name="referrer" content="no-referrer">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -1246,12 +1247,15 @@
     </div>
 </div>
 
-  </div>  </div>  </div>
+  </div>  </div>  </div> </div>
 <div id="app-window-alipay" class="app-window" style="background: #f5f7fa; display: none;">
     
     <div class="ali-ins-header">
         <div class="ali-header-left">
-            <div class="ali-avatar-small" id="ali-header-avatar"></div>
+<div class="ali-avatar-small" 
+     style="background-image: url('你的默认头像URL')" 
+     onclick="changeAlipayUserAvatar()"> </div>
+
             <div class="ali-user-info">
                 <div class="ali-greetings">Good Evening</div>
                 <div class="ali-username">My Wallet</div>
@@ -1296,16 +1300,11 @@
         </div>
 
         <div class="ali-section-title">Quick Transfer</div>
-        <div class="ali-quick-transfer-scroll">
-            <div class="ali-qt-item add" onclick="showSystemAlert('从通讯录添加朋友')">
-                <div class="ali-qt-avatar add">+</div>
-                <span>Add</span>
-            </div>
-            <div class="ali-qt-item">
-                <div class="ali-qt-avatar"></div>
-                <span>Kuku</span>
-            </div>
-        </div>
+<div class="ali-quick-transfer-scroll" id="ali-quick-transfer-list"> <div class="ali-qt-item" onclick="startTransferFlow()">
+        <div class="ali-qt-avatar add">+</div>
+        <span>Add</span>
+    </div>
+</div>
 
         <div class="ali-section-title" style="margin-top:20px; display:flex; justify-content:space-between;">
             <span>Recent Transactions</span>
@@ -1317,67 +1316,7 @@
 
         <div style="height: 40px;"></div>
     </div>
-</div>
-        <div class="ali-list-title">Recent Transactions</div>
-        <div id="ali-bill-list" class="ali-bill-list">
-            </div>
-    </div>
-</div>
-
-<div id="transfer-amount-overlay" class="custom-alert-overlay" style="display:none;">
-    <div class="transfer-box">
-        <div class="transfer-header">
-            <div class="close-btn" onclick="closeTransferFlow()">×</div>
-            <div>Transfer to TA</div>
-        </div>
-        <div class="transfer-avatar-area">
-            <div id="tf-target-avatar" class="tf-avatar"></div>
-            <div id="tf-target-name" class="tf-name">Target Name</div>
-        </div>
-        
-        <div class="tf-input-area">
-            <div class="tf-symbol">¥</div>
-            <input type="number" id="tf-amount-input" placeholder="0.00" oninput="checkTransferAmount()">
-        </div>
-        
-        <div class="tf-btn disabled" id="tf-next-btn" onclick="showPwdOverlay()">Transfer</div>
-    </div>
-</div>
-
-<div id="transfer-pwd-overlay" class="custom-alert-overlay" style="display:none; align-items: flex-end;">
-    <div class="pwd-sheet">
-        <div class="pwd-header">
-            <div class="pwd-close" onclick="closePwdOverlay()">×</div>
-            <div class="pwd-title">Enter Payment Password</div>
-        </div>
-        <div class="pwd-amount">¥ <span id="pwd-display-amount">0.00</span></div>
-        <div class="pwd-method">Balance (Alipay)</div>
-        
-        <div class="pwd-dots-box">
-            <div class="pwd-dot" id="pwd-dot-0"></div>
-            <div class="pwd-dot" id="pwd-dot-1"></div>
-            <div class="pwd-dot" id="pwd-dot-2"></div>
-            <div class="pwd-dot" id="pwd-dot-3"></div>
-            <div class="pwd-dot" id="pwd-dot-4"></div>
-            <div class="pwd-dot" id="pwd-dot-5"></div>
-        </div>
-        
-        <div class="pwd-keyboard">
-            <div class="pk-key" onclick="typePwd(1)">1</div>
-            <div class="pk-key" onclick="typePwd(2)">2</div>
-            <div class="pk-key" onclick="typePwd(3)">3</div>
-            <div class="pk-key" onclick="typePwd(4)">4</div>
-            <div class="pk-key" onclick="typePwd(5)">5</div>
-            <div class="pk-key" onclick="typePwd(6)">6</div>
-            <div class="pk-key" onclick="typePwd(7)">7</div>
-            <div class="pk-key" onclick="typePwd(8)">8</div>
-            <div class="pk-key" onclick="typePwd(9)">9</div>
-            <div class="pk-key bg" onclick="showSystemAlert('别乱点，输入6位密码就行')">.</div>
-            <div class="pk-key" onclick="typePwd(0)">0</div>
-            <div class="pk-key bg" onclick="delPwd()">←</div>
-        </div>
-    </div>
-</div>
+</div> </div> </div>
 
         <div id="sub-page-creator" class="exp-theme-root" style="display: none;">
             <div class="exp-browser-top">
@@ -1751,12 +1690,81 @@
             <div class="alert-btn confirm" id="g-confirm-btn-yes">Confirm</div>
         </div>
     </div>
+</div> </div> </div>
+
+<div id="transfer-amount-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:9000; flex-direction:column;">
+    
+    <div style="padding: 50px 20px 10px 20px; display:flex; align-items:center;">
+        <div onclick="closeTransferFlow()" style="font-size:24px; color:#000; cursor:pointer;">✕</div>
+        <div style="flex:1; text-align:center; font-weight:600; font-size:17px;">Transfer</div>
+        <div style="width:24px;"></div> </div>
+
+    <div style="margin-top:40px; display:flex; flex-direction:column; align-items:center;">
+        <div id="tf-target-avatar" style="width:70px; height:70px; border-radius:50%; background-color:#f0f0f0; background-size:cover; background-position:center; margin-bottom:15px; border:1px solid rgba(0,0,0,0.05);"></div>
+        <div id="tf-target-name" style="font-size:18px; font-weight:600; color:#000;">Target Name</div>
+        <div style="font-size:13px; color:#999; margin-top:5px;">Qualcomm Snapdragon Bank</div>
+    </div>
+
+    <div style="margin-top:50px; padding:0 30px;">
+        <div style="font-size:14px; color:#000; font-weight:600; margin-bottom:15px;">Amount</div>
+        <div style="display:flex; align-items:flex-end; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <span style="font-size:36px; font-weight:bold; margin-right:10px;">¥</span>
+            <input type="number" id="tf-amount-input" oninput="checkTransferAmount()" placeholder="0.00" 
+                   style="flex:1; border:none; outline:none; font-size:40px; font-weight:bold; background:transparent; font-family:inherit;">
+        </div>
+    </div>
+
+    <div style="padding:20px 30px;">
+        <input type="text" placeholder="Add a note..." style="width:100%; border:none; outline:none; font-size:15px; color:#666; background:transparent;">
+    </div>
+
+    <div style="flex:1;"></div>
+
+    <div style="padding:20px 30px 50px 30px;">
+        <div id="tf-next-btn" onclick="showPwdOverlay()" class="disabled" 
+             style="width:100%; height:54px; background:#000; color:#fff; border-radius:27px; display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:600; transition:all 0.3s; cursor:pointer;">
+            Transfer
+        </div>
+    </div>
 </div>
 
-<div id="float-lyric-bar" class="float-lyric locked" style="display:none;">
-    <div class="fl-text">Waiting for music...</div>
-    <div class="fl-drag-handle">✥ 拖动我</div>
-    <div class="fl-lock-btn" onclick="toggleLyricLock()">🔒 锁定</div>
+<div id="transfer-pwd-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9001; align-items:flex-end;">
+    <div style="width:100%; background:#fff; border-top-left-radius:24px; border-top-right-radius:24px; padding-bottom:40px; animation: slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);">
+        
+        <div style="padding:20px; text-align:center; position:relative; border-bottom:1px solid #f5f5f5;">
+            <div onclick="closePwdOverlay()" style="position:absolute; left:20px; top:20px; font-size:24px; color:#000; cursor:pointer;">✕</div>
+            <div style="font-weight:600; font-size:17px;">Enter Password</div>
+        </div>
+
+        <div style="text-align:center; padding:40px 0 30px 0;">
+            <div style="font-size:14px; color:#666; margin-bottom:10px;">Transfer to friend</div>
+            <div style="font-size:36px; font-weight:bold;">¥ <span id="pwd-display-amount">0.00</span></div>
+        </div>
+
+        <div style="display:flex; justify-content:center; gap:15px; margin-bottom:40px;">
+            <div class="pwd-dot" id="pwd-dot-0"></div>
+            <div class="pwd-dot" id="pwd-dot-1"></div>
+            <div class="pwd-dot" id="pwd-dot-2"></div>
+            <div class="pwd-dot" id="pwd-dot-3"></div>
+            <div class="pwd-dot" id="pwd-dot-4"></div>
+            <div class="pwd-dot" id="pwd-dot-5"></div>
+        </div>
+
+        <div class="ins-num-pad">
+            <div class="num-key" onclick="typePwd(1)">1</div>
+            <div class="num-key" onclick="typePwd(2)">2</div>
+            <div class="num-key" onclick="typePwd(3)">3</div>
+            <div class="num-key" onclick="typePwd(4)">4</div>
+            <div class="num-key" onclick="typePwd(5)">5</div>
+            <div class="num-key" onclick="typePwd(6)">6</div>
+            <div class="num-key" onclick="typePwd(7)">7</div>
+            <div class="num-key" onclick="typePwd(8)">8</div>
+            <div class="num-key" onclick="typePwd(9)">9</div>
+            <div class="num-key empty"></div>
+            <div class="num-key" onclick="typePwd(0)">0</div>
+            <div class="num-key del" onclick="delPwd()">⌫</div>
+        </div>
+    </div>
 </div>
 
     </div> <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
