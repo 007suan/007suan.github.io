@@ -1,60 +1,77 @@
 /* ==========================================================================
-   1. ROOT VARIABLES & GLOBAL RESET (全局变量与重置)
+   1. ROOT VARIABLES & GLOBAL RESET (全屏适配版)
    ========================================================================== */
-:root {
-    --bg-color: #f5f5f5;
-    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    --dot-color: #dcdcdc;
-    --text-color: #666;
-    --placeholder-bg: #e6e6e6;
-    --app-icon-default: #cccccc;
-    --app-icon-size: 62px;
-    
-    /* Dock 颜色 (带磨砂感) */
-    --dock-bg: rgba(208, 208, 208, 0.8);
-    
-    /* 汽水音乐主题色 */
-    --soda-yellow: #fce76d;
-    --soda-dark: #121212;
-    
-    font-family: var(--font-family);
-} 
+@font-face { font-family: 'bulangni'; src: url('') format('truetype'); font-weight: normal; font-style: normal; font-display: swap; }
 
-* {
+:root { 
+    --screen-width: 350px; 
+    --screen-height: 650px; 
+    --secondary-bg: #ffffff; 
+    --border-color: #e0e0e0; 
+    --text-primary: #1f1f1f; 
+    --text-secondary: #8a8a8a; 
+    --accent-color: #007bff; 
+}
+
+/* ★ 核心修复 1: 锁死 HTML 和 BODY */
+html {
+    -webkit-text-size-adjust: 100%;
+    width: 100%;
+    height: 100%; /* 必须是 100%，不能是 auto */
+    overflow: hidden; /* 禁止原生滚动 */
+}
+
+body {
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
-    -webkit-user-select: none;
-    user-select: none;
+    font-family: 'bulangni', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-weight: normal;
+    background-color: #f0f2f5;
+    
+    /* ★ 核心修复 2: 强制固定定位，防止安卓键盘/地址栏顶起页面 */
+    position: fixed; 
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
 }
 
-input, textarea, [contenteditable="true"] {
-    -webkit-user-select: text;
-    user-select: text;
+/* ★ 核心修复 3: 屏幕容器改为绝对定位锚点 */
+#phone-screen {
+    position: absolute; /* 绝对定位，铺满父容器 */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0; /* 只要锁死四边，高度自动就是全屏 */
+    
+    width: auto; /* 让左右锚点决定宽度 */
+    height: auto; /* 让上下锚点决定高度 (不用 100vh 了！) */
+    
+    overflow: hidden; /* 内部内容自己滚 */
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+    
+    /* 适配 iPhone 刘海屏 (如果有) */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
 }
 
-        html {
-            -webkit-text-size-adjust: 100%;
-            height: 100%; 
-        }
-        body {
-            margin: 0;
-            font-family: 'bulangni', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            font-weight: normal;
-            background-color: #f0f2f5;
-            height: 100%; 
-            overflow: hidden; 
-        }
-        #phone-screen {
-            width: 100%;
-            height: 100vh; 
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            background-color: #ffffff; 
-        }
+/* 底部输入框区域 (保持原样，但确保它是 flex-shrink: 0) */
+#chat-input-area {
+    flex-shrink: 0;
+    padding: 8px;
+    /* 确保底部安全区不被遮挡 */
+    padding-bottom: calc(8px + env(safe-area-inset-bottom)); 
+    background-color: rgba(247, 247, 247, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
 
 /* iOS风输入框样式 */
 [contenteditable="true"] {
