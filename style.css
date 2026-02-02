@@ -45,6 +45,11 @@ html {
 body {
     margin: 0;
     padding: 0;
+    /* ★ 关键：用 fixed 把 body 钉在屏幕上，安卓地址栏就不敢乱动了 */
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    overflow: hidden;
     background-color: var(--bg-color);
     font-family: var(--font-family);
     overflow: hidden; 
