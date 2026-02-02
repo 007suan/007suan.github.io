@@ -2543,8 +2543,12 @@ body, button, input, textarea, select, .edit-text {
 
 /* === 🎤 歌词列表 (紧凑精致版) === */
 #lyric-view {
-    padding: 50% 0; 
+    height: 100%; 
+    overflow-y: auto; 
+    padding: 0; 
     scrollbar-width: none; 
+    scroll-behavior: smooth; 
+    position: relative;
 }
 #lyric-view::-webkit-scrollbar { display: none; }
 

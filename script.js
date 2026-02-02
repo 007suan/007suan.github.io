@@ -6910,57 +6910,109 @@ const MusicState = {
     }
 };
 
-// (B) 歌词管理器 (防抖动 + 丝滑版)
+// (B) 歌词管理器 (增强版：支持备用API + 万能正则 + 智能滚动)
 const LyricManager = {
     lrcData: [],
-    lastActiveIdx: -1, // ★★★ 核心：记住上一行是谁，防止重复操作 ★★★
+    lastActiveIdx: -1,
     
+    // ★ 修复点1：加载支持轮询多个API
     load: async function(id) {
-        // 重置状态
-        this.lastActiveIdx = -1;
-        document.getElementById('lyric-content').innerHTML = '<p style="margin-top:50%;">正在加载歌词...</p>';
-        safeSetText('widget-lyric-line', '加载中...');
-        safeSetText('mini-lrc-1', 'Loading...'); 
-        safeSetText('mini-lrc-2', '');
+        this.resetState('加载中...');
         
-        try {
-            const res = await fetch(`${API_BASE}/lyric?id=${id}`);
-            const data = await res.json();
-            const lrcText = (data.lrc && data.lrc.lyric) ? data.lrc.lyric : "[00:00.00] 暂无歌词";
-            this.parse(lrcText);
-        } catch(e) {
-            document.getElementById('lyric-content').innerHTML = '<p style="margin-top:50%;">歌词加载失败 (T_T)</p>';
-            safeSetText('widget-lyric-line', '暂无歌词');
+        // 整理所有可用的API地址 (主API + 备用API)
+        // 注意：这里用 map 构造出所有可能的歌词接口地址
+        const apiCandidates = [
+            `${API_BASE}/lyric?id=${id}`,
+            ...BACKUP_APIS.map(url => `${url}/lyric?id=${id}`),
+            `https://music.163.com/api/song/lyric?id=${id}&lv=1&kv=1&tv=-1` // 官方备用
+        ];
+
+        let loaded = false;
+
+        // 轮询尝试
+        for (const url of apiCandidates) {
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                // 只要拿到数据，不管它是 lrc.lyric 还是直接的 lyric
+                const lrcText = (data.lrc && data.lrc.lyric) ? data.lrc.lyric : null;
+                
+                if (lrcText) {
+                    this.parse(lrcText);
+                    loaded = true;
+                    break; // 成功了就跳出循环
+                }
+            } catch (e) {
+                console.warn(`歌词线路 ${url} 失败，尝试下一条...`);
+            }
+        }
+
+        if (!loaded) {
+            this.resetState('暂无歌词 (T_T)');
         }
     },
     
+    // 重置状态的辅助函数
+    resetState: function(msg) {
+        this.lastActiveIdx = -1;
+        this.lrcData = [];
+        const box = document.getElementById('lyric-content');
+        if(box) box.innerHTML = `<p style="margin-top:50%; color:rgba(255,255,255,0.5);">${msg}</p>`;
+        safeSetText('widget-lyric-line', msg);
+        safeSetText('mini-lrc-1', 'SODA MUSIC'); 
+        safeSetText('mini-lrc-2', '');
+    },
+    
+    // ★ 修复点2：万能正则解析
     parse: function(text) {
         this.lrcData = [];
         const lines = text.split('\n');
-        const timeExp = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/;
+        
+        // 解释：\[(\d+) -> 分钟不管几位
+        // :(\d+) -> 秒不管几位
+        // (\.(\d+))? -> 毫秒可能有，也可能没有 (?)
+        const timeExp = /\[(\d+):(\d+)(\.(\d+))?\]/;
+        
         lines.forEach(line => {
             const match = timeExp.exec(line);
+            // 必须要有时间标签，且去掉标签后还有内容
             if(match && line.replace(timeExp, '').trim()) {
                 const min = parseInt(match[1]);
                 const sec = parseInt(match[2]);
-                const ms = parseInt(match[3]);
-                const time = min * 60 + sec + ms / (match[3].length === 3 ? 1000 : 100);
+                
+                // 处理毫秒：如果没有match[4]就是0，如果有，看位数决定除以多少
+                let ms = 0;
+                if(match[4]) {
+                    const msStr = match[4];
+                    const msVal = parseInt(msStr);
+                    // 如果是 500 (3位) -> 0.5s; 50 (2位) -> 0.5s; 5 (1位) -> 0.05s (大约)
+                    // 简单的办法：统一转成秒
+                    if(msStr.length === 3) ms = msVal / 1000;
+                    else if(msStr.length === 2) ms = msVal / 100;
+                    else ms = msVal / 10;
+                }
+                
+                const time = min * 60 + sec + ms;
                 this.lrcData.push({ time: time, text: line.replace(timeExp, '').trim() });
             }
         });
+        
         this.render();
     },
     
     render: function() {
         const box = document.getElementById('lyric-content');
-        box.innerHTML = ''; // 清空
+        if(!box) return; // 防止页面没加载时报错
         
-        // 为了让第一句能居中，前面加个占位 (其实 CSS padding 已经处理了，这里保险)
-        // box.innerHTML += '<div style="height: 50%;"></div>';
+        box.innerHTML = ''; 
+        // 增加顶部占位，让第一句就在中间
+        const spacerTop = document.createElement('div');
+        spacerTop.style.height = '50%';
+        box.appendChild(spacerTop);
 
         if(this.lrcData.length === 0) {
             box.innerHTML = '<p style="margin-top:50%;">纯音乐 / 无歌词</p>';
-            safeSetText('mini-lrc-1', 'SODA MUSIC');
             return;
         }
         
@@ -6969,78 +7021,78 @@ const LyricManager = {
             p.className = 'lrc-line';
             p.id = `lrc-${idx}`;
             p.innerText = line.text;
-            // 点击歌词跳转
+            // 优化：点击歌词跳转
             p.onclick = () => { 
                 const audio = document.getElementById('global-audio');
-                if(audio) audio.currentTime = line.time; 
+                if(audio && audio.duration) {
+                    audio.currentTime = line.time; 
+                    // 稍微往回倒一点点，体验更好
+                    if(line.time > 0.5) audio.currentTime -= 0.5;
+                }
             };
             box.appendChild(p);
         });
         
-        // 后面也加个占位
-        // box.innerHTML += '<div style="height: 50%;"></div>';
+        // 增加底部占位
+        const spacerBottom = document.createElement('div');
+        spacerBottom.style.height = '50%';
+        box.appendChild(spacerBottom);
     },
     
     sync: function(currentTime) {
-        // 1. 算出当前该唱哪一句
-        let activeIdx = -1;
-        for(let i = 0; i < this.lrcData.length; i++) {
-            if(currentTime >= this.lrcData[i].time) { 
-                activeIdx = i; 
-            } else { 
-                break; 
-            }
-        }
+        if(!this.lrcData.length) return;
+
+        // 1. 找到当前行 (找到最后一个 时间 < currentTime 的行)
+        let activeIdx = this.lrcData.findIndex((line, idx) => {
+            const next = this.lrcData[idx + 1];
+            return currentTime >= line.time && (!next || currentTime < next.time);
+        });
         
-        // ★★★ 核心防抖逻辑：只有行号变了，才执行更新 ★★★
+        if(activeIdx === -1) activeIdx = 0; // 默认第一行
+
+        // ★ 防抖
         if(activeIdx !== this.lastActiveIdx) {
-            this.lastActiveIdx = activeIdx; // 更新记忆
+            this.lastActiveIdx = activeIdx;
             
-            if(activeIdx !== -1) {
-                // A. 全屏歌词处理
-                // 去掉旧的高亮
-                const old = document.querySelector('.lrc-active');
-                if(old) old.classList.remove('lrc-active');
+            // A. 列表滚动处理
+            const activeLine = document.getElementById(`lrc-${activeIdx}`);
+            const box = document.getElementById('lyric-content');
+            
+            // 移除旧高亮
+            const old = box.querySelector('.lrc-active');
+            if(old) old.classList.remove('lrc-active');
+            
+            if(activeLine) {
+                activeLine.classList.add('lrc-active');
                 
-                // 加新的高亮
-                const activeLine = document.getElementById(`lrc-${activeIdx}`);
-                if(activeLine) {
-                    activeLine.classList.add('lrc-active');
-                    // 丝滑滚动到中间 (smooth)
-                    activeLine.scrollIntoView({ behavior: "smooth", block: "center" });
-                }
-                
-                // B. 获取文字内容
-                const text = this.lrcData[activeIdx].text;
-                const nextText = this.lrcData[activeIdx + 1] ? this.lrcData[activeIdx + 1].text : "";
-
-                // C. 更新各种组件
-                safeSetText('widget-lyric-line', text); // 小组件
-                
-                const floatText = document.querySelector('#float-lyric-bar .fl-text');
-                if(floatText) floatText.innerText = text; // 悬浮条
-
-                // D. 中间两行同步 (带动画)
-                const mini1 = document.getElementById('mini-lrc-1');
-                const mini2 = document.getElementById('mini-lrc-2');
-                
-                if(mini1 && mini1.innerText !== text) {
-                    // 淡出 -> 换字 -> 淡入
-                    mini1.style.opacity = 0;
-                    mini1.style.transform = "translateY(5px)";
-                    setTimeout(() => {
-                        mini1.innerText = text;
-                        mini1.style.opacity = 1;
-                        mini1.style.transform = "translateY(0)";
-                    }, 100);
-                }
-                if(mini2) mini2.innerText = nextText;
+                // ★ 修复点3：使用 scrollIntoView 的平滑模式
+                // block: "center" 自动把这行字居中
+                activeLine.scrollIntoView({ behavior: "smooth", block: "center" });
             }
+            
+            // B. 更新小组件和悬浮条
+            const text = this.lrcData[activeIdx].text;
+            const nextText = this.lrcData[activeIdx + 1] ? this.lrcData[activeIdx + 1].text : "";
+
+            safeSetText('widget-lyric-line', text);
+            
+            const mini1 = document.getElementById('mini-lrc-1');
+            const mini2 = document.getElementById('mini-lrc-2');
+            
+            // 简单的淡入淡出动画
+            if(mini1 && mini1.innerText !== text) {
+                mini1.style.opacity = 0;
+                setTimeout(() => {
+                    mini1.innerText = text;
+                    mini1.style.opacity = 1;
+                }, 150);
+            }
+            if(mini2) mini2.innerText = nextText;
         }
     }
 };
 
-// (C) 究极VIP解析器 (老公特调霸道版：不做检查，拿到就播！)
+// (C) 究极VIP解析器 
 class EnhancedVIPPlayer {
     constructor() {
         this.apiList = [
