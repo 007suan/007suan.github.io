@@ -1,20 +1,3 @@
-// ==========================================
-// ★★★ 安卓全屏高度修正补丁 ★★★
-// ==========================================
-// 这一段是为了解决安卓浏览器底部导航栏遮挡问题
-function fixMobileHeight() {
-    let vh = window.innerHeight * 0.01;
-    document.documentElement.style.setProperty('--vh', `${vh}px`);
-    
-    // 强制把 body 高度设为窗口可视高度
-    document.body.style.height = window.innerHeight + 'px';
-}
-
-// 初始化执行
-fixMobileHeight();
-// 窗口大小改变时也执行 (比如横竖屏切换)
-window.addEventListener('resize', fixMobileHeight);
-
 /**
  * ==========================================================
  * 幸福的秘诀是 拥有苹果时只在意苹果(๑＞＜)☆
