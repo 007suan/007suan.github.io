@@ -42,17 +42,14 @@ html {
     height: 100dvh; 
 }
 
-body {
-    margin: 0;
-    padding: 0;
-    background-color: #000;
-    /* 同样，把 height: 100% 改成 100dvh */
-    height: 100dvh;
-    width: 100vw;
-    overflow: hidden; /* 禁止滚动 */
-    position: fixed; /* 锁死位置 */
-
-}
+        body {
+            margin: 0;
+            font-family: 'bulangni', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-weight: normal;
+            background-color: #f0f2f5;
+            height: 100%; 
+            overflow: hidden; 
+        }
 
 /* iOS风输入框样式 */
 [contenteditable="true"] {
