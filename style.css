@@ -37,33 +37,18 @@ input, textarea, [contenteditable="true"] {
     user-select: text;
 }
 
-/* ★★★ 核心全屏逻辑：锁死浏览器窗口 ★★★ */
 html {
-    width: 100%;
-    height: 100%;
-    /* 防止iOS横屏字号放大 */
     -webkit-text-size-adjust: 100%;
-    /* 禁止滚动 */
-    overflow: hidden; 
+    height: 100%; 
 }
 
 body {
-    width: 100%;
-    height: 100%;
     margin: 0;
-    
-    /* ★ 关键：用 fixed 把 body 钉在屏幕上，安卓地址栏就不敢乱动了 */
-    position: fixed; 
-    top: 0; 
-    left: 0; 
-    overflow: hidden;
+    padding: 0;
     background-color: var(--bg-color);
     font-family: var(--font-family);
     overflow: hidden; 
     overscroll-behavior: none; }
-    /* 字体设置 */
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-}
 
 /* iOS风输入框样式 */
 [contenteditable="true"] {
