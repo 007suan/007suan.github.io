@@ -34,36 +34,27 @@ input, textarea, [contenteditable="true"] {
     user-select: text;
 }
 
-html {
-    /* 禁止页面整体滚动，防止回弹效果露出浏览器底色 */
-    overflow: hidden; 
-    height: 100%;
-}
-
-body {
-    margin: 0;
-    padding: 0;
-    width: 100vw;
-    /* 重点：用 dvh 替代 100% */
-    height: 100dvh; 
-    background-color: #000; /* 把背景设黑，就算有缝隙也不明显 */
-    overflow: hidden;
-    position: fixed; /* 强制固定，防止被安卓键盘顶上去 */
-    top: 0;
-    left: 0;
-}
-
-.phone-screen {
-    width: 100%;
-    height: 100%; /* 继承 body 的 100dvh */
-    background: #f2f2f7;
-    position: relative;
-    overflow: hidden;
-    
-    /* 某些安卓机型可能需要这个来触发全屏模式 */
-    display: flex;
-    flex-direction: column;
-}
+        html {
+            -webkit-text-size-adjust: 100%;
+            height: 100%; 
+        }
+        body {
+            margin: 0;
+            font-family: 'bulangni', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-weight: normal;
+            background-color: #f0f2f5;
+            height: 100%; 
+            overflow: hidden; 
+        }
+        #phone-screen {
+            width: 100%;
+            height: 100vh; 
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background-color: #ffffff; 
+        }
 
 /* iOS风输入框样式 */
 [contenteditable="true"] {
