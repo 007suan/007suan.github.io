@@ -968,7 +968,7 @@
                     <div class="wx-p3-desc edit-text">你好像过的很好，<br>迫不及待地抹去我的存在。</div>
                 </div>
                 <div class="wx-p3-tags">
-                    <div class="wx-p3-tag edit-textarea">让过去过去，让将来将来</div>
+                    <div class="wx-p3-tag edit-text">让过去过去，让将来将来</div>
                     <div class="wx-p3-tag edit-text">淡淡的就会顺顺的。</div>
                     <div class="wx-p3-tag grey edit-text">誓言是一场有时差的雨</div>
       </div>
@@ -1110,7 +1110,7 @@
         <div class="back-btn" onclick="closeChatControl()">
             <svg viewBox="0 0 24 24" width="24" height="24" fill="#333"><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z" transform="rotate(90 12 12)"/></svg>
         </div>
-        <span style="font-weight: 700; font-size: 16px;">详细设定</span>
+        <span style="font-weight: 700; font-size: 16px;">聊天控制中心</span>
 <div class="nav-btn-right" onclick="saveDetailSettings()">保存</div>
         <div style="width: 40px;"></div> 
     </div>
@@ -1393,7 +1393,7 @@
                 </div>
             </div>
 
-            <div class="exp-content-scroll">
+            <div class="exp-content-scroll creator-content-scroll-area">
                 <div class="exp-header-layout">
                     <div class="exp-avatar-area">
                         <div class="exp-avatar-circle upload-img" id="creator-avatar"><div class="exp-avatar-tip">Click<br>Upload</div></div>
@@ -1409,49 +1409,58 @@
                         </div>
                     </div>
                 </div>
+                
                 <div class="exp-body-section">
                     <div class="exp-sec-header">
                         <span class="exp-sec-icon">≡</span><span class="exp-sec-title">ABOUT Me</span>
                         <div class="exp-pill-btn">★ 𝗪𝗶𝗻𝘁𝗲𝗿.</div>
                     </div>
-<div class="exp-text-block">
-    <div class="exp-text-row">
-        <span class="exp-bold">基础:</span>
-        <input type="text" id="creator-realname" class="exp-inline-input" placeholder="名称 / Name">
-        <span class="exp-slash">/</span>
-        <input type="text" id="creator-alias" class="exp-inline-input" placeholder="Alias / 昵称" style="width: 100px;">
-        <span class="exp-divider">/</span>
-        <input type="text" id="creator-gender" class="exp-inline-input small" placeholder="性别" style="width: 40px;">
-    </div>
-    
-    <div class="exp-text-row">
-        <span class="exp-bold">其他:</span>
-        <span class="exp-label-small">Height:</span><input type="text" id="creator-height" class="exp-inline-input small" placeholder="178">
-        <span class="exp-divider">|</span>
-        <span class="exp-label-small">Age:</span><input type="text" id="creator-age" class="exp-inline-input small" placeholder="18">
-        <span class="exp-divider">|</span>
-        <span class="exp-label-small">MBTI:</span><input type="text" id="creator-mbti" class="exp-inline-input small" placeholder="INTJ">
-    </div>
+                    
+                    <div class="exp-text-block">
+                        <div class="exp-text-row">
+                            <span class="exp-bold">基础:</span>
+                            <input type="text" id="creator-realname" class="exp-inline-input" placeholder="名称 / Name">
+                            <span class="exp-slash">/</span>
+                            <input type="text" id="creator-alias" class="exp-inline-input" placeholder="Alias / 昵称" style="width: 100px;">
+                            <span class="exp-divider">/</span>
+                            <input type="text" id="creator-gender" class="exp-inline-input small" placeholder="性别" style="width: 40px;">
+                        </div>
+                        
+                        <div class="exp-text-row">
+                            <span class="exp-bold">其他:</span>
+                            <span class="exp-label-small">Height:</span><input type="text" id="creator-height" class="exp-inline-input small" placeholder="178" style="width: 35px;">
+                            <span class="exp-divider">|</span>
+                            <span class="exp-label-small">Age:</span><input type="text" id="creator-age" class="exp-inline-input small" placeholder="18" style="width: 30px;">
+                            <span class="exp-divider">|</span>
+                            <span class="exp-label-small">MBTI:</span><input type="text" id="creator-mbti" class="exp-inline-input small" placeholder="INTJ" style="width: 45px;">
+                            <span class="exp-divider">|</span>
+                            <span class="exp-label-small"> birthday:</span><input type="text" id="creator-birthday" class="exp-inline-input small" placeholder="11.30" style="width: 60px;">
+                        </div>
 
-    <div class="exp-text-area-wrapper">
-        <div class="exp-row-label">@设定 「背景故事」</div>
-        <textarea id="creator-desc" class="exp-textarea" rows="3" oninput="autoResize(this)" placeholder="在这里输入背景故事、详细设定..."></textarea>
-    </div>
+                        <div class="exp-text-area-wrapper">
+                            <div class="exp-row-label">@设定 「背景故事」</div>
+                            <textarea id="creator-desc" class="exp-textarea" rows="3" oninput="autoResize(this)" placeholder="在这里输入背景故事、详细设定..."></textarea>
+                        </div>
 
-    <div class="exp-text-area-wrapper">
-        <div class="exp-row-label">性格 | 语气 | 细节</div>
-        <textarea id="creator-persona" class="exp-textarea" rows="3" oninput="autoResize(this)" placeholder="在这里输入性格细节、说话语气..."></textarea>
-    </div>
-    
-    <div class="exp-text-area-wrapper">
-        <div class="exp-row-label">其他 | 爱好 (Hobbies)</div>
-        <textarea id="creator-hobbies" class="exp-textarea" rows="2" oninput="autoResize(this)" placeholder="TA的爱好、喜欢的东西..."></textarea>
-    </div>
+                        <div class="exp-text-area-wrapper">
+                            <div class="exp-row-label">性格 | 语气 | 细节</div>
+                            <textarea id="creator-persona" class="exp-textarea" rows="3" oninput="autoResize(this)" placeholder="在这里输入性格细节、说话语气..."></textarea>
+                        </div>
+                        
+                        <div class="exp-text-area-wrapper">
+                            <div class="exp-row-label">外貌 | 穿着 (Appearance)</div>
+                            <textarea id="creator-appearance" class="exp-textarea" rows="2" oninput="autoResize(this)" placeholder="描述TA的样貌、眼睛、头发..."></textarea>
+                        </div>
+                        
+                        <div class="exp-text-area-wrapper">
+                            <div class="exp-row-label">其他 | 爱好 (Hobbies)</div>
+                            <textarea id="creator-hobbies" class="exp-textarea" rows="2" oninput="autoResize(this)" placeholder="TA的爱好、喜欢的东西..."></textarea>
+                        </div>
 
-    <input type="hidden" id="creator-bday">
-    <input type="hidden" id="creator-note">
-    <div class="exp-footer-deco">漫画 | 听歌🎧 | 画画 | 发呆 | ★</div>
+                        <input type="hidden" id="creator-note">
+                        <div class="exp-footer-deco">漫画 | 听歌🎧 | 画画 | 发呆 | ★</div>
                     </div>
+                    
                     <div class="exp-sec-header" style="margin-top: 20px;">
                         <span class="exp-sec-icon">≡</span><span class="exp-sec-title">INTRODUCTION</span>
                     </div>
@@ -1459,10 +1468,9 @@
                         <div class="exp-qr-text">幸福的秘诀是 拥有苹果时只在意苹果(๑＞＜)☆<br><span style="font-size:10px; color:#999;">I want to talk...💬</span></div>
                     </div>
                 </div>
-                <div style="height: 100px;"></div>
+                <div style="height: 300px;"></div>
             </div>
         </div>
-  </div>
 
 <div id="sub-page-post-creator" class="sub-page" style="background: #fff; z-index: 6000;">
 <div class="wx-post-header">
