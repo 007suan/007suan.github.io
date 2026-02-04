@@ -1962,7 +1962,7 @@ function formatMiniTime(ts) {
 }
 
 // ==========================================================
-// ★★★ 渲染消息 (完整修复版) ★★★
+// ★★★ 渲染消息 (转账还原 · 撤回不跳头 · 零闪烁版) ★★★
 // ==========================================================
 window.renderMessages = function(chatId, autoScroll = true) {
     const chat = chatsData.find(c => c.id === chatId);
@@ -1970,224 +1970,167 @@ window.renderMessages = function(chatId, autoScroll = true) {
     const container = document.getElementById('chat-msg-area');
     if (!container) return;
     
-    // 判断是否在底部
-    const isAtBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) < 50;
-    
+    const fragment = document.createDocumentFragment();
+    const isAtBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) < 150;
     const contact = contactsData.find(c => c.id === chat.contactId);
     const persona = personasData.find(p => p.id === chat.personaId) || { avatar: '' };
     const msgs = chat.messages || [];
 
-    // 分页加载
     let limit = currentRenderLimit || 20;
     const startIndex = Math.max(0, msgs.length - limit);
     const msgsToRender = msgs.slice(startIndex);
 
-    container.innerHTML = ''; 
-
-    // 加载更多按钮
     if (startIndex > 0) {
         const loadMore = document.createElement('div');
-        loadMore.innerHTML = `<div style="padding:10px;text-align:center;color:#ccc;font-size:12px;cursor:pointer;">下拉加载更多...</div>`;
-        loadMore.onclick = () => { loadMoreMessages(); };
-        container.appendChild(loadMore);
+        loadMore.innerHTML = `<div style="padding:15px;text-align:center;color:#ccc;font-size:12px;cursor:pointer;">查看更早的消息</div>`;
+        loadMore.onclick = () => loadMoreMessages();
+        fragment.appendChild(loadMore);
     }
 
     let lastTime = 0;
     let lastRole = null;
+    let groupShownAvatar = false; // 标记当前气泡簇是否已显示过头像
 
     msgsToRender.forEach((msg, i) => {
         const isMe = msg.role === 'me';
+        const nextMsg = msgsToRender[i + 1];
         
-        // 1. 时间胶囊
+        // 1. 时间胶囊 (30分钟断层视为绝对隔离)
         if (i === 0 || msg.timestamp - lastTime > 30 * 60 * 1000) {
             const timePill = document.createElement('div');
             timePill.className = 'msg-time-pill';
-            const date = new Date(msg.timestamp);
-            timePill.innerText = `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
-            container.appendChild(timePill);
-            lastTime = msg.timestamp;
-            lastRole = null;
-        }
-
-        // 2. 动作旁白
-        if (msg.type === 'action') {
-            const actionRow = document.createElement('div');
-            const animClass = (Date.now() - msg.timestamp < 2000) ? 'new-msg-anim' : '';
-            actionRow.className = `msg-row action-aside ${animClass}`;
-            const who = isMe ? '我' : (contact ? contact.name : 'TA');
-            actionRow.innerHTML = `<div class="msg-content">(${who} ${msg.text})</div>`;
-            container.appendChild(actionRow);
+            timePill.innerText = `${new Date(msg.timestamp).getHours()}:${new Date(msg.timestamp).getMinutes().toString().padStart(2, '0')}`;
+            fragment.appendChild(timePill);
             lastRole = null; 
-            return;
         }
 
-        // 3. 撤回消息
-        if (msg.type === 'recall') {
-            const recallDiv = document.createElement('div');
-            recallDiv.className = 'msg-recall-pill';
+        // 2. 连续性核心逻辑：2分钟内同角色视为同一簇
+        const isNewGroup = (msg.role !== lastRole || (msg.timestamp - lastTime > 2 * 60 * 1000));
+        if (isNewGroup) {
+            lastRole = msg.role;
+            groupShownAvatar = false; 
+        }
+        lastTime = msg.timestamp;
+
+        const isNew = (Date.now() - msg.timestamp < 1500);
+        const animClass = (autoScroll && isNew) ? 'new-msg-anim' : '';
+
+        // 3. 渲染分类逻辑
+        if (msg.type === 'action') {
+            // 动作消息不展示头像，但不重置 lastRole，保持连续性
+            const row = document.createElement('div');
+            row.className = `msg-row action-aside ${animClass}`;
+            row.innerHTML = `<div class="msg-content">(${isMe ? '我' : (contact ? contact.name : 'TA')} ${msg.text})</div>`;
+            fragment.appendChild(row);
+        } 
+        else if (msg.type === 'recall') {
+            // 撤回消息不展示头像，也不重置 lastRole
+            const row = document.createElement('div');
+            row.className = 'msg-recall-pill';
             const who = isMe ? '我' : (contact ? contact.name : 'TA');
             const rawContent = (msg.originalText || "").replace(/"/g, '&quot;');
             const extraInfo = (msg.extra || "").replace(/"/g, '&quot;');
-            const msgType = msg.originalType || 'text';
-            const peekCode = `peekRecalledMsg("${msgType}", "${rawContent}", "${extraInfo}")`;
-            
-            recallDiv.innerHTML = `${who} 撤回了一条消息 <span class="recall-link" style="color:#007aff;cursor:pointer;margin-left:5px;" onclick='${peekCode}'>(点击偷看)</span>`;
-                        container.appendChild(recallDiv);
-
-            lastRole = null;
-            return;
-        }
-
-        // 4. 普通消息 (文本/图片/表情/转账)
-        let showAvatar = (i === 0 || msg.role !== lastRole || (msg.timestamp - (msgsToRender[i-1]?.timestamp || 0) > 30 * 60 * 1000));
-        let hasTail = false;
-        const nextMsg = msgsToRender[i + 1];
-        if (!nextMsg || nextMsg.role !== msg.role || nextMsg.type === 'action' || nextMsg.type === 'recall' || (nextMsg.timestamp - msg.timestamp > 2 * 60 * 1000)) hasTail = true;
-
-        const row = document.createElement('div');
-        const animClass = (Date.now() - msg.timestamp < 2000) ? 'new-msg-anim' : '';
-        row.className = `msg-row ${isMe ? 'me' : 'other'} ${hasTail ? 'has-tail' : ''} ${animClass}`;
-        row.dataset.msgIndex = startIndex + i;
-        row.id = `msg-${msg.timestamp}`;
-
-        const avatarUrl = isMe ? persona.avatar : (contact ? contact.avatar : '');
-        const bgStyle = getAvatarStyle(avatarUrl);
-        const miniTime = formatMiniTime(msg.timestamp);
-
-        let avatarHtml = showAvatar ? 
-            `<div class="msg-avatar-col"><div class="msg-avatar" style="${bgStyle}"></div><div class="msg-avatar-time">${miniTime}</div></div>` : 
-            `<div class="msg-avatar-placeholder"></div>`;
-
-        let extraClass = '';
-        
-        // --- 核心渲染逻辑开始 ---
-        let mainBubble = '';
-        let quoteHtml = '';
-
-        // A. 生成气泡主体 (修复版)
-        if (msg.type === 'sticker') {
-            mainBubble = `<img src="${msg.text}" class="sticker-img-big" style="max-width:120px;border-radius:10px;">`;
-            extraClass = 'sticker-type'; 
+            const peekCode = `peekRecalledMsg("${msg.originalType || 'text'}", "${rawContent}", "${extraInfo}")`;
+            row.innerHTML = `${who} 撤回了一条消息 <span class="recall-link" style="color:#007aff;cursor:pointer;margin-left:5px;" onclick='${peekCode}'>(点击偷看)</span>`;
+            fragment.appendChild(row);
         } 
-        else if (msg.type === 'image') {
-            mainBubble = `<img src="${msg.text}" class="chat-image" style="max-width:150px;border-radius:10px;" onclick="previewImage('${msg.text}')">`;
-        } 
-        else if (msg.type === 'transfer') {
-            // --- 转账卡片 ---
-            let status = msg.transferStatus;
-            // ★ 修复：优先读 msg.text，读不到再尝试解析 extra
-            let amt = parseFloat(msg.text); 
-            
-            if (!status || isNaN(amt)) {
-                try {
-                    const extra = JSON.parse(msg.extra || '{}');
-                    if (!status) status = extra.status;
-                    if (isNaN(amt)) amt = parseFloat(extra.amount || 0);
-                } catch(e) {}
-            }
-            
-            const stateClass = (status === 'accepted' || status === 'refunded') ? 'accepted' : '';
-            let statusText = 'Transfer';
-            if (status === 'accepted') statusText = 'Received';
-            if (status === 'refunded') statusText = 'Refunded';
-            
-            mainBubble = `
-                <div class="msg-content transfer ${stateClass}" onclick="handleTransferClick('${msg.id}')">
-                    <div class="tf-icon-img"></div>
-                    <div class="tf-info">
-                        <div class="tf-amt">¥${amt.toFixed(2)}</div>
-                        <div class="tf-status">${statusText}</div>
-                    </div>
-                </div>
-            `;
-        }
-        else if (msg.type === 'transfer_receipt') {
-            // --- ★ 新增：转账回执 (小气泡) ---
-            // 内容格式： "type|amount" 比如 "accept|520.00"
-            const [action, amtVal] = (msg.text || "").split('|');
-            const isAccept = action === 'accept';
-            
-            const iconHtml = isAccept ? '✔' : '✕';
-            const iconClass = isAccept ? '' : 'refund'; // 退款标红
-            const title = isAccept ? '已收款' : '已退回';
-            const sub = `¥${parseFloat(amtVal||0).toFixed(2)}`;
-
-            mainBubble = `
-                <div class="msg-content receipt">
-                    <div class="receipt-icon ${iconClass}">${iconHtml}</div>
-                    <div class="receipt-text">
-                        <span>${title}</span>
-                        <span class="receipt-sub">${sub}</span>
-                    </div>
-                </div>
-            `;
-        }
         else {
-            // 普通文本
-            let contentHtml = (msg.text || msg.content || '').replace(/\n/g, '<br>');
-            mainBubble = `<div class="msg-content ${extraClass}">${contentHtml}</div>`;
-        }
+            // 普通气泡逻辑 (Text / Image / Transfer / Sticker)
+            const row = document.createElement('div');
+            
+            // 尾巴判断：下一条换人或时间隔太久，则当前气泡长尾巴
+            let hasTail = !nextMsg || nextMsg.role !== msg.role || (nextMsg.timestamp - msg.timestamp > 2 * 60 * 1000);
+            
+            row.className = `msg-row ${isMe ? 'me' : 'other'} ${hasTail ? 'has-tail' : ''} ${animClass}`;
+            row.dataset.msgIndex = startIndex + i;
+            row.id = `msg-${msg.timestamp}`;
 
-        // B. 生成引用 (悬浮上方)
-        if (msg.quote) {
-            let fullQuoteText = `${msg.quote.name}：${msg.quote.text}`;
-            if (fullQuoteText.length > 20) fullQuoteText = fullQuoteText.substring(0, 20) + "...";
-            quoteHtml = `<div class="msg-quote-outside" onclick="scrollToMsg('${msg.quote.id}')">${fullQuoteText}</div>`;
-        }
+            // 头像显示判断：同一簇只在第一条有内容的消息出头像
+            const bgStyle = getAvatarStyle(isMe ? persona.avatar : (contact ? contact.avatar : ''));
+            let avatarHtml = '';
+            if (!groupShownAvatar) {
+                avatarHtml = `<div class="msg-avatar-col"><div class="msg-avatar" style="${bgStyle}"></div><div class="msg-avatar-time">${formatMiniTime(msg.timestamp)}</div></div>`;
+                groupShownAvatar = true;
+            } else {
+                avatarHtml = `<div class="msg-avatar-placeholder"></div>`;
+            }
 
-        // C. 组合 (引用在前，气泡在后)
-        // 注意：转账消息(mainBubble)已经是div了，如果是文本/图片，mainBubble也是div/img
-        // 这里统一包装一下，方便布局
-        const colContent = `<div class="msg-container-col">${quoteHtml}${mainBubble}</div>`;
+            let mainBubble = '';
+            // --- 还原转账与回执逻辑 ---
+            if (msg.type === 'transfer') {
+                let status = msg.transferStatus;
+                let amt = parseFloat(msg.text);
+                if (!status || isNaN(amt)) {
+                    try {
+                        const extra = JSON.parse(msg.extra || '{}');
+                        if (!status) status = extra.status;
+                        if (isNaN(amt)) amt = parseFloat(extra.amount || 0);
+                    } catch(e) {}
+                }
+                const stateClass = (status === 'accepted' || status === 'refunded') ? 'accepted' : '';
+                let statusText = status === 'accepted' ? 'Received' : (status === 'refunded' ? 'Refunded' : 'Transfer');
+                mainBubble = `
+                    <div class="msg-content transfer ${stateClass}" onclick="handleTransferClick('${msg.id}')">
+                        <div class="tf-icon-img"></div>
+                        <div class="tf-info">
+                            <div class="tf-amt">¥${amt.toFixed(2)}</div>
+                            <div class="tf-status">${statusText}</div>
+                        </div>
+                    </div>`;
+            } 
+            else if (msg.type === 'transfer_receipt') {
+                const [action, amtVal] = (msg.text || "").split('|');
+                const isAccept = action === 'accept';
+                mainBubble = `
+                    <div class="msg-content receipt">
+                        <div class="receipt-icon ${isAccept ? '' : 'refund'}">${isAccept ? '✔' : '✕'}</div>
+                        <div class="receipt-text">
+                            <span>${isAccept ? '已收款' : '已退回'}</span>
+                            <span class="receipt-sub">¥${parseFloat(amtVal||0).toFixed(2)}</span>
+                        </div>
+                    </div>`;
+            } 
+            else if (msg.type === 'sticker') {
+                mainBubble = `<img src="${msg.text}" class="sticker-img-big" style="max-width:120px;border-radius:10px;">`;
+            } 
+            else if (msg.type === 'image') {
+                mainBubble = `<img src="${msg.text}" class="chat-image" style="max-width:150px;border-radius:10px;" onclick="previewImage('${msg.text}')">`;
+            } 
+            else {
+                mainBubble = `<div class="msg-content">${(msg.text || '').replace(/\n/g, '<br>')}</div>`;
+            }
 
-        if (isMe) {
-            row.innerHTML = `${colContent}${avatarHtml}`;
-        } else {
-            row.innerHTML = `${avatarHtml}${colContent}`;
+            let quoteHtml = '';
+            if (msg.quote) {
+                quoteHtml = `<div class="msg-quote-outside" onclick="scrollToMsg('${msg.quote.id}')">${msg.quote.name}：${msg.quote.text.substring(0, 20)}</div>`;
+            }
+
+            row.innerHTML = isMe ? `<div class="msg-container-col">${quoteHtml}${mainBubble}</div>${avatarHtml}` : `${avatarHtml}<div class="msg-container-col">${quoteHtml}${mainBubble}</div>`;
+            
+            const bubble = row.querySelector('.msg-content, .sticker-img-big, .chat-image');
+            if(bubble && window.bindLongPress) bindLongPress(bubble);
+            fragment.appendChild(row);
         }
-        
-        // 绑定长按
-        const bubbleContent = row.querySelector('.msg-content, .sticker-img-big, .chat-image');
-        if(bubbleContent && window.bindLongPress) bindLongPress(bubbleContent);
-        
-        container.appendChild(row);
-        lastRole = msg.role;
     });
 
-    // 5. 底部状态条 (已读/已送达)
+    // 4. 状态页脚
     if (msgsToRender.length > 0) {
-        const lastMsg = msgsToRender[msgsToRender.length - 1];
-        if(lastMsg.type !== 'action' && lastMsg.type !== 'recall') {
-            const statusDiv = document.createElement('div');
-            statusDiv.className = 'msg-status-foot';
-            const d = new Date(lastMsg.timestamp);
-            const timeStr = `${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}`;
-            
-            if (lastMsg.role === 'me') {
-                statusDiv.innerHTML = `已送达 ${timeStr}`;
-                statusDiv.style.textAlign = 'right';
-                statusDiv.style.paddingRight = '50px';
-                statusDiv.style.color = '#8e8e93';
-            } else {
-                statusDiv.innerHTML = `已读 ${timeStr}`;
-                statusDiv.style.textAlign = 'left';
-                statusDiv.style.paddingLeft = '58px';
-                statusDiv.style.color = '#8e8e93';
-            }
-            container.appendChild(statusDiv);
+        const last = msgsToRender[msgsToRender.length - 1];
+        if (last.type !== 'action' && last.type !== 'recall') {
+            const foot = document.createElement('div');
+            foot.className = 'msg-status-foot';
+            foot.style.cssText = `color:#8e8e93; font-size:11px; margin-top:2px; margin-bottom:12px; text-align: ${last.role==='me'?'right':'left'}; padding: ${last.role==='me'?'0 50px 0 0':'0 0 0 58px'};`;
+            foot.innerText = `${last.role === 'me' ? '已送达' : '已读'} ${new Date(last.timestamp).getHours()}:${new Date(last.timestamp).getMinutes().toString().padStart(2,'0')}`;
+            fragment.appendChild(foot);
         }
     }
 
+    // 5. 原子化执行定位
+    container.style.scrollBehavior = 'auto';
+    container.replaceChildren(fragment);
     if (autoScroll || isAtBottom) {
-        // 1. 临时关掉平滑滚动
-        container.style.scrollBehavior = 'auto'; 
         container.scrollTop = container.scrollHeight;
-        container.style.scrollBehavior = ''; // 恢复原状
-        
-        // 2. 为了保险，在下一帧再按一次
-        requestAnimationFrame(() => {
-             container.scrollTop = container.scrollHeight;
-        });
+        requestAnimationFrame(() => container.style.scrollBehavior = 'smooth');
     }
 };
 
@@ -3840,16 +3783,13 @@ document.addEventListener('DOMContentLoaded', () => {
 // [15] 朋友圈 Story 逻辑
 // ====================
 window.renderMomentsHeader = function() {
-    // 1. 尝试找容器，兼容 class 和 id
     let container = document.querySelector('.ins-highlights-scroll');
     if(!container) return;
-    
     container.innerHTML = '';
 
-    // === 第一部分：固定显示“新建”按钮 ===
+    // === 第一部分：新建按钮 (不变) ===
     const addBtn = document.createElement('div');
     addBtn.className = 'ins-highlight-item';
-    // ★ 改成下面这句，就可以打开发布界面啦！
     addBtn.onclick = () => window.openPostCreator(); 
     addBtn.innerHTML = `
         <div class="ins-highlight-circle plus-btn">
@@ -3859,22 +3799,32 @@ window.renderMomentsHeader = function() {
     `;
     container.appendChild(addBtn);
 
-    // === 第二部分：显示“我” (Persona) ===
-    const me = personasData[0]; // 获取你的第一个面具
-    if(me) {
-        const meItem = document.createElement('div');
-        meItem.className = 'ins-highlight-item';
-        meItem.innerHTML = `
-            <div class="ins-highlight-circle upload-img" style="${getAvatarStyle(me.avatar)} border: 2px solid #007aff;"></div>
-            <div class="ins-highlight-text edit-text">Me</div>
-        `;
-        // 点击“我”的头像可以换图
-        meItem.querySelector('.upload-img').onclick = (e) => {
-             e.stopPropagation();
-             handleImageUpload(e.target);
-        };
-        container.appendChild(meItem);
+    // === 第二部分：显示“本体” (Moments Host) ★★★ 改这里 ★★★ ===
+    // 不再读取 personasData[0]，而是读取 momentsHost
+    const meItem = document.createElement('div');
+    meItem.className = 'ins-highlight-item';
+    
+    // 处理头像样式
+    let avatarStyle = '';
+    if (momentsHost.avatar) {
+        // 如果有 url() 就用，没有就拼一个
+        let url = momentsHost.avatar.includes('url(') ? momentsHost.avatar : `url('${momentsHost.avatar}')`;
+        avatarStyle = `background-image: ${url};`;
+    } else {
+        avatarStyle = 'background-color: #ddd;'; // 默认灰底
     }
+
+    meItem.innerHTML = `
+        <div class="ins-highlight-circle" style="${avatarStyle} border: 2px solid #007aff;"></div>
+        <div class="ins-highlight-text">${momentsHost.name}</div>
+    `;
+    
+    // 点击这个圆圈，也可以触发换头像
+    meItem.onclick = (e) => {
+         e.stopPropagation();
+         triggerMomentsAvatarUpload();
+    };
+    container.appendChild(meItem);
 
     // === 第三部分：显示“好友” (Contacts) ===
     contactsData.forEach(c => {
@@ -4054,9 +4004,6 @@ window.showPayNotification = function(amount, type) {
     }
 };
 
-// ====================
-// [17] 聊天控制面板逻辑 (Chat Control)
-// ====================
 window.openChatControl = function() {
     if (!currentChatId) return;
     const chat = chatsData.find(c => c.id === currentChatId);
@@ -4066,34 +4013,58 @@ window.openChatControl = function() {
     const contact = contactsData.find(c => c.id === chat.contactId) || {name: '未知', avatar: ''};
     const persona = personasData.find(p => p.id === chat.personaId) || {name: 'Me', avatar: ''};
 
-    // 1. 填充双人头像 (同步！)
+    // 1. 填充双人头像
     document.getElementById('cc-char-name-big').innerText = contact.name;
     document.getElementById('cc-char-avatar-big').style.backgroundImage = getAvatarStyle(contact.avatar).replace('background-image: ', '').replace(';', '');
-    
     document.getElementById('cc-user-name-big').innerText = persona.name;
     document.getElementById('cc-user-avatar-big').style.backgroundImage = getAvatarStyle(persona.avatar).replace('background-image: ', '').replace(';', '');
 
     // 2. 填充私有备注
     document.getElementById('cc-private-alias').value = contact.privateAlias || '';
 
-    // 3. ★★★ 相识天数计算 ★★★
-    // 如果没有记录 createTime，就用 chat.id (通常是时间戳)
+    // 3. 相识天数
     const startTime = chat.createTime || chat.id; 
     const diff = Date.now() - startTime;
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    document.getElementById('cc-friend-days').innerText = days + 1; // 第一天也算一天！
+    document.getElementById('cc-friend-days').innerText = days + 1;
 
-    // 4. 填充逻辑开关
+    // 4. 填充逻辑开关 (时间)
     document.getElementById('cc-switch-time').checked = (chat.enableTime !== false); 
     
-    // 5. 填充记忆条数 (只留这一段！)
+    // 5. 填充记忆条数
     const limit = chat.contextLimit || 20; 
     const limitInput = document.getElementById('cc-ctx-limit');
-    if (limit >= 99999) {
-        limitInput.value = ""; // 无限模式显示为空
-    } else {
-        limitInput.value = limit;
+    if (limit >= 99999) { limitInput.value = ""; } else { limitInput.value = limit; }
+
+    // ==========================================
+    // ★★★ 核心修改：读取 Chat (窗口) 的数据 ★★★
+    // ==========================================
+    const activeSwitch = document.getElementById('detail-active-mode');
+    const intervalBox = document.getElementById('active-interval-box');
+
+    if (activeSwitch) {
+        // 1. 读取 chat.enableActiveMode (而不是 contact)
+        activeSwitch.checked = (chat.enableActiveMode === true);
+
+        // 2. 根据状态显示/隐藏下面的频率框
+        if (intervalBox) {
+            intervalBox.style.display = activeSwitch.checked ? 'flex' : 'none';
+        }
+        
+        // 3. 点击事件只负责切换 UI 显示 (不保存！)
+        activeSwitch.onclick = function() {
+            if (intervalBox) {
+                intervalBox.style.display = this.checked ? 'flex' : 'none';
+            }
+        };
     }
+    
+    // 填充频率数值 (优先读 Chat 的，没有就读默认值)
+    const activeInterval = document.getElementById('detail-active-interval');
+    if (activeInterval) {
+        activeInterval.value = chat.activeInterval || 60;
+    }
+    // ==========================================
 
     // 显示面板
     const panel = document.getElementById('chat-control-overlay');
@@ -4101,15 +4072,26 @@ window.openChatControl = function() {
     setTimeout(() => panel.classList.add('active'), 10);
 };
 
+// ====================
+// [补丁] 关闭聊天控制面板 (关门钥匙)
+// ====================
 window.closeChatControl = function() {
     const panel = document.getElementById('chat-control-overlay');
-    panel.classList.remove('active');
-    setTimeout(() => panel.style.display = 'none', 300);
+    if (!panel) return;
     
-
-    if(currentChatId) renderMessages(currentChatId);
+    // 1. 撤销动画类，让它滑下去
+    panel.classList.remove('active');
+    
+    // 2. 等动画播完再隐藏
+    setTimeout(() => {
+        panel.style.display = 'none';
+        
+        // 3. 顺便刷新一下聊天界面，确保设置生效
+        if(currentChatId && window.renderMessages) {
+            renderMessages(currentChatId);
+        }
+    }, 300);
 };
-
 // 实时更新 Token 预测 & 显示数值
 window.updateTokenPredict = function(val) {
     document.getElementById('cc-ctx-display').innerText = val;
@@ -4117,13 +4099,7 @@ window.updateTokenPredict = function(val) {
     const estimated = 500 + (val * 50 * 1.5); 
     document.getElementById('cc-token-predict').innerText = `~${Math.floor(estimated)}`;
     
-    // 既然拖动了，就顺手保存一下
-    saveChatSettings();
 };
-
-// ==========================================
-// ★★★ 聊天控制中心 - 保存功能 (JS补全) ★★★
-// ==========================================
 window.saveDetailSettings = function() {
     // 1. 安全检查
     if (!currentChatId) return showSystemAlert('数据迷路了...请重新打开聊天(T_T)');
@@ -4134,7 +4110,7 @@ window.saveDetailSettings = function() {
     if (!chat || !contact) return;
 
     // --- 2. 抓取数据 ---
-    // (A) 备注
+    // (A) 备注 (这个还是属于人的属性)
     const aliasInput = document.getElementById('cc-private-alias');
     if (aliasInput) contact.privateAlias = aliasInput.value.trim(); 
 
@@ -4149,29 +4125,39 @@ window.saveDetailSettings = function() {
     const timeSwitch = document.getElementById('cc-switch-time');
     if (timeSwitch) chat.enableTime = timeSwitch.checked;
 
-    // (D) ★自主意识 (重点检查这里)
+    // ==========================================
+    // ★★★ 核心修改：保存到 Chat (窗口) ★★★
+    // ==========================================
     const activeSwitch = document.getElementById('detail-active-mode');
     if (activeSwitch) {
-        contact.enableActiveMode = activeSwitch.checked;
-        // 如果开启了，且没有上次活跃时间，初始化一个
-        if (contact.enableActiveMode && !contact.lastActiveTime) {
-            contact.lastActiveTime = Date.now();
+        // 保存开关到 chat
+        chat.enableActiveMode = activeSwitch.checked;
+        
+        // 如果开启了，且没有记录过时间，初始化一个时间
+        if (chat.enableActiveMode && !chat.lastActiveTime) {
+            chat.lastActiveTime = Date.now();
         }
     }
+    
     const activeInterval = document.getElementById('detail-active-interval');
-    if (activeInterval) contact.activeInterval = parseInt(activeInterval.value) || 60;
+    if (activeInterval) {
+        // 保存频率到 chat
+        chat.activeInterval = parseInt(activeInterval.value) || 60;
+    }
 
-    // --- 3. ★关键：必须同时保存 contactsData 和 chatsData ---
+    // --- 3. 保存并反馈 ---
     Promise.all([
         localforage.setItem('Wx_Contacts_Data', contactsData),
-        localforage.setItem('Wx_Chats_Data', chatsData)
+        localforage.setItem('Wx_Chats_Data', chatsData) // 重点是保存这个！
     ]).then(() => {
         // 更新界面显示
         const nameEl = document.getElementById('chat_layer_name');
         if (nameEl) nameEl.innerText = contact.privateAlias || contact.name;
         
         showSystemAlert('设定已保存！(^w^)', 'success');
-        closeChatControl(); 
+        
+        if(window.closeChatControl) window.closeChatControl(); 
+        
     }).catch(err => {
         console.error(err);
         showSystemAlert('保存失败惹(T_T)', 'error');
@@ -4293,83 +4279,6 @@ function applyAvatarStyle(elementId, avatarStr) {
     el.style.backgroundSize = 'cover';
     el.style.backgroundPosition = 'center';
 }
-
-// === 1. 详细设定 (Chat Control) ===
-window.openChatControl = function() {
-    if (!currentChatId) return;
-    const chat = chatsData.find(c => c.id === currentChatId);
-    if (!chat) return;
-
-    // 获取双方数据
-    const contact = contactsData.find(c => c.id === chat.contactId) || {name: '未知', avatar: ''};
-    const persona = personasData.find(p => p.id === chat.personaId) || {name: 'Me', avatar: ''};
-
-    // 填充名字
-    document.getElementById('cc-char-name-big').innerText = contact.name;
-    document.getElementById('cc-user-name-big').innerText = persona.name;
-
-    // 同步头像
-    applyAvatarStyle('cc-char-avatar-big', contact.avatar);
-    applyAvatarStyle('cc-user-avatar-big', persona.avatar);
-
-    // 填充其他数据
-    document.getElementById('cc-private-alias').value = contact.privateAlias || '';
-    
-    // 相识天数
-    const startTime = chat.createTime || chat.id; 
-    const diff = Date.now() - startTime;
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    document.getElementById('cc-friend-days').innerText = days + 1;
-
-    // 开关状态
-    document.getElementById('cc-switch-time').checked = (chat.enableTime !== false); 
-    const limit = chat.contextLimit || 20;
-    const limitInput = document.getElementById('cc-ctx-limit');
-    if (limitInput) {
-        // 如果是无限模式(99999)，就让输入框显示为空，否则显示数字
-        limitInput.value = (limit >= 99999) ? "" : limit;
-    }
-
-    // 显示面板
-    const panel = document.getElementById('chat-control-overlay');
-    panel.style.display = 'flex';
-    // ============================================
-    // ★★★ 修复：回显“自主意识”开关和输入框 ★★★
-    // ============================================
-    
-    const activeSwitch = document.getElementById('detail-active-mode');
-    const intervalBox = document.getElementById('active-interval-box');
-    const intervalInput = document.getElementById('detail-active-interval');
-
-    if (activeSwitch) {
-        // 1. 从 contact 数据里读取状态
-        const isActive = contact.enableActiveMode || false;
-        activeSwitch.checked = isActive;
-        
-        // 2. 根据状态决定输入框显不显示
-        // 如果开关开了，就用 'flex' 显示；关了就 'none' 隐藏
-        if (intervalBox) {
-            intervalBox.style.display = isActive ? 'flex' : 'none';
-        }
-
-        // 3. 绑定点击事件：手指一点开关，输入框立马 弹出来/缩回去
-        activeSwitch.onclick = function() {
-            if (intervalBox) {
-                intervalBox.style.display = this.checked ? 'flex' : 'none';
-            }
-            // ★ 修复：调用正确的保存函数 (saveDetailSettings)
-            if(window.saveDetailSettings) window.saveDetailSettings(); 
-            else console.error("找不到保存函数，救命！");
-        };
-    }
-
-    // 4. 回显频率数值 (如果没有就默认60)
-    if (intervalInput) {
-        intervalInput.value = contact.activeInterval || 60;
-    }
-    setTimeout(() => panel.classList.add('active'), 10);
-};
-
 
 // ==========================================================
 // ★ 总结页核心逻辑 (INS风双人头像 + 列表渲染)
@@ -4689,36 +4598,198 @@ function saveSummaryToChat(text, type = 'manual') {
     showSystemAlert('回忆保存成功噜♪( ´▽｀)～');
 }
 
-// ==========================================================
-// [22] 朋友圈/动态 (Moments) 逻辑
-// ==========================================================
+// ====================
+// [22] 朋友圈/动态 (Moments) 逻辑 - 独立本体版
+// ====================
 
-let momentsData = []; // 存储动态数据
-let tempPostImg = null; // 临时存储发布时的图片
+let momentsData = []; 
+let tempPostImg = null; 
+let tempVisibleSelection = [];
 
-// 1. 初始化加载动态数据
+// ★★★ 新增：朋友圈独立本体数据 (无面具状态) ★★★
+let momentsHost = {
+    name: '我',          // 默认昵称
+    avatar: '',          // 默认头像
+    cover: ''            // 朋友圈封面
+};
+
+// 1. 初始化
 window.initMoments = function() {
-    localforage.getItem('Wx_Moments_Data').then(data => {
-        momentsData = data || [];
-        renderMomentsFeed();
+    // 同时加载 动态列表 和 本体数据
+    Promise.all([
+        localforage.getItem('Wx_Moments_Data'),
+        localforage.getItem('Wx_Moments_Host') // ★ 读取独立数据
+    ]).then(([mPosts, mHost]) => {
+        momentsData = mPosts || [];
+        if (mHost) momentsHost = mHost; //如果有存档就用存档的
+        
+        renderMomentsFeed();   // 渲染列表
+        renderMomentsHeader(); // 渲染 Story 栏
+        updateMomentsHostUI(); // ★ 渲染大封面和个人信息
     });
 };
-// 绑定到页面加载
 document.addEventListener('DOMContentLoaded', window.initMoments);
+// ====================
+// ★★★ 朋友圈本体交互 (封面/头像/昵称同步) ★★★
+// ====================
 
+// A. 刷新所有相关 UI
+window.updateMomentsHostUI = function() {
+    // 1. 同步大封面
+    const coverEl = document.getElementById('moments-cover-bg');
+    if (coverEl) {
+        // ★★★ 修改重点：强制白色，禁止点击 ★★★
+        
+        // 1. 强制背景变白
+        coverEl.style.background = '#fff'; 
+        coverEl.style.backgroundImage = 'none'; // 确保没有图片
+        
+        // 2. 移除点击事件 (让他点不动！)
+        coverEl.onclick = null; 
+        
+        // (原来那些 triggerMomentsCoverUpload 的代码统统删掉！)
+    }
 
-// 2. 打开/关闭 发布器
+    // 2. 同步大头像 (保持不变)
+    const avatarEl = document.getElementById('moments-host-avatar');
+    if (avatarEl) {
+        if (momentsHost.avatar) avatarEl.style.backgroundImage = `url('${momentsHost.avatar}')`;
+        else avatarEl.style.backgroundImage = ''; 
+        avatarEl.onclick = () => triggerMomentsAvatarUpload();
+    }
+
+    // 3. 同步大昵称 (保持不变)
+    const nameEl = document.getElementById('moments-host-name');
+    if (nameEl) {
+        nameEl.innerText = momentsHost.name;
+        nameEl.onclick = () => editMomentsHostName();
+    }
+
+    // 4. 顺便刷新一下 Story 栏里的那个“我”
+    renderMomentsHeader();
+};
+
+// C. 触发换头像
+window.triggerMomentsAvatarUpload = function() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                momentsHost.avatar = evt.target.result;
+                saveMomentsHost(); // 保存！
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    input.click();
+};
+
+// D. 触发改名
+window.editMomentsHostName = function() {
+    showPromptDialog("Edit Name", "请输入新的昵称:", (newName) => {
+        if (newName) {
+            momentsHost.name = newName;
+            saveMomentsHost(); // 保存！
+        }
+    });
+};
+
+// E. 保存数据 helper
+function saveMomentsHost() {
+    localforage.setItem('Wx_Moments_Host', momentsHost).then(() => {
+        updateMomentsHostUI(); // 保存完立即刷新 UI
+        showSystemAlert('个性化设置保存成功噜');
+    });
+}
+// 2. 打开发布器 (重写：渲染聊天窗口选择列表)
 window.openPostCreator = function() {
-    document.getElementById('post-text-input').value = "";
-    document.getElementById('post-img-preview-area').innerHTML = `
+    // 重置输入
+    const input = document.getElementById('post-text-input');
+    if(input) input.value = "";
+    
+    // 重置图片预览区
+    const imgArea = document.getElementById('post-img-preview-area');
+    if(imgArea) {
+        imgArea.innerHTML = `
         <div onclick="triggerPostImgUpload()" style="width: 80px; height: 80px; background: #f7f7f7; border-radius: 4px; display: flex; justify-content: center; align-items: center; cursor: pointer;">
             <svg viewBox="0 0 24 24" width="30" height="30" fill="#ccc"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
         </div>`;
+    }
     tempPostImg = null;
+    
+    // ★ 核心修改：渲染“可见范围”选择器
+    // 请确保你的 HTML Post页面里有一个 <div id="post-privacy-container"></div> 用来放列表
+    // 如果没有，请把原来的 <select id="post-privacy-select"> 删掉，换成这个 div
+    renderVisibilitySelector();
+
     openSubPage('sub-page-post-creator');
 };
 
-// 3. 触发图片上传 (发布器用)
+// ★ 新增：渲染可见性选择列表 (基于聊天窗口)
+function renderVisibilitySelector() {
+    const container = document.getElementById('post-privacy-container'); 
+    if (!container) return; // 如果没找到容器就不渲染了
+
+    container.innerHTML = `<div style="font-size:12px; color:#999; margin-bottom:8px; padding-left:5px;">Visible To (选择可见的聊天窗口)</div>`;
+    
+    // 默认全选所有聊天 (你可以根据需要改)
+    tempVisibleSelection = chatsData.map(c => c.id);
+
+    // 遍历所有聊天记录
+    chatsData.forEach(chat => {
+        const contact = contactsData.find(c => c.id === chat.contactId);
+        const persona = personasData.find(p => p.id === chat.personaId);
+        
+        if (!contact) return;
+
+        const row = document.createElement('div');
+        row.className = 'visibility-selector-row';
+        row.style.cssText = "display:flex; align-items:center; padding:10px; background:#fff; border-bottom:1px solid #f5f5f5; cursor:pointer; transition:0.2s;";
+        
+        // 选中状态UI判断
+        const isSelected = tempVisibleSelection.includes(chat.id);
+        const checkIcon = isSelected ? '✅' : '⚪️';
+        const opacity = isSelected ? '1' : '0.5';
+        
+        // 头像处理
+        let avatarUrl = contact.avatar || '';
+        if(avatarUrl.includes('url(')) avatarUrl = avatarUrl.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '');
+        
+        row.innerHTML = `
+            <div class="v-check-icon" style="margin-right:12px; font-size:16px;">${checkIcon}</div>
+            <div class="v-avatar" style="background-image: url('${avatarUrl}'); width:40px; height:40px; border-radius:50%; margin-right:12px; background-size:cover; background-position:center;"></div>
+            <div class="v-info" style="flex:1;">
+                <div style="font-weight:bold; font-size:15px; color:#333;">${contact.name}</div>
+                <div style="font-size:12px; color:#007aff; margin-top:2px;">使用面具: ${persona ? persona.name : '默认'}</div>
+            </div>
+        `;
+
+        // 点击切换选中状态
+        row.onclick = () => {
+            const idx = tempVisibleSelection.indexOf(chat.id);
+            if (idx > -1) {
+                tempVisibleSelection.splice(idx, 1); // 取消选中
+                row.querySelector('.v-check-icon').innerText = '⚪️';
+                row.style.opacity = '0.5';
+            } else {
+                tempVisibleSelection.push(chat.id); // 选中
+                row.querySelector('.v-check-icon').innerText = '✅';
+                row.style.opacity = '1';
+            }
+
+            // ★★★ 就在这里，插进这一句 ★★★
+            updateVisibilityLabel(); 
+        };
+
+        container.appendChild(row);
+    });
+}
+
+// 3. 触发图片上传
 window.triggerPostImgUpload = function() {
     const input = document.createElement('input');
     input.type = 'file';
@@ -4728,14 +4799,13 @@ window.triggerPostImgUpload = function() {
         if (file) {
             const reader = new FileReader();
             reader.onload = (evt) => {
-                tempPostImg = evt.target.result; // 存 Base64
-                // 显示预览
+                tempPostImg = evt.target.result; 
                 const area = document.getElementById('post-img-preview-area');
-                // 插入到加号前面
                 const div = document.createElement('div');
                 div.className = 'preview-img-box';
                 div.style.backgroundImage = `url('${tempPostImg}')`;
-                div.innerHTML = `<div class="preview-del-btn" onclick="this.parentNode.remove(); tempPostImg=null;">×</div>`;
+                div.style.cssText = `width:80px; height:80px; background-size:cover; margin-right:10px; position:relative; border-radius:4px;`;
+                div.innerHTML = `<div onclick="this.parentNode.remove(); tempPostImg=null;" style="position:absolute; top:-5px; right:-5px; background:red; color:#fff; width:18px; height:18px; border-radius:50%; text-align:center; line-height:18px; font-size:12px; cursor:pointer;">×</div>`;
                 area.prepend(div);
             };
             reader.readAsDataURL(file);
@@ -4744,42 +4814,57 @@ window.triggerPostImgUpload = function() {
     input.click();
 };
 
-// 4. 发布动态 (核心逻辑)
+// 4. ★★★ 修复后的发布逻辑 (Post Button) ★★★
 window.publishPost = function() {
-    const text = document.getElementById('post-text-input').value;
-    const privacy = document.getElementById('post-privacy-select').value;
+    console.log("正在尝试发布动态..."); // 调试用
+
+    // 获取文本
+    const input = document.getElementById('post-text-input');
+    const text = input ? input.value.trim() : "";
     
+    // 校验：必须有图或者有字
     if (!text && !tempPostImg) {
         showSystemAlert('写点什么吧(๑＞＜)☆～');
         return;
     }
 
-    // 获取当前“我”的信息
-    const me = personasData[0] || { name: 'Me', avatar: '' };
+    // ★★★ 改这里：获取作者信息 ★★★
+    // 使用 momentsHost (本体)，不再使用 personasData[0]
+    const authorInfo = {
+        name: momentsHost.name,
+        avatar: momentsHost.avatar
+    };
 
     const newPost = {
         id: Date.now(),
+        // ★★★ 加上这行标记！★★★
+        isMe: true, 
+        
         author: {
-            name: me.name,
-            avatar: me.avatar
+            // 这里存个备份，但渲染时我们会优先用 momentsHost
+            name: momentsHost.name, 
+            avatar: momentsHost.avatar 
         },
         content: text,
         image: tempPostImg,
         time: Date.now(),
-        privacy: privacy, // public, private, friends
-        likes: 0,
-        isLiked: false
+        visibleChatIds: [...tempVisibleSelection], 
+        likesList: [],
+        comments: []
     };
 
-    momentsData.unshift(newPost); // 加到最前面
+momentsData.unshift(newPost);
+    
+    // 保存并刷新
     localforage.setItem('Wx_Moments_Data', momentsData).then(() => {
         showSystemAlert('发布成功啦～');
         closeSubPage('sub-page-post-creator');
-        renderMomentsFeed();
         
-        // 更新一下上面的帖子数
-        const countEl = document.querySelector('.ins-stats b');
-        if(countEl) countEl.innerText = momentsData.length;
+        // 如果当前在朋友圈页面，刷新一下
+        if(document.getElementById('wx-page-moments').style.display === 'block') {
+            renderMomentsFeed();
+        }
+
     });
 };
 
@@ -4797,42 +4882,52 @@ window.renderMomentsFeed = function() {
         return;
     }
 
-    // 获取“我”的名字
-    const myName = personasData[0] ? personasData[0].name : 'Me';
+    // ★★★ 核心修复：使用朋友圈独立身份 (momentsHost) ★★★
+    // 这样点赞/评论时，就是你刚才改的那个名字，而不是通讯录里的！
+    const myName = momentsHost.name || 'Me'; 
 
     momentsData.forEach(post => {
-        // --- 容错处理：确保新数据结构存在 ---
-        if (!post.likesList) post.likesList = []; // 存对象: {name: 'XuShiyu'}
-        if (!post.comments) post.comments = [];   // 存对象: {author: 'Xu', content: '..', to: ''}
+        // --- 容错处理 ---
+        if (!post.likesList) post.likesList = []; 
+        if (!post.comments) post.comments = [];
 
         // --- 1. 构建头部 ---
         const card = document.createElement('div');
         card.className = 'moment-card';
         card.style.borderBottom = '1px solid #f0f0f0'; 
         
-        const avatarStyle = getAvatarStyle(post.author.avatar);
+        // 这里的头像逻辑也优化一下：如果是本人发的，强制显示当前本体头像
+        let displayAvatar = post.author.avatar;
+        let displayName = post.author.name;
+        
+        // 如果是“我”发的，或者标记了 isMe，就强制同步现在的样子
+        if (post.isMe || displayName === myName || displayName === 'Me') {
+            displayAvatar = momentsHost.avatar;
+            displayName = momentsHost.name;
+        }
+
+        const avatarStyle = getAvatarStyle(displayAvatar);
         const timeStr = formatTime(post.time);
         
         let imgHtml = '';
         if (post.image) {
-            imgHtml = `<div class="m-card-media" style="margin-top:10px;"><img src="${post.image}" class="m-single-img" style="border-radius:8px; max-height:350px; width:auto; max-width:100%; object-fit:contain;" loading="lazy"></div>`;
+            imgHtml = `<div class="m-card-media" style="margin-top:10px;"><img src="${post.image}" class="m-single-img" style="border-radius:8px; max-height:350px; width:auto; max-width:100%; object-fit:contain;" loading="lazy" onclick="previewImage(this)"></div>`;
         }
 
-        // --- 2. 判断我是否赞过 (用来控制爱心变红) ---
+        // --- 2. 判断我是否赞过 ---
         const isLikedByMe = post.likesList.some(u => u.name === myName);
         const likeBtnClass = isLikedByMe ? 'm-icon-btn liked' : 'm-icon-btn';
         
-        // --- 3. 构建互动区 HTML (点赞列表 + 评论) ---
+        // --- 3. 构建互动区 ---
         let interactionHtml = '';
         
-        // A. 点赞人名列表
+        // A. 点赞列表
         let likesHtml = '';
         if (post.likesList.length > 0) {
-            // 把名字拼成 "XuShiyu, Me, Other"
             const names = post.likesList.map(u => u.name).join(', ');
             likesHtml = `
                 <div class="moment-likes">
-                    <div class="like-icon-small"></div>
+                    <div class="like-icon-small">♡</div>
                     <span>${names}</span>
                 </div>
             `;
@@ -4852,7 +4947,6 @@ window.renderMomentsFeed = function() {
             commentsHtml = `<div class="moment-comments">${listItems}</div>`;
         }
         
-        // 只有有点赞或评论时，才显示灰色底框
         if (post.likesList.length > 0 || post.comments.length > 0) {
             interactionHtml = `
                 <div class="moment-interactions">
@@ -4867,7 +4961,7 @@ window.renderMomentsFeed = function() {
             <div class="m-card-header">
                 <div class="m-card-avatar" style="${avatarStyle}"></div>
                 <div style="flex:1;">
-                    <div class="m-card-user">${post.author.name}</div>
+                    <div class="m-card-user">${displayName}</div>
                     <div style="font-size:11px; color:#999;">${post.privacy === 'private' ? '🔒 ' : ''}${timeStr}</div>
                 </div>
                 <div class="m-card-more" onclick="deleteMoment(${post.id})">•••</div>
@@ -4880,11 +4974,11 @@ window.renderMomentsFeed = function() {
 
             <div class="m-action-bar" style="margin-top:5px; justify-content: flex-start; gap: 15px;">
                 <div class="${likeBtnClass}" onclick="toggleLike(${post.id})">
-                    <img src="https://i.postimg.cc/K4hy2zDX/wu-biao-ti117-20260110142016.png" style="width:24px; height:24px;">
+                    <svg viewBox="0 0 24 24" width="24" height="24" class="ins-icon"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                 </div>
                 
                 <div class="m-icon-btn" onclick="showCommentInput(${post.id})">
-                     <img src="https://i.postimg.cc/6TxNX3Lk/wu-biao-ti117-20260110142025.png" style="width:24px; height:24px;">
+                     <svg viewBox="0 0 24 24" width="24" height="24" class="ins-icon"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
                 </div>
             </div>
 
@@ -4896,72 +4990,80 @@ window.renderMomentsFeed = function() {
     });
 };
 
-// 6. 点赞功能
+// 6. 点赞功能 (修复版：用 momentsHost)
 window.toggleLike = function(id) {
     const post = momentsData.find(p => p.id === id);
     if (!post) return;
     
-    // 确保结构存在
     if (!post.likesList) post.likesList = [];
     
-    const myName = personasData[0] ? personasData[0].name : 'Me';
+    // ★ 这里也用独立名字
+    const myName = momentsHost.name || 'Me';
     
-    // 检查我是否赞过
+    // 检查是否赞过
     const idx = post.likesList.findIndex(u => u.name === myName);
     
     if (idx >= 0) {
-        // 已经赞过 -> 取消赞
         post.likesList.splice(idx, 1);
-        post.likes--; // 兼容旧数据
+        if(post.likes > 0) post.likes--; 
     } else {
-        // 没赞过 -> 点赞
         post.likesList.push({ name: myName });
-        post.likes++; // 兼容旧数据
-        
-        // ★ 如果是给 AI 点赞，这里可以触发震动反馈
+        if(!post.likes) post.likes = 0;
+        post.likes++;
         if(navigator.vibrate) navigator.vibrate(30);
     }
     
-    // 保存并重新渲染
     localforage.setItem('Wx_Moments_Data', momentsData);
     renderMomentsFeed();
 };
 
 // 显示评论输入框
 window.showCommentInput = function(postId, replyToUser = null) {
-    // 这里简单用 prompt，你可以以后改成更好看的弹窗
     const placeholder = replyToUser ? `回复 ${replyToUser}:` : "评论...";
-    const text = prompt(placeholder);
     
-    if (text && text.trim()) {
-        addComment(postId, text.trim(), replyToUser);
+    // 优先使用高级弹窗，没有就用 prompt
+    if (window.showPromptDialog) {
+        showPromptDialog("评论", placeholder, (text) => {
+            if (text) addComment(postId, text.trim(), replyToUser);
+        });
+    } else {
+        const text = prompt(placeholder);
+        if (text && text.trim()) addComment(postId, text.trim(), replyToUser);
     }
 };
 
-// 点击别人的评论进行回复
+// 点击评论回复
 window.handleReplyComment = function(postId, authorName) {
-    const myName = personasData[0] ? personasData[0].name : 'Me';
+    const myName = momentsHost.name || 'Me';
     if (authorName === myName) {
-        // 点击自己的评论 -> 询问删除
-        if(confirm("要删除这条评论吗？")) {
-            deleteComment(postId, authorName); // 简单处理：按名字删最近一条，或者你需要给评论加ID
-        }
-        return;
+        // 点击自己 -> 删除
+        if(window.showConfirmDialog) {
+                    // 只需要在括号里的最后面加一个 "delete"
+        showConfirmDialog(
+            "确定要删除这条评论吗？", 
+            () => deleteComment(postId, authorName), 
+            "delete" // ← 就是这个！加上它弹窗就变红啦！
+        );
+    } else {
+        // 这是给老旧浏览器留的保底，不用管它
+        if(confirm("要删除这条评论吗？")) deleteComment(postId, authorName);
     }
+    return;
+}
     // 回复别人
     showCommentInput(postId, authorName);
 };
 
-// 添加评论核心逻辑
+// 添加评论
 function addComment(postId, content, replyToUser = null) {
     const post = momentsData.find(p => p.id === postId);
     if (!post) return;
     
     if (!post.comments) post.comments = [];
     
-    const myName = personasData[0] ? personasData[0].name : 'Me';
+    // ★ 使用独立名字
+    const myName = momentsHost.name || 'Me';
     
-    // 1. 推入新评论
     post.comments.push({
         author: myName,
         content: content,
@@ -4969,30 +5071,18 @@ function addComment(postId, content, replyToUser = null) {
         time: Date.now()
     });
     
-    // 2. 保存渲染
     localforage.setItem('Wx_Moments_Data', momentsData);
     renderMomentsFeed();
-    
-    // 3. ★ 触发 AI 回复逻辑 (如果我回复了 AI) ★
-    if (post.author.name !== myName) {
-        // 找到这个 AI 对应的角色数据
-        const aiChar = contactsData.find(c => c.name === post.author.name);
-        if (aiChar) {
-            // 延迟触发，模拟思考
-            setTimeout(() => triggerAIResponseToComment(aiChar, post, content), 3000);
-        }
-    }
-}
+} // <--- ★★★ 之前这里漏了一个括号，帮你补上了！！ ★★★
 
-// (简单的删除评论逻辑，删最后一条匹配的)
+// 删除评论
 function deleteComment(postId, authorName) {
     const post = momentsData.find(p => p.id === postId);
     if(post && post.comments) {
-        // 从后往前找
         for(let i = post.comments.length - 1; i >= 0; i--) {
             if(post.comments[i].author === authorName) {
                 post.comments.splice(i, 1);
-                break;
+                break; // 只删一条
             }
         }
         localforage.setItem('Wx_Moments_Data', momentsData);
@@ -5000,18 +5090,69 @@ function deleteComment(postId, authorName) {
     }
 }
 
-// 7. 删除功能 (点击三个点触发)
+// 7. 删除动态
 window.deleteMoment = function(id) {
-    if(confirm("要删除这条动态吗？")) {
+    // 优先使用高级弹窗
+    const doDelete = () => {
         momentsData = momentsData.filter(p => p.id !== id);
         localforage.setItem('Wx_Moments_Data', momentsData).then(() => {
             renderMomentsFeed();
-            // 更新上面的计数
-            const countEl = document.querySelector('.ins-stats b');
+            // 更新顶部计数
+            const countEl = document.querySelector('.ins-stats b') || document.querySelector('.ins-stat-num');
             if(countEl) countEl.innerText = momentsData.length;
         });
+    };
+
+if(window.showConfirmDialog) {
+    showConfirmDialog("确定要删除这条动态嘛？<br>此操作不可恢复！", doDelete, "delete");
+} else {
+        if(confirm("确定要删除这条动态嘛？")) doDelete();
     }
 };
+
+// (辅助函数：把你原来的渲染逻辑包进来)
+function createMomentCardHTML(post) {
+    const card = document.createElement('div');
+    card.className = 'moment-card';
+    card.style.borderBottom = '1px solid #f0f0f0';
+    
+    const timeStr = formatTime(post.time);
+    let imgHtml = post.image ? `<div class="m-card-media" style="margin-top:10px;"><img src="${post.image}" style="border-radius:8px; max-height:350px; width:auto; max-width:100%; object-fit:contain;" loading="lazy"></div>` : '';
+    
+    // 互动区逻辑 (保持不变)
+    let likesText = post.likesList.map(u => u.name).join(', ');
+    let commentsHtml = post.comments.map(c => `
+        <div class="moment-comment-item" onclick="handleReplyComment(${post.id}, '${c.author}')">
+            <span class="comment-author">${c.author}</span>${c.to ? `<span style="color:#666">回复</span><span class="comment-author">${c.to}</span>` : ''}：${c.content}
+        </div>
+    `).join('');
+
+    card.innerHTML = `
+        <div class="m-card-header">
+            <div class="m-card-avatar" style="${getAvatarStyle(post.author.avatar)}"></div>
+            <div style="flex:1;">
+                <div class="m-card-user">${post.author.name}</div>
+                <div style="font-size:11px; color:#999;">${timeStr}</div>
+            </div>
+            <div class="m-card-more" onclick="deleteMoment(${post.id})">•••</div>
+        </div>
+        <div style="padding:0 15px;">
+             <div class="m-caption" style="margin:5px 0;">${post.content}</div>
+             ${imgHtml}
+        </div>
+        <div class="m-action-bar" style="margin-top:5px; justify-content: flex-start; gap: 15px;">
+            <div class="m-icon-btn" onclick="toggleLike(${post.id})">♡</div>
+            <div class="m-icon-btn" onclick="showCommentInput(${post.id})">💬</div>
+        </div>
+        <div style="padding: 0 15px 15px 15px;">
+            <div class="moment-interactions">
+                ${likesText ? `<div class="moment-likes">♡ ${likesText}</div>` : ''}
+                <div class="moment-comments">${commentsHtml}</div>
+            </div>
+        </div>
+    `;
+    return card;
+}
 
 // =================================================================
 // ★★★主题与美化系统★★★
@@ -5980,7 +6121,8 @@ function createGroupPill(name, isActive, canEdit) {
                     saveGroups(); saveStickers();
                     renderSubGroups(); renderStickers();
                     showSystemAlert('分组已删除');
-                });
+                }, "delete"); 
+
             }, 600);
         };
         const movePress = (e) => {
@@ -8034,235 +8176,368 @@ function safeSetImage(id, url) {
     if(el) el.src = url; 
 }
 // ==========================================================
-//  后台活动服务 (Background Active Service) - 修复实装版
-//  让纸片人真的活过来！✨
+// [Module B] 自主意识系统 (Autonomous Brain) - 终极修复版
 // ==========================================================
 
-// 1. 启动全局心跳
 let backgroundTimer = null;
 
+// 1. 启动服务 (在 DOMContentLoaded 时调用)
 function startBackgroundService() {
     if (backgroundTimer) clearInterval(backgroundTimer);
-    console.log("正在监控所有角色的动向...");
-    
-    // 每 60秒 巡查一次
-    backgroundTimer = setInterval(checkAllCharactersActivity, 60000);
+    console.log("🧠 自主意识引擎已启动...");
+    // 每 60 秒心跳一次，检查有没有要搞的事
+    backgroundTimer = setInterval(() => checkAllCharactersActivity(false), 60000);
 }
 
-// 2. 巡查逻辑
-function checkAllCharactersActivity() {
+// 2. 巡查总入口
+// forceReaction: 是否因为User刚发了动态，强制立刻检查
+async function checkAllCharactersActivity(forceReaction = false) {
     const now = Date.now();
-    
-    contactsData.forEach(async char => {
-        // 前置检查：必须开启了开关，且不是你自己
-        if (!char.enableActiveMode || char.isMe) return;
 
-        // 获取上次活跃时间 (如果没有，就默认为现在)
-        const lastTime = char.lastActiveTime || now;
-        const intervalMs = (char.activeInterval || 60) * 60 * 1000; // 分钟转毫秒
+    // ★ 关键修复：直接遍历所有【聊天窗口 (Chats)】，而不是角色
+    // 因为自主意识现在是绑定在窗口上的！
+    for (const chat of chatsData) {
+        
+        // 1. 检查开关：必须在这个 Chat 里开启了自主意识
+        // (如果没有 enableActiveMode 字段或者为 false，直接跳过)
+        if (!chat.enableActiveMode) continue;
+        
+        // 2. 找到对应的角色 (Char) 和用户面具 (Persona)
+        const char = contactsData.find(c => c.id === chat.contactId);
+        const persona = personasData.find(p => p.id === chat.personaId);
+        
+        // 如果数据不完整，跳过
+        if (!char || !persona) continue;
 
-        // 只有当 (现在 - 上次 > 间隔) 时才触发
-        if (now - lastTime > intervalMs) {
-            // 随机波动 (0~10% 的延迟)，防止太死板
+        // 获取上次活跃时间 (默认当前)
+        const lastTime = chat.lastActiveTime || now;
+        // 获取频率 (默认 60 分钟)
+        const intervalMs = (chat.activeInterval || 60) * 60 * 1000;
+
+        // --- [事件 A：User 发了新动态 (最高优先级)] ---
+        // 逻辑：找一条 User 发的、且对这个 chat 可见、且 1小时内发、且 Char 还没评论过的动态
+        const recentUserPost = momentsData.find(m => 
+            (m.author.name === 'Me' || m.author.name === 'User') && // 是 User 发的
+            m.visibleChatIds && m.visibleChatIds.includes(chat.id) && // ★ 对当前窗口可见！
+            (now - m.time < 60 * 60 * 1000) && // 1小时内的新鲜热乎
+            (!m.comments.some(c => c.author === char.name)) // 还没评论过
+        );
+
+        if (recentUserPost) {
+            console.log(`[Chat: ${char.name}] 发现 User 发了新动态，准备组合拳出击...`);
+            // 触发组合拳：朋友圈互动 + 私聊
+            await performComplexInteraction(char, chat, persona, 'REACT_TO_USER_POST', recentUserPost);
+            continue; // 处理完这个就不做其他随机行为了，省钱
+        }
+        
+        // --- [事件 B：修罗场/回复循环] ---
+        // 逻辑：找一条 Char 自己发的动态，且最新一条评论不是自己 (说明有人回了)，且 Char 还没回回去
+        const charPost = momentsData.find(m => 
+            m.author.name === char.name && 
+            m.comments.length > 0 &&
+            m.comments[m.comments.length-1].author !== char.name 
+        );
+        
+        // 70% 概率回复 (别太烦人)
+        if (charPost && Math.random() < 0.7) { 
+             console.log(`[Chat: ${char.name}] 发现有人评论了自己，准备回击...`);
+             await performComplexInteraction(char, chat, persona, 'REPLY_TO_COMMENT', charPost);
+             continue;
+        }
+
+        // --- [事件 C：普通随机闲聊/发动态 (低优先级)] ---
+        // 只有在非强制模式下，且时间间隔到了才触发
+        if (!forceReaction && (now - lastTime > intervalMs)) {
+            // 增加一点随机延迟 (0~10%)，防止像闹钟一样死板
             const randomDelay = Math.random() * (intervalMs * 0.1); 
             
-            // 触发事件
             if (now - lastTime > intervalMs + randomDelay) {
-                await triggerCharacterEvent(char);
+                const dice = Math.random();
+                
+                // 30% 概率 Char 自己发新动态
+                if (dice < 0.3) {
+                    await performComplexInteraction(char, chat, persona, 'POST_NEW_MOMENT', null);
+                } 
+                // 70% 概率纯私聊 (分享日常)
+                else {
+                    await performComplexInteraction(char, chat, persona, 'INIT_CHAT', null);
+                }
+                
+                // 更新活跃时间 (记在 Chat 上！)
+                chat.lastActiveTime = now;
+                localforage.setItem('Wx_Chats_Data', chatsData);
             }
         }
-    });
+    }
 }
 
-// 3. 触发随机事件 (核心大脑)
-// === AI 搞事主逻辑 (升级版) ===
-async function triggerCharacterEvent(char) {
-    // 更新最后活跃时间
-    char.lastActiveTime = Date.now();
-    localforage.setItem('Wx_Contacts_Data', contactsData); 
+// 3. ★★★ 核心交互执行器 (一次调用，多种操作) ★★★
+async function performComplexInteraction(char, chat, persona, mode, targetPost) {
+    // 准备聊天记录 (最近 15 条，作为背景上下文)
+    const recentMsgs = (chat.messages || []).slice(-15).map(m => 
+        `${m.role === 'me' ? (persona.name || 'User') : char.name}: ${m.text}`
+    ).join('\n');
 
-    const dice = Math.random(); 
-    console.log(`[${char.name}] 正在自主行动... 骰子: ${dice.toFixed(2)}`);
+    // --- 构建 Prompt ---
+    let systemPrompt = `
+    【指令：自主意识行为决策】
+    你现在是 **${char.name}**。
+    你的聊天对象 (User) 是 **${persona.name || 'User'}**。
+    
+    **历史聊天上下文**：
+    ${recentMsgs}
+    
+    **人物设定**：
+    ${char.persona}
+    ${char.desc || ''}
+    
+    **当前触发事件**：
+    `;
 
-    // === 概率分布 ===
-    // 0.00 - 0.30 : 主动私聊 
-    // 0.30 - 0.50 : 发新朋友圈 
-    // 0.50 - 0.75 : 给User点赞 
-    // 0.75 - 1.00 : 评论User朋友圈
+    if (mode === 'REACT_TO_USER_POST') {
+        // 把评论区其他人的话也塞进去，制造修罗场素材
+        const otherComments = targetPost.comments.map(c => `${c.author}: ${c.content}`).join('\n');
+        
+        systemPrompt += `
+    User 刚刚发了一条朋友圈，并且**指定了你可以看到**。
+    朋友圈内容：“${targetPost.content}”
+    图片：${targetPost.image ? '有图片' : '无图片'}
+    已有评论：
+    ${otherComments}
+    
+    **你的任务 (必须同时完成)**：
+    1. 【朋友圈动作】：必须点赞。必须写一条评论。
+       - 如果看到有别的人评论(特别是异性)，请表现出吃醋、阴阳怪气或询问“这是谁”。
+       - 如果只有User，就根据内容互动。
+    2. 【私聊动作】：在私聊窗口引用这条动态，直接找 User 兴师问罪或聊天。
+       - 语气要和朋友圈评论有所区分，私聊可以更亲密或更凶。
+        `;
+    } 
+    else if (mode === 'REPLY_TO_COMMENT') {
+        const lastComment = targetPost.comments[targetPost.comments.length-1];
+        systemPrompt += `
+    你在朋友圈发了：“${targetPost.content}”
+    **${lastComment.author}** 评论了你：“${lastComment.content}”
+    
+    **你的任务**：
+    1. 【回复评论】：在朋友圈里回复他/她。
+    2. 【私聊】：(可选) 如果评论的人是 User，且内容值得在私聊里继续说，则生成私聊内容；否则私聊内容留空。
+        `;
+    }
+    else if (mode === 'INIT_CHAT') {
+        systemPrompt += `
+    太久没说话了，你想主动找 User 聊天。
+    分享你的日常，或者问 User 在干嘛。
+    `;
+    }
+    else if (mode === 'POST_NEW_MOMENT') {
+        systemPrompt += `
+    你想发一条新的朋友圈动态。
+    内容是关于你的心情、日常或对 User 的想法。
+    `;
+    }
 
+    systemPrompt += `
+    \n‼️**格式严格要求**‼️
+    请**仅**返回一个 JSON 对象，不要包含任何 markdown 格式或额外文本。格式如下：
+    {
+        "action_type": "${mode}",
+        "like_post": true,  // 是否点赞 (仅朋友圈相关模式有效)
+        "comment_content": "这里填朋友圈评论的内容", 
+        "chat_message": "这里填私聊发送给User的内容 (如果不需要私聊则填 null)",
+        "new_post_content": "这里填新动态的内容(仅发动态模式有效)"
+    }
+    `;
+
+    // --- 调用 API ---
     try {
-        if (dice < 0.3) {
-            // [A] 主动私聊
-            if(typeof performAutoChat === 'function') await performAutoChat(char);
-            
-        } else if (dice < 0.5) {
-            // [B] 发朋友圈
-            if(typeof performAutoPost === 'function') {
-                await performAutoPost(char);
-                triggerMomentsRedDot(); 
+        const responseText = await callApiInternal(systemPrompt); 
+        if (!responseText) return;
+
+        // 清洗 JSON (防止 AI 加 ```json ... ```)
+        const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const actionData = JSON.parse(cleanJson);
+
+        console.log(`[${char.name}] 自主决策结果:`, actionData);
+
+        // --- 执行动作 (Action Execution) ---
+
+        // 1. 处理点赞
+        if (actionData.like_post && targetPost) {
+            if (!targetPost.likesList) targetPost.likesList = [];
+            // 避免重复赞
+            if (!targetPost.likesList.some(u => u.name === char.name)) {
+                targetPost.likesList.push({ name: char.name });
+                targetPost.likes = (targetPost.likes || 0) + 1;
             }
-            
-        } else if (dice < 0.75) {
-            // [C] 自动点赞
-            await performAutoLike(char);
-            
-        } else {
-            // [D] 自动评论
-            await performAutoCommentV2(char);
         }
-    } catch (e) {
-        console.error(`[${char.name}] 刚刚想搞事但失败惹....:`, e);
-    }
-}
 
-// === 补充缺失的函数 (防止报错) ===
-
-// [A] 自动私聊 (简单版补全)
-async function performAutoChat(char) {
-    // 找到和这个角色的聊天
-    let chat = chatsData.find(c => c.contactId === char.id);
-    if (!chat) return; // 没聊过天就不主动发了
-
-    const prompt = `
-    你是 ${char.name}。
-    现在你想主动给User发一条消息。
-    内容可以是分享日常、撒娇、或者问User在干嘛。
-    要求：简短，像微信聊天一样。
-    `;
-    const text = await callApiInternal(prompt);
-    if (text) {
-        pushMsgToData(chat, text, 'char', null, 'text');
-    }
-}
-
-// [B] 自动发朋友圈 (简单版补全)
-async function performAutoPost(char) {
-    const prompt = `
-    你是 ${char.name}。
-    现在你想发一条朋友圈动态。
-    要求：内容简短，符合你的人设，不要带引号。
-    `;
-    const text = await callApiInternal(prompt);
-    if (text) {
-        const newPost = {
-            id: Date.now() + Math.random(),
-            author: { name: char.name, avatar: char.avatar },
-            content: text,
-            time: Date.now(),
-            likesList: [],
-            comments: []
-        };
-        momentsData.unshift(newPost);
-        localforage.setItem('Wx_Moments_Data', momentsData);
-        if(document.getElementById('wx-page-moments').style.display === 'block') renderMomentsFeed();
-    }
-}
-
-// [C] 自动点赞逻辑
-async function performAutoLike(char) {
-    // 找一条 User 发的、且这个 AI 还没赞过的动态
-    const target = momentsData.find(m => 
-        (m.author.name === 'Me' || m.author.name === (personasData[0]?.name)) && // 是我发的
-        (!m.likesList || !m.likesList.some(u => u.name === char.name)) // 还没赞过
-    );
-    
-    if (target) {
-        if (!target.likesList) target.likesList = [];
-        target.likesList.push({ name: char.name });
-        // 兼容旧数据结构
-        if(!target.likes) target.likes = 0;
-        target.likes++;
-        
-        localforage.setItem('Wx_Moments_Data', momentsData);
-        triggerMomentsRedDot(); // 红点！
-        
-        // 如果正开着，刷新
-        if(document.getElementById('wx-page-moments').style.display === 'block') renderMomentsFeed();
-        
-        console.log(`${char.name} 点赞了你的动态`);
-    }
-}
-
-// [D] 自动评论逻辑 (V2 - 真的写进评论区)
-async function performAutoCommentV2(char) {
-    // 找一条 User 发的动态
-    const target = momentsData.find(m => m.author.name === 'Me' || m.author.name === (personasData[0]?.name));
-    if (!target) return; // 没动态可评
-
-    const systemPrompt = `
-    【指令：朋友圈评论】
-    你是 **${char.name}**。
-    User发了一条朋友圈：“${target.content}”
-    请以你的性格写一句评论
-    要求：像真人一样，简短，可以毒舌也可以暖心
-    `;
-
-    const comment = await callApiInternal(systemPrompt);
-    
-    if (comment) {
-        if (!target.comments) target.comments = [];
-        target.comments.push({
-            author: char.name,
-            content: comment,
-            to: null,
-            time: Date.now()
-        });
-        
-        localforage.setItem('Wx_Moments_Data', momentsData);
-        triggerMomentsRedDot(); // 红点！
-        
-        if(document.getElementById('wx-page-moments').style.display === 'block') renderMomentsFeed();
-        
-        showSystemAlert(`${char.name} 评论了你的动态`);
-    }
-}
-
-// === AI 针对评论的回复 ===
-async function triggerAIResponseToComment(char, post, userComment) {
-    // 1/3 的概率不回（高冷一点），或者你可以设成 100%
-    if (Math.random() > 0.9) return; 
-
-    console.log(`${char.name} 正在思考如何回复你的评论...`);
-
-    const systemPrompt = `
-    【指令：朋友圈互动】
-    你是 **${char.name}**。
-    你在朋友圈发了：“${post.content}”
-    User (${personasData[0]?.name || 'User'}) 评论说：“${userComment}”
-    
-    请回复 User 的评论
-    要求：
-    1. 符合你的人设 (${char.persona})
-    2. 简短有力，像微信回复一样
-    3. 不要带引号
-    `;
-
-    try {
-        const reply = await callApiInternal(systemPrompt);
-        if (reply) {
-            // 存入评论列表
-            if (!post.comments) post.comments = [];
-            post.comments.push({
+        // 2. 处理朋友圈评论
+        if (actionData.comment_content && targetPost) {
+            if (!targetPost.comments) targetPost.comments = [];
+            targetPost.comments.push({
                 author: char.name,
-                content: reply,
-                to: personasData[0]?.name || 'Me', // 回复给 User
+                content: actionData.comment_content,
+                to: (mode === 'REPLY_TO_COMMENT') ? targetPost.comments[targetPost.comments.length-1].author : null, 
                 time: Date.now()
             });
-            
-            localforage.setItem('Wx_Moments_Data', momentsData);
-            
-            // 触发红点提醒
-            triggerMomentsRedDot();
-            
-            // 如果用户正开着朋友圈，刷新一下
-            if (document.getElementById('wx-page-moments').style.display === 'block') {
-                renderMomentsFeed();
-            } else {
-                // 如果没开朋友圈，弹个窗提示
-                showSystemAlert(`${char.name} 回复了你的评论`);
-            }
+            // 触发红点
+            if(window.triggerMomentsRedDot) window.triggerMomentsRedDot();
         }
+
+        // 3. 处理发新动态
+        if (actionData.new_post_content) {
+            const newMoment = {
+                id: Date.now(),
+                author: { name: char.name, avatar: char.avatar },
+                content: actionData.new_post_content,
+                time: Date.now(),
+                likesList: [],
+                comments: []
+            };
+            momentsData.unshift(newMoment);
+            if(window.triggerMomentsRedDot) window.triggerMomentsRedDot();
+        }
+
+        // 4. 保存朋友圈数据 (一次性保存)
+        await localforage.setItem('Wx_Moments_Data', momentsData);
+        // 如果界面开着，刷新UI
+        if (document.getElementById('wx-page-moments') && document.getElementById('wx-page-moments').style.display === 'block') {
+            if(window.renderMomentsFeed) window.renderMomentsFeed();
+        }
+
+        // 5. 处理私聊 (最重要的一步！)
+        if (actionData.chat_message) {
+            // 模拟打字延迟 (让 User 感觉到 AI 刚评论完就切过来私聊了，很有压迫感！)
+            setTimeout(() => {
+                // 如果是针对动态的私聊，加上引用
+                let quote = null;
+                if (mode === 'REACT_TO_USER_POST' && targetPost) {
+                    quote = { 
+                        text: `[朋友圈] ${targetPost.content}`, 
+                        name: persona.name, 
+                        id: targetPost.id 
+                    };
+                }
+                
+                // 发送消息
+                if(window.pushMsgToData) {
+                    window.pushMsgToData(chat, actionData.chat_message, 'char', quote, 'text');
+                }
+                
+            }, 4000); // 4秒延迟
+        }
+
     } catch (e) {
-        console.error("char回复评论失败", e);
+        console.error("自主意识执行失败 (可能是JSON解析错):", e);
     }
 }
+// ====================
+// [补丁] 可见范围选择器开关
+// ====================
+window.toggleVisibilitySelector = function() {
+    const overlay = document.getElementById('visibility-drawer-overlay');
+    if (!overlay) return;
+
+    // 切换显示/隐藏
+    if (overlay.style.display === 'flex') {
+        overlay.style.display = 'none';
+        updateVisibilityLabel(); // 关掉时顺便更新一下显示的文字
+    } else {
+        overlay.style.display = 'flex';
+        // 如果你的CSS有写 .active 动画，可以在这里加上
+       setTimeout(() => overlay.classList.add('active'), 10);
+    }
+};
+
+// 顺手帮你写了个更新文字的小功能
+// (比如选了3个人，外面就显示 "Selected 3")
+function updateVisibilityLabel() {
+    const label = document.getElementById('vis-label');
+    if (!label) return;
+    
+    const total = chatsData.length;
+    const selected = tempVisibleSelection.length;
+    
+    if (selected === total) {
+        label.innerText = "All";
+    } else if (selected === 0) {
+        label.innerText = "Only Me";
+    } else {
+        label.innerText = `Selected ${selected}`;
+    }
+}
+// ==========================================
+// ★ 全局通用弹窗系统 (JS控制部分)
+// ==========================================
+
+// 1. 显示弹窗函数 (增加了 type 参数)
+// 使用方法: showConfirmDialog("要删除吗？", 你的回调函数, "delete");
+window.showConfirmDialog = function(message, onConfirm, type = 'normal') {
+    const overlay = document.getElementById('global-confirm-modal');
+    const box = overlay.querySelector('.custom-alert-box'); // 获取弹窗盒子
+    const title = document.getElementById('g-confirm-title');
+    const desc = document.getElementById('g-confirm-desc');
+    const confirmBtn = document.getElementById('g-confirm-btn-yes');
+    const cancelBtn = overlay.querySelector('.alert-btn.cancel');
+
+    // --- A. 设置文案 ---
+    desc.innerHTML = message; // 支持换行
+    
+    // --- B. 智能判断皮肤 (红/蓝切换) ---
+    if (type === 'delete' || type === 'destructive') {
+        // 红色警报模式！
+        box.classList.add('destructive'); 
+        title.innerText = "Warning!"; // 标题变警告
+        title.style.color = "#FF3B30"; // 标题变红 (双重保险)
+        confirmBtn.innerText = "Delete"; // 按钮文案
+    } else {
+        // 默认蓝色模式
+        box.classList.remove('destructive');
+        title.innerText = "Confirm";
+        title.style.color = "#000"; // 标题恢复黑色
+        confirmBtn.innerText = "Confirm"; // 按钮文案
+    }
+
+    // --- C. 显示弹窗 (重置动画状态) ---
+    overlay.style.display = 'flex';
+    box.classList.remove('closing'); // 移除退场类
+    overlay.classList.remove('closing-anim'); // 移除背景退场类
+
+    // --- D. 绑定点击事件 (核心！) ---
+    
+    // 确认按钮逻辑
+    confirmBtn.onclick = function() {
+        // 1. 先播放退场动画
+        closeGlobalConfirm();
+        // 2. 如果有回调函数，执行它
+        if (onConfirm) {
+            // 稍微延迟一下执行，或者立即执行都可以
+            onConfirm(); 
+        }
+    };
+
+    // 取消按钮逻辑 (覆盖默认的 onclick，确保有动画)
+    cancelBtn.onclick = function() {
+        closeGlobalConfirm();
+    };
+};
+
+// 2. 关闭弹窗函数 (带丝滑退场动画)
+window.closeGlobalConfirm = function() {
+    const overlay = document.getElementById('global-confirm-modal');
+    const box = overlay.querySelector('.custom-alert-box');
+
+    // 加上 CSS 里写的那个动画类
+    box.classList.add('closing'); 
+    overlay.classList.add('closing-anim'); // 背景也淡出
+
+    // 等 0.2秒 动画播完再真正隐藏
+    setTimeout(() => {
+        overlay.style.display = 'none';
+        // 动画播完了，把类清理掉，方便下次使用
+        box.classList.remove('closing'); 
+        box.classList.remove('destructive'); // 顺便把红色皮肤也卸载了
+        overlay.classList.remove('closing-anim');
+    }, 200); // 这里的时间要跟 CSS 里的动画时间一致哦
+};

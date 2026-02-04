@@ -249,7 +249,11 @@
 
 <div class="desktop-footer-controls">
     <div class="search-pill edit-text" id="desktop_search_text">
-        <span style="font-size: 12px;">🔍 搜索</span>
+<span style="font-size: 12px; display: flex; align-items: center; gap: 4px;">
+    <img src="https://i.postimg.cc/tJwpcBxk/wu-biao-ti119-20260203173406.png" 
+         style="width: 12px; height: 12px; object-fit: contain;"> 
+    搜索
+</span>
     </div>
 
     <div class="desktop-pagination">
@@ -389,7 +393,7 @@
     <div id="search-drawer" style="position:absolute; top:-100%; left:0; width:100%; height:100%; background:rgba(20, 20, 20, 0.95); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); transition: top 0.4s cubic-bezier(0.32, 1, 0.23, 1); z-index:20; display:flex; flex-direction:column;">
         <div style="padding: 50px 20px 10px 20px; display:flex; align-items:center; gap:12px;">
             <div style="flex:1; height:36px; background:rgba(255,255,255,0.12); border-radius:10px; display:flex; align-items:center; padding:0 10px;">
-                <span style="color:rgba(255,255,255,0.4); font-size:14px;">🔍</span>
+                <span style="color:rgba(255,255,255,0.4); font-size:14px;">♪</span>
                 <input type="text" id="music-search-keyword" placeholder="Search" style="flex:1; background:transparent; border:none; color:#fff; font-size:15px; margin-left:6px; outline:none; height:100%;">
             </div>
             <div onclick="searchMusicCloud()" style="color:#fce76d; font-size:15px; font-weight:600; cursor:pointer;">搜索</div>
@@ -515,12 +519,15 @@
 
 <div id="wx-page-moments" class="ins-layout">
     
-<div class="ins-new-header">
+<div class="ins-new-header" id="moments-cover-bg">
+    
     <div class="ins-top-row">
         <div class="ins-avatar-section">
             <div class="ins-mood-bubble edit-text" style="top: -20px; left: 5px; transform:none;">Ing..☁️</div>
-            <div class="ins-big-avatar upload-img sync-avatar" id="ins_page_avatar" style="width: 86px; height: 86px; border: 1px solid rgba(0,0,0,0.1);"></div>
+            
+            <div class="ins-big-avatar" id="moments-host-avatar" style="width: 86px; height: 86px; border: 1px solid rgba(0,0,0,0.1);"></div>
         </div>
+        
         <div class="ins-stats-section">
             <div class="ins-stat-box"><span class="ins-stat-num edit-text">11</span><span class="ins-stat-label">posts</span></div>
             <div class="ins-stat-box"><span class="ins-stat-num edit-text">1314</span><span class="ins-stat-label">followers</span></div>
@@ -529,7 +536,8 @@
     </div>
 
     <div class="ins-bio-section">
-        <div class="ins-bio-name edit-text">昵称</div>
+        <div class="ins-bio-name" id="moments-host-name">昵称</div>
+        
         <div class="ins-bio-text edit-text">誓言是一场有时差的雨 🌧️<br>instagram: @lover</div>
     </div>
 
@@ -721,7 +729,7 @@
 
 <div style="padding: 20px; margin-top: 10px; background: #fff; border-radius: 20px 20px 0 0; box-shadow: 0 -4px 10px rgba(0,0,0,0.02);">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <span style="font-weight: 600; color: #333;">🍞 Icon Toast Border</span>
+        <span style="font-weight: 600; color: #333;">图标边框（面包边）</span>
         <label class="ios-switch">
             <input type="checkbox" id="toast-border-switch" onchange="toggleToastBorder(this.checked)">
             <span class="slider"></span>
@@ -1111,7 +1119,7 @@
             <svg viewBox="0 0 24 24" width="24" height="24" fill="#333"><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z" transform="rotate(90 12 12)"/></svg>
         </div>
         <span style="font-weight: 700; font-size: 16px;">聊天控制中心</span>
-<div class="nav-btn-right" onclick="saveDetailSettings()">保存</div>
+        <div class="nav-btn-right" onclick="saveDetailSettings()">保存</div>
         <div style="width: 40px;"></div> 
     </div>
 
@@ -1143,7 +1151,7 @@
             
             <div class="ins-bio-box">
                 <div class="ins-label">备注 (Alias)</div>
-                <input type="text" id="cc-private-alias" class="ins-bio-input" placeholder="给TA起个爱称៷>ㅂ<៷..." onchange="saveChatSettings()">
+                <input type="text" id="cc-private-alias" class="ins-bio-input" placeholder="给TA起个爱称៷>ㅂ<៷...">
             </div>
         </div>
 
@@ -1172,34 +1180,34 @@
                     <div class="desc">Let TA know what time it is</div>
                 </div>
             </div>
-            <label class="ios-switch"><input type="checkbox" id="cc-switch-time" onchange="saveChatSettings()"><span class="slider"></span></label>
+            <label class="ios-switch"><input type="checkbox" id="cc-switch-time"><span class="slider"></span></label>
         </div>
 
-<div class="ins-menu-item" style="justify-content: space-between; align-items: center; padding-right: 15px;">
-    <div class="ins-menu-left" style="flex: 1;">
-        <div class="ins-point">✦</div>
-        <div class="ins-menu-text">
-            <div class="title" style="font-size: 16px;">记忆条数</div>
-            <div class="desc" style="margin-top: 4px; color: #999;">
-                填 0 或留空则为“无限模式”
+        <div class="ins-menu-item" style="justify-content: space-between; align-items: center; padding-right: 15px;">
+            <div class="ins-menu-left" style="flex: 1;">
+                <div class="ins-point">✦</div>
+                <div class="ins-menu-text">
+                    <div class="title" style="font-size: 16px;">记忆条数</div>
+                    <div class="desc" style="margin-top: 4px; color: #999;">
+                        填 0 或留空则为“无限模式”
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <input type="number" id="cc-ctx-limit" 
-           placeholder="All" 
-           class="ios-input-number"
-           oninput="saveChatSettings()" 
-           style="
-               width: 80px; height: 36px; 
-               background: #f2f2f7; 
-               border: 1px solid rgba(0,0,0,0.05); 
-               border-radius: 8px; 
-               text-align: center; 
-               font-weight: 600; font-size: 16px; 
-               outline: none; color: #007aff;
-           ">
-</div>
+            <input type="number" id="cc-ctx-limit" 
+                   placeholder="All" 
+                   class="ios-input-number"
+                   oninput="updateTokenPredict(this.value)" 
+                   style="
+                       width: 80px; height: 36px; 
+                       background: #f2f2f7; 
+                       border: 1px solid rgba(0,0,0,0.05); 
+                       border-radius: 8px; 
+                       text-align: center; 
+                       font-weight: 600; font-size: 16px; 
+                       outline: none; color: #007aff;
+                   ">
+        </div>
 
         <div class="ins-menu-item" onclick="triggerBgUpload()">
             <div class="ins-menu-left">
@@ -1211,6 +1219,7 @@
             </div>
             <div class="ins-arrow">›</div>
         </div>
+
         <div class="ins-menu-item">
             <div class="ins-menu-left">
                 <div class="ins-point">✦</div>
@@ -1220,23 +1229,22 @@
                 </div>
             </div>
             <label class="ios-switch">
-                <input type="checkbox" id="detail-active-mode" onchange="saveChatSettings()">
+                <input type="checkbox" id="detail-active-mode">
                 <span class="slider"></span>
             </label>
         </div>
 
         <div class="ins-menu-item" id="active-interval-box" style="justify-content: space-between; align-items: center; padding-right: 15px; display:none;">
             <div class="ins-menu-left" style="flex: 1;">
-                <div class="ins-point" style="color: transparent;">✦</div> <div class="ins-menu-text">
+                <div class="ins-point" style="color: transparent;">✦</div> 
+                <div class="ins-menu-text">
                     <div class="title" style="font-size: 15px; color: #666;">心动频率 (分钟)</div>
                     <div class="desc" style="font-size: 10px;">间隔多久搞一次事 (Min 30m)</div>
                 </div>
             </div>
-
             <input type="number" id="detail-active-interval" 
                    value="60" min="30"
                    class="ios-input-number"
-                   onchange="saveChatSettings()"
                    style="
                        width: 80px; height: 36px; 
                        background: #f2f2f7; 
@@ -1247,6 +1255,7 @@
                        outline: none; color: #ff2d55;
                    ">
         </div>
+
         <div class="ins-menu-item" onclick="requestDeleteChat(currentChatId); closeChatControl();">
             <div class="ins-menu-left">
                 <div class="ins-point" style="color: #ff3b30;">✖</div>
@@ -1376,19 +1385,19 @@
             <div class="exp-browser-top">
                 <div class="exp-tab-bar">
                     <div class="exp-tab active">
-                        <span class="exp-icon">📄</span><span class="exp-tab-text">Expansion Notice</span><span class="exp-close" onclick="showExitAlert()">×</span>
+<img src="https://i.postimg.cc/zv68Qxg4/wu-biao-ti119-20260203173257.png" class="exp-icon" style="width: 18px; height: 18px; object-fit: contain; vertical-align: middle;"><span class="exp-tab-text">Expansion Notice</span><span class="exp-close" onclick="showExitAlert()">×</span>
                     </div>
                     <div class="exp-win-ctrls"><span>─</span><span>□</span><span onclick="showExitAlert()">×</span></div>
                 </div>
                 <div class="exp-tool-bar">
                     <div class="exp-tool-left"><span class="exp-grid-icon">⣿</span><span class="exp-label">LABEL</span></div>
                     <div class="exp-url-box">
-                        <span class="exp-search-icon">🔍</span>
+                        <img src="https://i.postimg.cc/tJwpcBxk/wu-biao-ti119-20260203173406.png" class="exp-search-icon" style="width: 18px; height: 18px; object-fit: contain; vertical-align: middle;">
                         <input type="text" class="exp-search-input" value="- 你的泪流淌 像决堤湖泊。" placeholder="Type your mood...">
                     </div>
                     <div class="exp-tool-right">
-                        <span class="exp-btn save-btn" onclick="saveCharacter()">🔝</span> 
-                        <span class="exp-btn delete-btn" onclick="showDeleteAlert()" style="font-size: 18px;">🔙</span>
+                        <img src="https://i.postimg.cc/0jFP4VwC/wu-biao-ti119-20260203173340.png" class="exp-btn save-btn" onclick="saveCharacter()" style="width: 23px; height: 23px; object-fit: contain; vertical-align: middle;"> 
+                        <img src="https://i.postimg.cc/5yTbrsCs/wu-biao-ti119-20260203173327.png" class="exp-btn delete-btn" onclick="showDeleteAlert()" style="width: 23px; height: 23px; object-fit: contain; vertical-align: middle;">
                     </div>
                 </div>
             </div>
@@ -1421,7 +1430,7 @@
                             <span class="exp-bold">基础:</span>
                             <input type="text" id="creator-realname" class="exp-inline-input" placeholder="名称 / Name">
                             <span class="exp-slash">/</span>
-                            <input type="text" id="creator-alias" class="exp-inline-input" placeholder="Alias / 昵称" style="width: 100px;">
+                            <input type="text" id="creator-alias" class="exp-inline-input" placeholder="Alias / 昵称" style="width: 75px;">
                             <span class="exp-divider">/</span>
                             <input type="text" id="creator-gender" class="exp-inline-input small" placeholder="性别" style="width: 40px;">
                         </div>
@@ -1468,7 +1477,7 @@
                         <div class="exp-qr-text">幸福的秘诀是 拥有苹果时只在意苹果(๑＞＜)☆<br><span style="font-size:10px; color:#999;">I want to talk...💬</span></div>
                     </div>
                 </div>
-                <div style="height: 300px;"></div>
+                <div style="height: 10px;"></div>
             </div>
         </div>
 
@@ -1507,17 +1516,15 @@
         <div class="wx-opt-right"><svg class="wx-opt-arrow" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5v10z"/></svg></div>
     </div>
     
-    <div class="wx-opt-item">
-        <img src="https://i.postimg.cc/xqVS2CyW/wu-biao-ti117-20260110141831.png" class="wx-opt-icon" style="width: 24px; height: 24px;">
-        <div class="wx-opt-text">Visible To</div>
-        <div class="wx-opt-right">
-            <select id="post-privacy-select" style="border:none;background:transparent;text-align:right;font-size:14px;color:#999;outline:none;">
-                <option value="public">All</option>
-                <option value="private">Private</option>
-            </select>
-            <svg class="wx-opt-arrow" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5v10z"/></svg>
-        </div>
-          </div>
+<div class="wx-opt-item" onclick="toggleVisibilitySelector()">
+    <img src="https://i.postimg.cc/xqVS2CyW/wu-biao-ti117-20260110141831.png" class="wx-opt-icon" style="width: 24px; height: 24px;">
+    <div class="wx-opt-text">Visible To</div>
+    
+    <div class="wx-opt-right">
+        <span id="vis-label" style="color:#999; font-size:14px; margin-right:5px;">All</span>
+        <svg class="wx-opt-arrow" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5v10z"/></svg>
+    </div>
+</div>
        </div>
     </div>
 </div>
@@ -1826,6 +1833,19 @@
             <div class="num-key" onclick="typePwd(0)">0</div>
             <div class="num-key del" onclick="delPwd()">⌫</div>
         </div>
+    </div>
+</div>
+</div> </div> </div>
+<div id="visibility-drawer-overlay" class="vis-overlay" onclick="toggleVisibilitySelector()">
+    <div class="vis-drawer" onclick="event.stopPropagation()">
+        <div class="vis-header">
+            <span style="flex:1"></span>
+            <span class="vis-title">Who can see this?</span>
+            <span class="vis-done-btn" onclick="toggleVisibilitySelector()">Done</span>
+        </div>
+        
+        <div id="post-privacy-container" style="overflow-y: auto; max-height: 60vh;">
+            </div>
     </div>
 </div>
 
