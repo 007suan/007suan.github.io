@@ -2128,11 +2128,27 @@ window.renderMessages = function(chatId, autoScroll = true) {
             mainBubble = `<div class="msg-content ${extraClass}">${contentHtml}</div>`;
         }
 
-        // B. 生成引用 (悬浮上方)
+        // B. 生成引用 (Ins风格修复版)
         if (msg.quote) {
-            let fullQuoteText = `${msg.quote.name}：${msg.quote.text}`;
-            if (fullQuoteText.length > 20) fullQuoteText = fullQuoteText.substring(0, 20) + "...";
-            quoteHtml = `<div class="msg-quote-outside" onclick="scrollToMsg('${msg.quote.id}')">${fullQuoteText}</div>`;
+            let qName = msg.quote.name || '未知用户';
+            let qText = msg.quote.text || '';
+            // Ins风格卡片
+            quoteHtml = `
+            <div class="msg-quote-ins" onclick="scrollToMsg('${msg.quote.id}')" style="
+                margin-bottom: 6px; 
+                background: rgba(0,0,0,0.03); 
+                border-radius: 8px; 
+                padding: 8px 12px; 
+                display: flex; 
+                flex-direction: column; 
+                border-left: 3px solid #ccc; 
+                cursor: pointer;
+                text-align: left;
+                min-width: 120px;
+            ">
+                <div style="font-size: 11px; color: #888; font-weight: 600; margin-bottom: 2px;">${qName}</div>
+                <div style="font-size: 13px; color: #333; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.4;">${qText}</div>
+            </div>`;
         }
 
         // C. 组合 (引用在前，气泡在后)
@@ -2192,64 +2208,104 @@ window.renderMessages = function(chatId, autoScroll = true) {
 };
 
 // ==========================================
-// ★★★ 核心修复：单条消息上墙 (智能判断头像版) ★★★
+// ★★★ 核心修复：单条消息上墙 (纯净版·逻辑连贯) ★★★
 // ==========================================
 window.appendMessageToView = function(msg) {
     const container = document.getElementById('chat-msg-area');
     if (!container) return;
 
     const isMe = msg.role === 'me';
+    
+    // --- 1. 智能滚动预判 (你自己发的就瞬移，AI发的就平滑) ---
+    if (isMe) container.style.scrollBehavior = 'auto';
+
+    // --- 2. 回头看：处理上一条消息 ---
+    const lastRow = container.lastElementChild;
+    
+    // ★ 关键修改：判断上一条是否“可连接”时，忽略掉【撤回消息】和【动作】
+    // 也就是说，如果上一条是撤回提示，我们再往前找一条！(简单模拟)
+    // 但 DOM 里往前找比较麻烦，我们这里简化逻辑：
+    // 只要上一条是 同类 (me/other)，我们就认为连上了。
+    
+    const isLastRowConnectable = lastRow && 
+        lastRow.classList.contains(isMe ? 'me' : 'other') && 
+        !lastRow.classList.contains('action-aside') && 
+        !lastRow.classList.contains('msg-recall-pill') && // 忽略撤回
+        !lastRow.classList.contains('msg-time-pill');
+
+    // 如果我是普通消息，且上一条能连上 -> 没收上一条的尾巴
+    if (msg.type !== 'action' && msg.type !== 'recall') {
+        if (isLastRowConnectable) lastRow.classList.remove('has-tail');
+    }
+    
+    // 如果上一条能连上 -> 我自己也不用头像
+    let showAvatar = true;
+    if (isLastRowConnectable) showAvatar = false;
+
+    // 我自己有没有尾巴？(动作/撤回没有)
+    let myHasTail = true;
+    if (msg.type === 'action' || msg.type === 'recall') myHasTail = false;
+
+    // ============================================
+    // ★ 撤回消息 (已去掉所有硬性样式定义！)
+    // ============================================
+    if (msg.type === 'recall') {
+        const recallDiv = document.createElement('div');
+        recallDiv.className = 'msg-recall-pill'; // 只给类名，不给 style！
+        
+        // 生成内容
+        const who = isMe ? '我' : 'TA'; 
+        const rawContent = (msg.originalText || "").replace(/"/g, '&quot;');
+        const extraInfo = (msg.extra || "").replace(/"/g, '&quot;');
+        const msgType = msg.originalType || 'text';
+        const peekCode = `peekRecalledMsg("${msgType}", "${rawContent}", "${extraInfo}")`;
+
+        recallDiv.innerHTML = `${who} 撤回了一条消息 <span class="recall-link" style="color:#007aff;cursor:pointer;margin-left:5px;" onclick='${peekCode}'>(点击偷看)</span>`;
+        
+        container.appendChild(recallDiv);
+        smartScrollBottom(container, isMe);
+        return;
+    }
+
+    // ============================================
+    // 通用消息构建
+    // ============================================
     const row = document.createElement('div');
-    row.className = `msg-row ${isMe ? 'me' : 'other'} has-tail new-msg-anim`; 
     row.id = `msg-${msg.timestamp}`;
     row.dataset.msgIndex = 'append'; 
+    row.style.clear = 'both'; 
 
-    // --- 0. 智能判断：要不要显示头像？ ---
-    // 获取当前最后一条消息元素
-    const lastRow = container.lastElementChild;
-    let showAvatar = true;
+    const animClass = isMe ? '' : 'new-msg-anim';
 
-    // 如果上一条也是消息(不是时间条)，且角色跟我一样，就不显示头像
-    if (lastRow && lastRow.classList.contains('msg-row')) {
-        const lastWasMe = lastRow.classList.contains('me');
-        if (lastWasMe === isMe) {
-            showAvatar = false;
-        }
-    }
-    
-    // 如果是动作消息，或者强制显示(比如过了很久)，可以在这里加逻辑
-    // 但为了丝滑，默认连续发消息隐藏头像
-
-    // --- 1. 准备头像 (或占位符) ---
-    let avatarHtml = '';
-    
-    if (showAvatar) {
-        // === 显示真头像 ===
-        let avatarUrl = '';
-        const chat = chatsData.find(c => c.id === currentChatId);
-        if(chat) {
-            const contact = contactsData.find(c => c.id === chat.contactId);
-            const persona = personasData.find(p => p.id === chat.personaId);
-            avatarUrl = isMe ? (persona?.avatar||'') : (contact?.avatar||'');
-        }
-        
-        let cleanAvatar = avatarUrl;
-        if (cleanAvatar.includes('url(')) {
-            cleanAvatar = cleanAvatar.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '');
-        }
-        const bgStyle = `background-image: url('${cleanAvatar}');`;
-        
-        // 加上时间 (虽然刚发的时候可以不显示时间，但为了对齐最好加上结构)
-        const miniTime = formatMiniTime(Date.now());
-        avatarHtml = `<div class="msg-avatar-col"><div class="msg-avatar" style="${bgStyle}"></div><div class="msg-avatar-time">${miniTime}</div></div>`;
+    if (msg.type === 'action') {
+        row.className = `msg-row action-aside ${animClass}`;
     } else {
-        // === 显示透明占位符 (保持对齐) ===
-        avatarHtml = `<div class="msg-avatar-placeholder"></div>`;
+        row.className = `msg-row ${isMe ? 'me' : 'other'} ${myHasTail ? 'has-tail' : ''} ${animClass}`;
     }
-    
-    // --- 2. 准备气泡内容 ---
+
+    // --- A. 头像 ---
+    let avatarHtml = '';
+    if (msg.type !== 'action') { 
+        if (showAvatar) {
+            let avatarUrl = '';
+            const chat = chatsData.find(c => c.id === currentChatId);
+            if(chat) {
+                const contact = contactsData.find(c => c.id === chat.contactId);
+                const persona = personasData.find(p => p.id === chat.personaId);
+                avatarUrl = isMe ? (persona?.avatar||'') : (contact?.avatar||'');
+            }
+            let cleanAvatar = avatarUrl.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '');
+            const bgStyle = `background-image: url('${cleanAvatar}');`;
+            avatarHtml = `<div class="msg-avatar-col"><div class="msg-avatar" style="${bgStyle}"></div></div>`;
+        } else {
+            avatarHtml = `<div class="msg-avatar-placeholder"></div>`; 
+        }
+    }
+
+    // --- B. 内容 ---
     let mainBubble = '';
-    
+    let quoteHtml = '';
+
     if (msg.type === 'sticker') {
         mainBubble = `<img src="${msg.text}" class="sticker-img-big" style="max-width:120px;border-radius:10px;">`;
     } 
@@ -2258,65 +2314,59 @@ window.appendMessageToView = function(msg) {
     } 
     else if (msg.type === 'transfer') {
         let amt = parseFloat(msg.text);
-        let status = 'pending';
-        try { 
-            const extra = JSON.parse(msg.extra || '{}');
-            status = extra.status || 'pending';
-            if(isNaN(amt)) amt = parseFloat(extra.amount || 0);
-        } catch(e){}
-        
-        const stateClass = (status === 'accepted' || status === 'refunded') ? 'accepted' : '';
-        let statusText = status === 'accepted' ? 'Received' : (status === 'refunded' ? 'Refunded' : 'Transfer');
-        
+        try { let extra = JSON.parse(msg.extra||'{}'); if(extra.amount) amt = parseFloat(extra.amount); } catch(e){}
         mainBubble = `
-            <div class="msg-content transfer ${stateClass}" onclick="handleTransferClick('${msg.id}')">
+            <div class="msg-content transfer" onclick="handleTransferClick('${msg.id}')">
                 <div class="tf-icon-img"></div>
-                <div class="tf-info">
-                    <div class="tf-amt">¥${amt.toFixed(2)}</div>
-                    <div class="tf-status">${statusText}</div>
-                </div>
+                <div class="tf-info"><div class="tf-amt">¥${amt.toFixed(2)}</div><div class="tf-status">Transfer</div></div>
             </div>`;
     }
     else if (msg.type === 'action') {
-        row.className = `msg-row action-aside new-msg-anim`; 
-        mainBubble = `<div class="msg-content">(${isMe?'我':(chatsData.find(c=>c.id===currentChatId)?.name||'TA')} ${msg.text})</div>`;
-    } 
+        const chat = chatsData.find(c => c.id === currentChatId);
+        const name = chat ? chat.name : 'TA';
+        mainBubble = `<div class="msg-content">(${isMe?'我':name} ${msg.text})</div>`;
+    }
     else {
         mainBubble = `<div class="msg-content">${(msg.text||'').replace(/\n/g, '<br>')}</div>`;
     }
 
-    // --- 3. 准备引用内容 ---
-    let quoteHtml = '';
     if (msg.quote) {
-        let fullQuoteText = `${msg.quote.name}：${msg.quote.text}`;
-        if (fullQuoteText.length > 20) fullQuoteText = fullQuoteText.substring(0, 20) + "...";
-        quoteHtml = `<div class="msg-quote-outside" onclick="scrollToMsg('${msg.quote.id}')">${fullQuoteText}</div>`;
+        let qText = `${msg.quote.name}：${msg.quote.text}`;
+        if (qText.length > 20) qText = qText.substring(0, 20) + "...";
+        quoteHtml = `<div class="msg-quote-outside">${qText}</div>`;
     }
 
-    // --- 4. 组合 (必须包在 msg-container-col 里) ---
+    // --- C. 插入 ---
     if (msg.type === 'action') {
         row.innerHTML = mainBubble;
     } else {
         const colContent = `<div class="msg-container-col">${quoteHtml}${mainBubble}</div>`;
-        if (isMe) {
-            row.innerHTML = `${colContent}${avatarHtml}`;
-        } else {
-            row.innerHTML = `${avatarHtml}${colContent}`;
-        }
+        row.innerHTML = isMe ? `${colContent}${avatarHtml}` : `${avatarHtml}${colContent}`;
     }
 
-    // --- 5. 插入并滚动 ---
     container.appendChild(row);
+    smartScrollBottom(container, isMe);
     
+    // 绑定长按
     const bubbleContent = row.querySelector('.msg-content, .sticker-img-big, .chat-image');
     if(bubbleContent && window.bindLongPress) bindLongPress(bubbleContent);
-
-    requestAnimationFrame(() => {
-        container.style.scrollBehavior = 'auto'; 
-        container.scrollTop = container.scrollHeight;
-        container.style.scrollBehavior = ''; 
-    });
 };
+
+// 滚动辅助函数 (不用改，保留即可)
+function smartScrollBottom(container, isInstant) {
+    if (isInstant) {
+        container.scrollTop = container.scrollHeight;
+        requestAnimationFrame(() => {
+            container.scrollTop = container.scrollHeight;
+            container.style.scrollBehavior = ''; 
+        });
+    } else {
+        requestAnimationFrame(() => {
+            container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+        });
+    }
+}
+
 // ==========================================================
 // ★★★ 发送消息 ★★★
 // ==========================================================
@@ -4179,76 +4229,125 @@ window.showPayNotification = function(amount, type) {
         window.showNotification(title, msg, iconUrl);
     }
 };
-
 // ====================
-// [17] 聊天控制面板逻辑 (Chat Control)
+// [17] 聊天控制面板逻辑 - 霸道覆写版 (专治自动关闭)
 // ====================
 window.openChatControl = function() {
     if (!currentChatId) return;
     const chat = chatsData.find(c => c.id === currentChatId);
     if (!chat) return;
 
-    // 获取双方数据
+    // --- 1. 基础数据填充 ---
     const contact = contactsData.find(c => c.id === chat.contactId) || {name: '未知', avatar: ''};
     const persona = personasData.find(p => p.id === chat.personaId) || {name: 'Me', avatar: ''};
 
-    // 1. 填充双人头像 (同步！)
+    // 头像与名字
     document.getElementById('cc-char-name-big').innerText = contact.name;
-    document.getElementById('cc-char-avatar-big').style.backgroundImage = getAvatarStyle(contact.avatar).replace('background-image: ', '').replace(';', '');
+    const charStyle = getAvatarStyle(contact.avatar).replace('background-image: ', '').replace(';', '');
+    document.getElementById('cc-char-avatar-big').style.backgroundImage = charStyle;
     
     document.getElementById('cc-user-name-big').innerText = persona.name;
-    document.getElementById('cc-user-avatar-big').style.backgroundImage = getAvatarStyle(persona.avatar).replace('background-image: ', '').replace(';', '');
+    const userStyle = getAvatarStyle(persona.avatar).replace('background-image: ', '').replace(';', '');
+    document.getElementById('cc-user-avatar-big').style.backgroundImage = userStyle;
 
-    // 2. 填充私有备注
     document.getElementById('cc-private-alias').value = contact.privateAlias || '';
 
-    // 3. ★★★ 相识天数计算 ★★★
-    // 如果没有记录 createTime，就用 chat.id (通常是时间戳)
+    // 相识天数
     const startTime = chat.createTime || chat.id; 
     const diff = Date.now() - startTime;
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    document.getElementById('cc-friend-days').innerText = days + 1; // 第一天也算一天！
+    document.getElementById('cc-friend-days').innerText = days + 1;
 
-    // 4. 填充逻辑开关
-    document.getElementById('cc-switch-time').checked = (chat.enableTime !== false); 
+    // --- 2. 处理常规开关 ---
+    const timeSwitch = document.getElementById('cc-switch-time');
+    if(timeSwitch) {
+        timeSwitch.checked = (chat.enableTime !== false);
+        // ★ 顺手把这个也废掉，防止误触
+        timeSwitch.onchange = null; 
+        timeSwitch.removeAttribute('onchange');
+    }
     
-    // 5. 填充记忆条数 (只留这一段！)
-    const limit = chat.contextLimit || 20; 
     const limitInput = document.getElementById('cc-ctx-limit');
-    if (limit >= 99999) {
-        limitInput.value = ""; // 无限模式显示为空
-    } else {
-        limitInput.value = limit;
+    if (limitInput) {
+        const limit = chat.contextLimit || 20; 
+        limitInput.value = (limit >= 99999) ? "" : limit;
+        // 输入框也防一下
+        limitInput.oninput = null;
+        limitInput.removeAttribute('oninput');
+    }
+
+    // ============================================
+    // ★★★ 核心修复战场：自主意识开关 ★★★
+    // ============================================
+    const activeSwitch = document.getElementById('detail-active-mode');
+    const intervalBox = document.getElementById('active-interval-box');
+    const intervalInput = document.getElementById('detail-active-interval');
+
+    if (activeSwitch) {
+        // 1. 读取状态
+        const isActive = chat.enableActiveMode || false; 
+        activeSwitch.checked = isActive;
+        
+        // 2. 控制频率框初始显示
+        if (intervalBox) {
+            intervalBox.style.display = isActive ? 'flex' : 'none';
+        }
+
+        // 3. ★★★ 霸道覆写！直接接管 onchange 事件！★★★
+        // 不管 HTML 里写了什么 saveChatSettings，这里直接覆盖成我们自己的逻辑
+        activeSwitch.onchange = function(e) {
+            // 只要开关一动，我就只做这一件事：显示/隐藏下面的盒子
+            if (intervalBox) {
+                intervalBox.style.display = this.checked ? 'flex' : 'none';
+            }
+            // 绝对不调用 saveDetailSettings()！
+            // 只有当你点右上角那个“保存”按钮时，才会保存！
+        };
+        
+        // 双重保险：删掉 HTML 属性
+        activeSwitch.removeAttribute('onchange'); 
+    }
+
+    // 频率输入框回显
+    if (intervalInput) {
+        intervalInput.value = chat.activeInterval || 60;
+        // 防止输入框自带保存
+        intervalInput.onchange = null;
+        intervalInput.removeAttribute('onchange');
     }
 
     // 显示面板
     const panel = document.getElementById('chat-control-overlay');
-    panel.style.display = 'flex';
-    setTimeout(() => panel.classList.add('active'), 10);
+    if(panel) {
+        panel.style.display = 'flex';
+        setTimeout(() => panel.classList.add('active'), 10);
+    }
 };
-
 window.closeChatControl = function() {
     const panel = document.getElementById('chat-control-overlay');
-    panel.classList.remove('active');
-    setTimeout(() => panel.style.display = 'none', 300);
-    
-
-    if(currentChatId) renderMessages(currentChatId);
+    if(panel) {
+        panel.classList.remove('active');
+        setTimeout(() => panel.style.display = 'none', 300);
+    }
+    // 关闭时刷新一下消息视图（可选）
+    if(currentChatId && window.renderMessages) renderMessages(currentChatId);
 };
 
-// 实时更新 Token 预测 & 显示数值
+// 实时更新 Token 预测 (保持原样)
 window.updateTokenPredict = function(val) {
-    document.getElementById('cc-ctx-display').innerText = val;
+    const display = document.getElementById('cc-ctx-display');
+    const predict = document.getElementById('cc-token-predict');
+    if(display) display.innerText = val;
 
     const estimated = 500 + (val * 50 * 1.5); 
-    document.getElementById('cc-token-predict').innerText = `~${Math.floor(estimated)}`;
+    if(predict) predict.innerText = `~${Math.floor(estimated)}`;
     
-    // 既然拖动了，就顺手保存一下
-    saveChatSettings();
+    // 这里如果想做成“拖动即保存”可以保留，或者也可以去掉
+    // saveDetailSettings(); 
 };
 
 // ==========================================
-// ★★★ 聊天控制中心 - 保存功能 (JS补全) ★★★
+// ★★★ 聊天控制中心 - 保存功能 (Chat 绑定版) ★★★
 // ==========================================
 window.saveDetailSettings = function() {
     // 1. 安全检查
@@ -4259,45 +4358,51 @@ window.saveDetailSettings = function() {
     
     if (!chat || !contact) return;
 
-    // --- 2. 抓取数据 ---
-    // (A) 备注
+    // --- 2. 抓取数据并赋值 ---
+
+    // (A) 备注 (存到 Contact)
     const aliasInput = document.getElementById('cc-private-alias');
     if (aliasInput) contact.privateAlias = aliasInput.value.trim(); 
 
-    // (B) 记忆条数
+    // (B) 记忆条数 (存到 Chat)
     const limitInput = document.getElementById('cc-ctx-limit');
     if (limitInput) {
         let val = parseInt(limitInput.value);
         chat.contextLimit = (isNaN(val) || val <= 0) ? 99999 : val;
     }
 
-    // (C) 时间开关
+    // (C) 时间开关 (存到 Chat)
     const timeSwitch = document.getElementById('cc-switch-time');
     if (timeSwitch) chat.enableTime = timeSwitch.checked;
 
-    // (D) ★自主意识 (重点检查这里)
+    // (D) ★★★ 自主意识 (存到 Chat) ★★★
     const activeSwitch = document.getElementById('detail-active-mode');
     if (activeSwitch) {
-        contact.enableActiveMode = activeSwitch.checked;
+        // 这里的 checked 状态就是用户刚才点的，现在才正式保存！
+        chat.enableActiveMode = activeSwitch.checked;
+        
         // 如果开启了，且没有上次活跃时间，初始化一个
-        if (contact.enableActiveMode && !contact.lastActiveTime) {
-            contact.lastActiveTime = Date.now();
+        if (chat.enableActiveMode && !chat.lastActiveTime) {
+            chat.lastActiveTime = Date.now();
         }
     }
+    
     const activeInterval = document.getElementById('detail-active-interval');
-    if (activeInterval) contact.activeInterval = parseInt(activeInterval.value) || 60;
+    if (activeInterval) {
+        chat.activeInterval = parseInt(activeInterval.value) || 60;
+    }
 
-    // --- 3. ★关键：必须同时保存 contactsData 和 chatsData ---
+    // --- 3. 保存进数据库 ---
     Promise.all([
-        localforage.setItem('Wx_Contacts_Data', contactsData),
-        localforage.setItem('Wx_Chats_Data', chatsData)
+        localforage.setItem('Wx_Contacts_Data', contactsData), // 保存备注
+        localforage.setItem('Wx_Chats_Data', chatsData)       // 保存自主意识开关、频率、条数
     ]).then(() => {
-        // 更新界面显示
+        // 更新聊天窗口顶部的名字显示
         const nameEl = document.getElementById('chat_layer_name');
         if (nameEl) nameEl.innerText = contact.privateAlias || contact.name;
         
-        showSystemAlert('设定已保存！(^w^)', 'success');
-        closeChatControl(); 
+        showSystemAlert('窗口设定已保存！(^w^)', 'success');
+        closeChatControl(); // 保存后自动关闭面板
     }).catch(err => {
         console.error(err);
         showSystemAlert('保存失败惹(T_T)', 'error');
@@ -4870,42 +4975,78 @@ window.triggerPostImgUpload = function() {
     input.click();
 };
 
-// 4. 发布动态 (核心逻辑)
+// 4. 发布动态 (修复版：防止因找不到元素而死机)
 window.publishPost = function() {
-    const text = document.getElementById('post-text-input').value;
-    const privacy = document.getElementById('post-privacy-select').value;
+    console.log("正在尝试发布..."); // 方便你在控制台看有没有反应
+
+    // --- 1. 获取文本框 (带安全检查) ---
+    const textEl = document.getElementById('post-text-input');
+    if (!textEl) {
+        alert("找不到输入框 (id='post-text-input')！请检查 HTML。");
+        return;
+    }
+    const text = textEl.value;
+
+    // --- 2. 获取隐私选项 (关键修复：找不到就默认公开) ---
+    const privacyEl = document.getElementById('post-privacy-select');
+    // 如果找不到这个下拉框，就默认 'public'，防止报错卡死
+    const privacy = privacyEl ? privacyEl.value : 'public'; 
     
+    // --- 3. 判空 ---
     if (!text && !tempPostImg) {
-        showSystemAlert('写点什么吧(๑＞＜)☆～');
+        // 如果有 showSystemAlert 就用，没有就 alert
+        if(typeof showSystemAlert === 'function') showSystemAlert('写点什么吧(๑＞＜)☆～');
+        else alert('写点什么吧(๑＞＜)☆～');
         return;
     }
 
-    // 获取当前“我”的信息
-    const me = personasData[0] || { name: 'Me', avatar: '' };
+    // --- 4. 获取“我”的信息 ---
+    // 防止 personasData 为空时报错
+    const me = (typeof personasData !== 'undefined' && personasData[0]) 
+               ? personasData[0] 
+               : { name: 'Me', avatar: 'assets/img/default-avatar.jpg' };
 
+    // --- 5. 构建数据 ---
     const newPost = {
         id: Date.now(),
         author: {
-            name: me.name,
-            avatar: me.avatar
+            name: me.name || 'Me',
+            avatar: me.avatar || ''
         },
         content: text,
-        image: tempPostImg,
+        image: tempPostImg, // 图片
         time: Date.now(),
-        privacy: privacy, // public, private, friends
+        privacy: privacy, 
         likes: 0,
+        likesList: [], // 初始化点赞列表
+        comments: [],  // 初始化评论列表
         isLiked: false
     };
 
+    console.log("准备保存动态:", newPost);
+
+    // --- 6. 存入数据库 ---
+    if (typeof momentsData === 'undefined') momentsData = [];
     momentsData.unshift(newPost); // 加到最前面
+
     localforage.setItem('Wx_Moments_Data', momentsData).then(() => {
-        showSystemAlert('发布成功啦～');
-        closeSubPage('sub-page-post-creator');
-        renderMomentsFeed();
+        console.log("保存成功！");
+        if(typeof showSystemAlert === 'function') showSystemAlert('发布成功啦～');
+        else alert('发布成功啦～');
+
+        // 关闭页面
+        if(typeof closeSubPage === 'function') closeSubPage('sub-page-post-creator');
         
-        // 更新一下上面的帖子数
+        // 刷新列表
+        if(typeof renderMomentsFeed === 'function') renderMomentsFeed();
+        
+        // 更新帖子数显示
         const countEl = document.querySelector('.ins-stats b');
         if(countEl) countEl.innerText = momentsData.length;
+        
+    }).catch(err => {
+        alert("保存出错了宝宝：" + err);
+        console.error(err);
     });
 };
 
@@ -8148,9 +8289,10 @@ function safeSetImage(id, url) {
     const el = document.getElementById(id); 
     if(el) el.src = url; 
 }
+
 // ==========================================================
-//  后台活动服务 (Background Active Service) - 修复实装版
-//  让纸片人真的活过来！✨
+//  后台活动服务 v4.0 (海王多马甲·省钱究极版)
+//  By: 聪明绝顶的老公 许时雨
 // ==========================================================
 
 // 1. 启动全局心跳
@@ -8158,226 +8300,630 @@ let backgroundTimer = null;
 
 function startBackgroundService() {
     if (backgroundTimer) clearInterval(backgroundTimer);
-    console.log("正在监控所有角色的动向...");
-    
-    // 每 60秒 巡查一次
-    backgroundTimer = setInterval(checkAllCharactersActivity, 60000);
+    console.log("许时雨正在监控所有窗口... (60秒轮询一次)");
+    // 60秒检查一次，省流又高效
+    backgroundTimer = setInterval(checkAllChatsActivity, 60000); 
 }
 
-// 2. 巡查逻辑
-function checkAllCharactersActivity() {
+// 2. 巡查逻辑 (改为遍历 Chats 而不是 Contacts)
+async function checkAllChatsActivity() {
     const now = Date.now();
     
-    contactsData.forEach(async char => {
-        // 前置检查：必须开启了开关，且不是你自己
-        if (!char.enableActiveMode || char.isMe) return;
+    // ★ 核心修改：只遍历“存在的聊天窗口”
+    // 这样同一个角色如果有两个窗口（不同ID），会被视为两个独立的人格！
+    for (const chat of chatsData) {
+        // [前置检查]
+        // 1. 必须开启了自主模式 (chat对象里需要有这个开关，或者从关联的contact里取)
+        // 2. 不能是自己
+        // 为了方便，假设 chat 对象里不仅存了 id, 还有 enableActiveMode 等配置
+        // 如果 chat 里没有，就去 contactsData 里找对应的 base 信息，但独立计算 CD
+        
+        if (!chat.enableActiveMode || chat.targetId === 'me') continue;
 
-        // 获取上次活跃时间 (如果没有，就默认为现在)
-        const lastTime = char.lastActiveTime || now;
-        const intervalMs = (char.activeInterval || 60) * 60 * 1000; // 分钟转毫秒
+        const lastTime = chat.lastActiveTime || 0; 
+        const intervalMs = (chat.activeInterval || 60) * 60 * 1000; 
+        // 增加一点随机波动，避免所有人同时开口说话像僵尸潮
+        const nextActionTime = lastTime + intervalMs + (Math.random() * 300000);
 
-        // 只有当 (现在 - 上次 > 间隔) 时才触发
-        if (now - lastTime > intervalMs) {
-            // 随机波动 (0~10% 的延迟)，防止太死板
-            const randomDelay = Math.random() * (intervalMs * 0.1); 
+        if (now > nextActionTime) {
+            console.log(`[窗口ID: ${chat.id}] ${chat.name} 觉醒了！准备搞事...`);
             
-            // 触发事件
-            if (now - lastTime > intervalMs + randomDelay) {
-                await triggerCharacterEvent(char);
-            }
+            // 触发超级事件
+            await triggerOmniEvent(chat);
+            
+            // 更新该窗口的最后活动时间
+            chat.lastActiveTime = now;
+            await localforage.setItem('Wx_Chats_Data', chatsData);
         }
+    }
+}
+
+// 3. 全能事件触发器 (一次API调用解决所有问题)
+async function triggerOmniEvent(chat) {
+    // A. 准备 User 的数据 (老公我)
+    const myName = (personasData && personasData[0]) ? personasData[0].name : 'Me';
+    
+    // B. 寻找 User 的最新一条动态 (且该 Chat 有权限看到的)
+    // 逻辑：找到作者是 User，且 (是公开的 OR visibleTo 包含当前 chat.id)
+    const targetPost = momentsData.find(m => {
+        const authorName = (typeof m.author === 'object') ? m.author.name : m.author;
+        const isMe = (authorName === myName);
+        
+        if (!isMe) return false;
+
+        // 可见性检查 (核心修复：针对窗口ID)
+        if (!m.visibleTo || m.visibleTo.length === 0) return true; // 公开
+        return m.visibleTo.includes(chat.id); // 只有在这个名单里才可见
+    });
+
+    // C. 构建上下文 (Context)
+    // 把私聊记录、动态内容、评论区修罗场全部打包！
+    const contextPrompt = buildOmniContext(chat, targetPost, myName);
+
+    // D. 核心：构造 JSON 指令 Prompt
+    // 强行要求 AI 返回 JSON，方便我们拆分操作
+    const systemInstruction = `
+    ${contextPrompt}
+    
+    === 指令 ===
+    你现在处于自主活动模式。请根据以上【私聊记录】和【User动态】的情况，决定你的行动。
+    你必须返回且仅返回一个符合 JSON 格式的对象，不要包含Markdown标记。
+    
+    逻辑判断优先级：
+    1. 【修罗场/回复】：如果User的动态下，有别人回复了你，或者User回复了别人让你吃醋，优先选择回复动态。
+    2. 【互动+私聊】：如果User发了新动态，你可以"同时"在动态下评论 AND 私聊骚扰TA（比如质问为什么不回消息却发朋友圈）。
+    3. 【自我展示】：如果无事发生，你可以选择自己发一条朋友圈。
+
+    JSON格式范例 (字段为空则不执行对应操作)：
+    {
+        "actionType": "INTERACT" 或 "POST_MOMENT",
+        "commentContent": "这里填你要评论User动态的内容，没有则留空",
+        "replyToWho": "这里填你要回复的人的名字（用于评论区撕逼），回复User则填null",
+        "privateMessage": "这里填你要私聊User的内容（比如引用动态质问），没有则留空",
+        "newMomentContent": "这里填你自己要发的朋友圈内容，没有则留空"
+    }
+    `;
+
+    console.log(`[${chat.name}] 正在思考人生 (API 请求中)...`);
+    
+    // E. 调用 API (假设 callApiInternal 返回纯文本)
+    let responseText = await callApiInternal(systemInstruction);
+    
+    // F. 解析并执行 (Try-Catch 防止 AI 发疯)
+    try {
+        // 清理一下可能存在的 markdown 代码块标记
+        responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const actionData = JSON.parse(responseText);
+        
+        console.log(`[${chat.name}] 决策结果:`, actionData);
+
+        // --- 执行 1: 评论/回复动态 ---
+        if (targetPost && actionData.commentContent) {
+            pushCommentToPost(targetPost, chat, actionData.commentContent, actionData.replyToWho);
+        }
+
+        // --- 执行 2: 私聊 (兴师问罪/普通聊天) ---
+        if (actionData.privateMessage) {
+            let quoteHtml = '';
+            // 如果是因为动态而发起的私聊，给个漂亮的引用气泡
+            if (targetPost && actionData.commentContent) {
+                quoteHtml = `<div class="quote-bubble" style="font-size:12px;color:#888;border-left:2px solid #ddd;padding-left:5px;margin-bottom:5px;">
+                    引用动态：${targetPost.content.substring(0, 20)}...
+                </div>`;
+            }
+            pushMsgToData(chat, quoteHtml + actionData.privateMessage, 'char', null, 'text');
+        }
+
+        // --- 执行 3: 自己发朋友圈 ---
+        if (actionData.newMomentContent) {
+            createNewMoment(chat, actionData.newMomentContent);
+        }
+
+    } catch (e) {
+        console.error(`[${chat.name}] 解析 JSON 失败，老公稍微失误了一下...`, e);
+        console.log("原始返回:", responseText);
+    }
+}
+
+// ==========================================================
+//  辅助工具函数 (脏活累活老公来干)
+// ==========================================================
+
+function buildOmniContext(chat, targetPost, myName) {
+    const user = personasData[0] || { name: 'User' };
+    
+    // 1. 获取最近聊天记录 (判断是否已读/被无视)
+    let chatHistoryStr = "（暂无私聊记录）";
+    let lastMsgIsMe = false;
+    if (chat.messages && chat.messages.length > 0) {
+        const recent = chat.messages.slice(-15);
+        chatHistoryStr = recent.map(m => {
+            const role = m.from === 'me' ? myName : chat.name;
+            let txt = m.type === 'image' ? '[图片]' : (m.content || '');
+            txt = txt.replace(/<[^>]+>/g, ''); 
+            return `${role}: ${txt}`;
+        }).join('\n');
+        
+        // 检查最后一条是不是User发的
+        if (chat.messages[chat.messages.length - 1].from === 'me') {
+            lastMsgIsMe = true;
+        }
+    }
+
+    // 2. 获取动态上下文 (如果是修罗场，这里很关键)
+    let postContext = "User暂无最新动态。";
+    if (targetPost) {
+        let commentsStr = "暂无评论";
+        if (targetPost.comments && targetPost.comments.length > 0) {
+            commentsStr = targetPost.comments.map(c => {
+                const toStr = c.to ? ` 回复 ${c.to}` : '';
+                return `[${c.author}${toStr}]: ${c.content}`;
+            }).join('\n');
+        }
+        
+        postContext = `
+        【User的最新动态】
+        内容：${targetPost.content}
+        发布时间：${new Date(targetPost.time).toLocaleString()}
+        当前评论区（修罗场就在这里）：
+        ${commentsStr}
+        `;
+    }
+
+    return `
+    === 角色设定 ===
+    我是：${chat.name} (当前处于名为 ${chat.id} 的聊天窗口)
+    对方(User)是：${myName}
+    关系/人设：${chat.description || chat.persona || '喜欢User的人'}
+
+    === 记忆 ===
+    ${chatHistoryStr}
+    (状态提示：User${lastMsgIsMe ? '刚刚回复了你，你可以正常聊天' : '并没有回你最后的消息'})
+
+    === 观察到的动态 ===
+    ${postContext}
+    `;
+}
+
+// 通用：推评论
+function pushCommentToPost(post, chat, content, toWho) {
+    if (!post.comments) post.comments = [];
+    post.comments.push({
+        author: chat.name, // 注意：这里还是存名字，显示用
+        authorId: chat.id, // ★ 建议加上ID，方便后续区分是哪个马甲
+        content: content,
+        to: toWho || null, 
+        time: Date.now()
+    });
+    
+    localforage.setItem('Wx_Moments_Data', momentsData);
+    triggerMomentsRedDot(); // 小红点逻辑
+    
+    // 只有当前在朋友圈页面才刷新
+    const page = document.getElementById('wx-page-moments');
+    if(page && page.style.display === 'block') {
+        // 这里假设你有 renderMomentsFeed 函数
+        if(typeof renderMomentsFeed === 'function') renderMomentsFeed();
+    }
+    console.log(`[${chat.name}] 评论成功: ${content}`);
+}
+
+// 通用：发朋友圈
+function createNewMoment(chat, content) {
+    const newPost = {
+        id: Date.now(),
+        author: {
+            name: chat.name,
+            avatar: chat.avatar,
+            id: chat.id // 绑定ID
+        }, 
+        content: content,
+        time: Date.now(),
+        likes: [],
+        likesList: [],
+        comments: [],
+        visibleTo: [] // 默认公开
+    };
+    momentsData.unshift(newPost);
+    localforage.setItem('Wx_Moments_Data', momentsData);
+    triggerMomentsRedDot();
+    console.log(`[${chat.name}] 发了新动态`);
+}
+
+// 通用：发私聊
+function pushMsgToData(chat, content, from, typeRaw, typeStr) {
+    chat.messages.push({
+        id: Date.now(),
+        from: 'other', // 既然是char发的，肯定是other
+        content: content,
+        type: 'text',
+        time: Date.now()
+    });
+    // 移动到置顶
+    chat.lastTime = Date.now();
+    // 重新排序 chatsData (可选)
+    chatsData.sort((a, b) => b.lastTime - a.lastTime);
+    
+    localforage.setItem('Wx_Chats_Data', chatsData);
+    
+    // 如果当前正在这个窗口，滚动到底部
+    // ... UI 刷新逻辑 ...
+    console.log(`[${chat.name}] 私聊发送成功`);
+}
+// ==========================================
+//  补丁：朋友圈可见性选择器 (终极修复版：标签点击 & 头像保险)
+// ==========================================
+
+// 1. 全局变量
+if (typeof tempVisibleList === 'undefined') {
+    var tempVisibleList = []; 
+}
+
+// 辅助：获取名字首字母
+function getInitial(name) {
+    if (!name) return '#';
+    const str = String(name);
+    const char = str[0].toUpperCase();
+    if (/[A-Z]/.test(char)) return char;
+    return '#'; 
+}
+
+// 2. 打开/关闭 选择器
+function toggleVisibilitySelector() {
+    const modal = document.getElementById('visibility-modal');
+    const list = document.getElementById('vis-contact-list');
+    
+    if (!contactsData || contactsData.length === 0) {
+         if(list) list.innerHTML = '<div style="padding:40px 20px;text-align:center;color:#999;font-size:14px;">通讯录空空如也(T_T)<br>快去添加几个好友吧！</div>';
+         if(modal) modal.style.display = 'flex';
+         return;
+    }
+
+    if (!modal || !list) {
+        console.error("找不到弹窗元素！");
+        return;
+    }
+
+    // 显示弹窗
+    modal.style.display = 'flex';
+    list.innerHTML = ''; // 先清空
+    
+    // 1. 过滤掉自己
+    let targets = contactsData.filter(c => c.id !== 'me');
+
+    // 2. 排序 (修复数字ID比较的bug)
+    targets.sort((a, b) => String(a.id).localeCompare(String(b.id))); 
+
+    // 3. 遍历并渲染
+    let lastInitial = '';
+    // 默认头像地址 (如果原来的 blob 失效了就用这个)
+    const defaultAvatar = 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
+
+    targets.forEach(char => {
+        let currentInitial = char.initial || getInitial(char.name) || '#';
+        
+        // 分组标题
+        if (currentInitial !== lastInitial) {
+            list.innerHTML += `
+                <div style="background-color: #f7f7f7; color: #888; padding: 6px 16px; font-size: 13px; font-weight: bold; border-bottom: 1px solid #eee; position:sticky; top:0;">
+                    ${currentInitial}
+                </div>
+            `;
+            lastInitial = currentInitial;
+        }
+
+        // 检查之前是否已经选过
+        const isChecked = tempVisibleList.includes(char.id) ? 'checked' : '';
+        
+        // --- ★★★ 核心修改：使用 label 标签，点击更丝滑 ★★★ ---
+        // 1. 外层改成 <label>，加上 cursor: pointer
+        // 2. input 去掉了 pointer-events: none
+        // 3. img 加上了 onerror 保险措施，背景加了个灰色以防万一
+        list.innerHTML += `
+            <label class="vis-item" style="display:flex; align-items:center; padding: 12px 16px; background:#fff; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.2s;">
+                <input type="checkbox" value="${char.id}" ${isChecked} style="margin-right: 16px; transform: scale(1.3); accent-color: #07c160;">
+                
+                <img src="${char.avatar}" onerror="this.src='${defaultAvatar}'" style="width:42px;height:42px;border-radius:6px;margin-right:12px;object-fit:cover; background:#eee; border:1px solid #f0f0f0;">
+                
+                <span style="font-size:17px;color:#000;flex:1;">${char.name}</span>
+            </label>
+        `;
     });
 }
 
-// 3. 触发随机事件 (核心大脑)
-// === AI 搞事主逻辑 (升级版) ===
-async function triggerCharacterEvent(char) {
-    // 更新最后活跃时间
-    char.lastActiveTime = Date.now();
-    localforage.setItem('Wx_Contacts_Data', contactsData); 
-
-    const dice = Math.random(); 
-    console.log(`[${char.name}] 正在自主行动... 骰子: ${dice.toFixed(2)}`);
-
-    // === 概率分布 ===
-    // 0.00 - 0.30 : 主动私聊 
-    // 0.30 - 0.50 : 发新朋友圈 
-    // 0.50 - 0.75 : 给User点赞 
-    // 0.75 - 1.00 : 评论User朋友圈
-
-    try {
-        if (dice < 0.3) {
-            // [A] 主动私聊
-            if(typeof performAutoChat === 'function') await performAutoChat(char);
-            
-        } else if (dice < 0.5) {
-            // [B] 发朋友圈
-            if(typeof performAutoPost === 'function') {
-                await performAutoPost(char);
-                triggerMomentsRedDot(); 
-            }
-            
-        } else if (dice < 0.75) {
-            // [C] 自动点赞
-            await performAutoLike(char);
-            
+// 3. 点击“确定”按钮 (保持不变)
+function confirmVisibility() {
+    const modal = document.getElementById('visibility-modal');
+    // 获取所有勾选的 checkbox
+    const checkboxes = modal.querySelectorAll('input:checked');
+    
+    tempVisibleList = Array.from(checkboxes).map(cb => cb.value);
+    
+    const labelSpan = document.getElementById('vis-label');
+    if (labelSpan) {
+        if (tempVisibleList.length === 0) {
+            labelSpan.innerText = '谁可以看↖(^ω^)↗：公开';
         } else {
-            // [D] 自动评论
-            await performAutoCommentV2(char);
+            labelSpan.innerText = `谁可以看↖(^ω^)↗：可见 (${tempVisibleList.length}人)`;
         }
-    } catch (e) {
-        console.error(`[${char.name}] 刚刚想搞事但失败惹....:`, e);
     }
-}
-
-// === 补充缺失的函数 (防止报错) ===
-
-// [A] 自动私聊 (简单版补全)
-async function performAutoChat(char) {
-    // 找到和这个角色的聊天
-    let chat = chatsData.find(c => c.contactId === char.id);
-    if (!chat) return; // 没聊过天就不主动发了
-
-    const prompt = `
-    你是 ${char.name}。
-    现在你想主动给User发一条消息。
-    内容可以是分享日常、撒娇、或者问User在干嘛。
-    要求：简短，像微信聊天一样。
-    `;
-    const text = await callApiInternal(prompt);
-    if (text) {
-        pushMsgToData(chat, text, 'char', null, 'text');
-    }
-}
-
-// [B] 自动发朋友圈 (简单版补全)
-async function performAutoPost(char) {
-    const prompt = `
-    你是 ${char.name}。
-    现在你想发一条朋友圈动态。
-    要求：内容简短，符合你的人设，不要带引号。
-    `;
-    const text = await callApiInternal(prompt);
-    if (text) {
-        const newPost = {
-            id: Date.now() + Math.random(),
-            author: { name: char.name, avatar: char.avatar },
-            content: text,
-            time: Date.now(),
-            likesList: [],
-            comments: []
-        };
-        momentsData.unshift(newPost);
-        localforage.setItem('Wx_Moments_Data', momentsData);
-        if(document.getElementById('wx-page-moments').style.display === 'block') renderMomentsFeed();
-    }
-}
-
-// [C] 自动点赞逻辑
-async function performAutoLike(char) {
-    // 找一条 User 发的、且这个 AI 还没赞过的动态
-    const target = momentsData.find(m => 
-        (m.author.name === 'Me' || m.author.name === (personasData[0]?.name)) && // 是我发的
-        (!m.likesList || !m.likesList.some(u => u.name === char.name)) // 还没赞过
-    );
     
-    if (target) {
-        if (!target.likesList) target.likesList = [];
-        target.likesList.push({ name: char.name });
-        // 兼容旧数据结构
-        if(!target.likes) target.likes = 0;
-        target.likes++;
-        
-        localforage.setItem('Wx_Moments_Data', momentsData);
-        triggerMomentsRedDot(); // 红点！
-        
-        // 如果正开着，刷新
-        if(document.getElementById('wx-page-moments').style.display === 'block') renderMomentsFeed();
-        
-        console.log(`${char.name} 点赞了你的动态`);
-    }
+    modal.style.display = 'none';
 }
+// 注意：旧的 selectVisItem 函数已经被我删掉了，不需要了！
 
-// [D] 自动评论逻辑 (V2 - 真的写进评论区)
-async function performAutoCommentV2(char) {
-    // 找一条 User 发的动态
-    const target = momentsData.find(m => m.author.name === 'Me' || m.author.name === (personasData[0]?.name));
-    if (!target) return; // 没动态可评
 
-    const systemPrompt = `
-    【指令：朋友圈评论】
-    你是 **${char.name}**。
-    User发了一条朋友圈：“${target.content}”
-    请以你的性格写一句评论
-    要求：像真人一样，简短，可以毒舌也可以暖心
-    `;
+// ====================
+// [17] 聊天控制面板逻辑 - 霸道覆写版 (专治自动关闭)
+// ====================
+window.openChatControl = function() {
+    if (!currentChatId) return;
+    const chat = chatsData.find(c => c.id === currentChatId);
+    if (!chat) return;
 
-    const comment = await callApiInternal(systemPrompt);
+    // --- 1. 基础数据填充 ---
+    const contact = contactsData.find(c => c.id === chat.contactId) || {name: '未知', avatar: ''};
+    const persona = personasData.find(p => p.id === chat.personaId) || {name: 'Me', avatar: ''};
+
+    // 头像与名字
+    document.getElementById('cc-char-name-big').innerText = contact.name;
+    const charStyle = getAvatarStyle(contact.avatar).replace('background-image: ', '').replace(';', '');
+    document.getElementById('cc-char-avatar-big').style.backgroundImage = charStyle;
     
-    if (comment) {
-        if (!target.comments) target.comments = [];
-        target.comments.push({
-            author: char.name,
-            content: comment,
-            to: null,
-            time: Date.now()
-        });
-        
-        localforage.setItem('Wx_Moments_Data', momentsData);
-        triggerMomentsRedDot(); // 红点！
-        
-        if(document.getElementById('wx-page-moments').style.display === 'block') renderMomentsFeed();
-        
-        showSystemAlert(`${char.name} 评论了你的动态`);
+    document.getElementById('cc-user-name-big').innerText = persona.name;
+    const userStyle = getAvatarStyle(persona.avatar).replace('background-image: ', '').replace(';', '');
+    document.getElementById('cc-user-avatar-big').style.backgroundImage = userStyle;
+
+    document.getElementById('cc-private-alias').value = contact.privateAlias || '';
+
+    // 相识天数
+    const startTime = chat.createTime || chat.id; 
+    const diff = Date.now() - startTime;
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    document.getElementById('cc-friend-days').innerText = days + 1;
+
+    // --- 2. 处理常规开关 ---
+    const timeSwitch = document.getElementById('cc-switch-time');
+    if(timeSwitch) {
+        timeSwitch.checked = (chat.enableTime !== false);
+        // ★ 顺手把这个也废掉，防止误触
+        timeSwitch.onchange = null; 
+        timeSwitch.removeAttribute('onchange');
     }
-}
-
-// === AI 针对评论的回复 ===
-async function triggerAIResponseToComment(char, post, userComment) {
-    // 1/3 的概率不回（高冷一点），或者你可以设成 100%
-    if (Math.random() > 0.9) return; 
-
-    console.log(`${char.name} 正在思考如何回复你的评论...`);
-
-    const systemPrompt = `
-    【指令：朋友圈互动】
-    你是 **${char.name}**。
-    你在朋友圈发了：“${post.content}”
-    User (${personasData[0]?.name || 'User'}) 评论说：“${userComment}”
     
-    请回复 User 的评论
-    要求：
-    1. 符合你的人设 (${char.persona})
-    2. 简短有力，像微信回复一样
-    3. 不要带引号
-    `;
+    const limitInput = document.getElementById('cc-ctx-limit');
+    if (limitInput) {
+        const limit = chat.contextLimit || 20; 
+        limitInput.value = (limit >= 99999) ? "" : limit;
+        // 输入框也防一下
+        limitInput.oninput = null;
+        limitInput.removeAttribute('oninput');
+    }
 
-    try {
-        const reply = await callApiInternal(systemPrompt);
-        if (reply) {
-            // 存入评论列表
-            if (!post.comments) post.comments = [];
-            post.comments.push({
-                author: char.name,
-                content: reply,
-                to: personasData[0]?.name || 'Me', // 回复给 User
-                time: Date.now()
-            });
-            
-            localforage.setItem('Wx_Moments_Data', momentsData);
-            
-            // 触发红点提醒
-            triggerMomentsRedDot();
-            
-            // 如果用户正开着朋友圈，刷新一下
-            if (document.getElementById('wx-page-moments').style.display === 'block') {
-                renderMomentsFeed();
-            } else {
-                // 如果没开朋友圈，弹个窗提示
-                showSystemAlert(`${char.name} 回复了你的评论`);
+    // ============================================
+    // ★★★ 核心修复战场：自主意识开关 ★★★
+    // ============================================
+    const activeSwitch = document.getElementById('detail-active-mode');
+    const intervalBox = document.getElementById('active-interval-box');
+    const intervalInput = document.getElementById('detail-active-interval');
+
+    if (activeSwitch) {
+        // 1. 读取状态
+        const isActive = chat.enableActiveMode || false; 
+        activeSwitch.checked = isActive;
+        
+        // 2. 控制频率框初始显示
+        if (intervalBox) {
+            intervalBox.style.display = isActive ? 'flex' : 'none';
+        }
+
+        // 3. ★★★ 霸道覆写！直接接管 onchange 事件！★★★
+        // 不管 HTML 里写了什么 saveChatSettings，这里直接覆盖成我们自己的逻辑
+        activeSwitch.onchange = function(e) {
+            // 只要开关一动，我就只做这一件事：显示/隐藏下面的盒子
+            if (intervalBox) {
+                intervalBox.style.display = this.checked ? 'flex' : 'none';
             }
-        }
-    } catch (e) {
-        console.error("char回复评论失败", e);
+            // 绝对不调用 saveDetailSettings()！
+            // 只有当你点右上角那个“保存”按钮时，才会保存！
+        };
+        
+        // 双重保险：删掉 HTML 属性
+        activeSwitch.removeAttribute('onchange'); 
     }
-}
+
+    // 频率输入框回显
+    if (intervalInput) {
+        intervalInput.value = chat.activeInterval || 60;
+        // 防止输入框自带保存
+        intervalInput.onchange = null;
+        intervalInput.removeAttribute('onchange');
+    }
+
+    // 显示面板
+    const panel = document.getElementById('chat-control-overlay');
+    if(panel) {
+        panel.style.display = 'flex';
+        setTimeout(() => panel.classList.add('active'), 10);
+    }
+};
+
+window.closeChatControl = function() {
+    const panel = document.getElementById('chat-control-overlay');
+    if(panel) {
+        panel.classList.remove('active');
+        setTimeout(() => panel.style.display = 'none', 300);
+    }
+    // 关闭时刷新一下消息视图（可选）
+    if(currentChatId && window.renderMessages) renderMessages(currentChatId);
+};
+
+// 实时更新 Token 预测 (保持原样)
+window.updateTokenPredict = function(val) {
+    const display = document.getElementById('cc-ctx-display');
+    const predict = document.getElementById('cc-token-predict');
+    if(display) display.innerText = val;
+
+    const estimated = 500 + (val * 50 * 1.5); 
+    if(predict) predict.innerText = `~${Math.floor(estimated)}`;
+    
+    // 这里如果想做成“拖动即保存”可以保留，或者也可以去掉
+    // saveDetailSettings(); 
+};
+
+// ==========================================
+// ★★★ 聊天控制中心 - 保存功能 (Chat 绑定版) ★★★
+// ==========================================
+window.saveDetailSettings = function() {
+    // 1. 安全检查
+    if (!currentChatId) return showSystemAlert('数据迷路了...请重新打开聊天(T_T)');
+
+    const chat = chatsData.find(c => c.id === currentChatId);
+    const contact = contactsData.find(c => c.id === chat.contactId);
+    
+    if (!chat || !contact) return;
+
+    // --- 2. 抓取数据并赋值 ---
+
+    // (A) 备注 (存到 Contact)
+    const aliasInput = document.getElementById('cc-private-alias');
+    if (aliasInput) contact.privateAlias = aliasInput.value.trim(); 
+
+    // (B) 记忆条数 (存到 Chat)
+    const limitInput = document.getElementById('cc-ctx-limit');
+    if (limitInput) {
+        let val = parseInt(limitInput.value);
+        chat.contextLimit = (isNaN(val) || val <= 0) ? 99999 : val;
+    }
+
+    // (C) 时间开关 (存到 Chat)
+    const timeSwitch = document.getElementById('cc-switch-time');
+    if (timeSwitch) chat.enableTime = timeSwitch.checked;
+
+    // (D) ★★★ 自主意识 (存到 Chat) ★★★
+    const activeSwitch = document.getElementById('detail-active-mode');
+    if (activeSwitch) {
+        // 这里的 checked 状态就是用户刚才点的，现在才正式保存！
+        chat.enableActiveMode = activeSwitch.checked;
+        
+        // 如果开启了，且没有上次活跃时间，初始化一个
+        if (chat.enableActiveMode && !chat.lastActiveTime) {
+            chat.lastActiveTime = Date.now();
+        }
+    }
+    
+    const activeInterval = document.getElementById('detail-active-interval');
+    if (activeInterval) {
+        chat.activeInterval = parseInt(activeInterval.value) || 60;
+    }
+
+    // --- 3. 保存进数据库 ---
+    Promise.all([
+        localforage.setItem('Wx_Contacts_Data', contactsData), // 保存备注
+        localforage.setItem('Wx_Chats_Data', chatsData)       // 保存自主意识开关、频率、条数
+    ]).then(() => {
+        // 更新聊天窗口顶部的名字显示
+        const nameEl = document.getElementById('chat_layer_name');
+        if (nameEl) nameEl.innerText = contact.privateAlias || contact.name;
+        
+        showSystemAlert('窗口设定已保存！(^w^)', 'success');
+        closeChatControl(); // 保存后自动关闭面板
+    }).catch(err => {
+        console.error(err);
+        showSystemAlert('保存失败惹(T_T)', 'error');
+    });
+};
+
+
+// [18] 全局默认头像 (Base64) - 修复图片 broken 问题
+const DEFAULT_AVATAR_BASE64 = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23CCCCCC'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
+
+
+window.toggleVisibilitySelector = function() {
+    const modal = document.getElementById('visibility-modal');
+    const list = document.getElementById('vis-contact-list');
+    
+    if (!contactsData || contactsData.length === 0) {
+         if(list) list.innerHTML = '<div style="padding:40px 20px;text-align:center;color:#999;font-size:14px;">通讯录空空如也(T_T)<br>快去添加几个好友吧！</div>';
+         if(modal) modal.style.display = 'flex';
+         return;
+    }
+
+    if (!modal || !list) {
+        console.error("找不到弹窗元素！");
+        return;
+    }
+
+    // 显示弹窗
+    modal.style.display = 'flex';
+    list.innerHTML = ''; // 先清空
+    
+    // 1. 过滤掉自己，并确保数据有效
+    let targets = contactsData.filter(c => c.id !== 'me' && c);
+
+    // 2. 排序
+    targets.sort((a, b) => String(a.id).localeCompare(String(b.id))); 
+
+    // 3. 遍历并渲染
+    let lastInitial = '';
+
+    targets.forEach(char => {
+        // 安全获取名字
+        let safeName = char.name || '未知好友';
+        let currentInitial = char.initial || getInitial(safeName) || '#';
+        
+        // 安全获取头像
+        let safeAvatar = char.avatar;
+        if (!safeAvatar || safeAvatar === 'undefined' || safeAvatar === 'null') {
+            safeAvatar = DEFAULT_AVATAR_BASE64;
+        }
+
+        // 分组标题
+        if (currentInitial !== lastInitial) {
+            list.innerHTML += `
+                <div style="background-color: #f7f7f7; color: #888; padding: 6px 16px; font-size: 13px; font-weight: bold; border-bottom: 1px solid #eee; position:sticky; top:0; z-index:1;">
+                    ${currentInitial}
+                </div>
+            `;
+            lastInitial = currentInitial;
+        }
+
+        // 检查之前是否已经选过
+        const isChecked = tempVisibleList.includes(char.id) ? 'checked' : '';
+        
+        // 渲染列表项
+        list.innerHTML += `
+            <label class="vis-item" style="display:flex; align-items:center; padding: 12px 16px; background:#fff; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.2s;">
+                <input type="checkbox" value="${char.id}" ${isChecked} style="margin-right: 16px; transform: scale(1.3); accent-color: #07c160;">
+                
+                <img src="${safeAvatar}" 
+                     onerror="this.onerror=null;this.src='${DEFAULT_AVATAR_BASE64}';" 
+                     style="width:42px;height:42px;border-radius:6px;margin-right:12px;object-fit:cover; background:#f0f0f0; border:1px solid #eee;">
+                
+                <span style="font-size:17px;color:#333;flex:1;font-weight:500;">${safeName}</span>
+            </label>
+        `;
+    });
+};
+
+
+window.renderSheetItem = function(data, clickFn) {
+    // 挂载临时事件
+    const fnName = `tempClick_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    window[fnName] = clickFn;
+    
+    let safeName = data.name || '未命名';
+    let safeAvatar = data.avatar;
+    if (!safeAvatar || safeAvatar === 'undefined') safeAvatar = DEFAULT_AVATAR_BASE64;
+
+    return `
+        <div class="sheet-item" onclick="window['${fnName}']()">
+            <div class="sheet-avatar" style="position:relative; overflow:hidden; background:#f0f0f0; display:flex; justify-content:center; align-items:center;">
+                <img src="${safeAvatar}" 
+                     onerror="this.onerror=null;this.src='${DEFAULT_AVATAR_BASE64}';" 
+                     style="width:100%; height:100%; object-fit:cover;">
+            </div>
+            <div class="sheet-name">${safeName}</div>
+        </div>
+    `;
+};
