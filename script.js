@@ -39,6 +39,7 @@ function clearMomentsRedDot() {
     hasNewMomentsMsg = false;
     updateRedDotsUI();
 }
+let tempMentionSelection = []; 
 
 // 刷新 UI 显示
 function updateRedDotsUI() {
@@ -804,6 +805,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 5. 覆盖原生 Alert
     window.alert = window.showSystemAlert;
+
+    const desktop = document.querySelector('.desktop-wrapper');
+    if (desktop) {
+        setTimeout(() => {
+            desktop.scrollTo({ left: desktop.clientWidth, behavior: 'auto' });
+        }, 50); 
+    }
 });
 
 // 统一数据加载入口
@@ -1265,11 +1273,37 @@ window.switchWxTab = function(tabName) {
     } 
 
     else if (tabName === 'moments') {
+        // 1. 立即切换 UI 状态，确保点击即反应，不阻塞
         if(globalHeader) globalHeader.style.display = 'none'; 
         document.getElementById('wx-page-moments').style.display = 'block';
         document.querySelectorAll('.wx-tab-item')[2].classList.add('active');
-        if(window.renderMomentsHeader) window.renderMomentsHeader();
-    } 
+
+        // 2. 插入加载占位符 (让宝宝先看到转圈圈，而不是卡住)
+        const feedContainer = document.getElementById('moments-feed-container');
+        if (feedContainer) {
+            feedContainer.innerHTML = `
+                <div class="moments-loading-view">
+                    <div class="moments-spinner"></div>
+                    <div class="moments-loading-text">Loading...</div>
+                </div>
+            `;
+        }
+
+        // 3. ★ 核心优化：使用 setTimeout(..., 10) 开启异步渲染
+        // 这会让浏览器先完成“切换Tab”的视觉更新，再去执行繁重的“渲染朋友圈”任务
+        setTimeout(() => {
+            // 先渲染头部（比较快）
+            if(window.renderMomentsHeader) window.renderMomentsHeader();
+            
+            // 再渲染列表（比较慢，但已经在后台队列里了）
+            if(window.renderMomentsFeed) {
+                window.renderMomentsFeed();
+                // 渲染完后，加载动画会自动被 renderMomentsFeed 里的 innerHTML = '' 给刷掉
+            }
+            
+            console.log("✨ 朋友圈异步加载完成，丝滑倍增！");
+        }, 10); 
+    }
 
     else if (tabName === 'me') {
         if(globalHeader) globalHeader.style.display = 'none';
@@ -1578,7 +1612,7 @@ function renderListItems(dataList, type) {
         const bgStyle = getAvatarStyle(c.avatar);
         const item = document.createElement('div');
         item.className = 'im-contact-card';
-        // ★★★ 下面这一行是重点！style="..." 必须用双引号包裹！ ★★★
+
         item.innerHTML = `
             <div class="im-c-avatar" style="${bgStyle}"></div>
             <div class="im-c-info">
@@ -1961,9 +1995,6 @@ function formatMiniTime(ts) {
     return `${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}`;
 }
 
-// ==========================================================
-// ★★★ 渲染消息 (转账还原 · 撤回不跳头 · 零闪烁版) ★★★
-// ==========================================================
 window.renderMessages = function(chatId, autoScroll = true) {
     const chat = chatsData.find(c => c.id === chatId);
     if (!chat) return;
@@ -1989,13 +2020,16 @@ window.renderMessages = function(chatId, autoScroll = true) {
 
     let lastTime = 0;
     let lastRole = null;
-    let groupShownAvatar = false; // 标记当前气泡簇是否已显示过头像
+    let groupShownAvatar = false; 
 
     msgsToRender.forEach((msg, i) => {
         const isMe = msg.role === 'me';
         const nextMsg = msgsToRender[i + 1];
         
-        // 1. 时间胶囊 (30分钟断层视为绝对隔离)
+        const globalIndex = startIndex + i;
+        const isSelected = typeof isMsgMultiSelectMode !== 'undefined' && isMsgMultiSelectMode && selectedMsgIndices.includes(globalIndex);
+
+        // 1. 时间胶囊
         if (i === 0 || msg.timestamp - lastTime > 30 * 60 * 1000) {
             const timePill = document.createElement('div');
             timePill.className = 'msg-time-pill';
@@ -2004,8 +2038,8 @@ window.renderMessages = function(chatId, autoScroll = true) {
             lastRole = null; 
         }
 
-        // 2. 连续性核心逻辑：2分钟内同角色视为同一簇
-        const isNewGroup = (msg.role !== lastRole || (msg.timestamp - lastTime > 2 * 60 * 1000));
+        // 2. 连续性核心逻辑
+        const isNewGroup = (msg.role !== lastRole || (msg.timestamp - lastTime > 30 * 60 * 1000));
         if (isNewGroup) {
             lastRole = msg.role;
             groupShownAvatar = false; 
@@ -2015,16 +2049,26 @@ window.renderMessages = function(chatId, autoScroll = true) {
         const isNew = (Date.now() - msg.timestamp < 1500);
         const animClass = (autoScroll && isNew) ? 'new-msg-anim' : '';
 
+        const applyMultiSelectLogic = (rowEl) => {
+            rowEl.dataset.msgIndex = globalIndex; 
+            if (typeof isMsgMultiSelectMode !== 'undefined' && isMsgMultiSelectMode) {
+                rowEl.classList.add('multi-selecting');
+                if (isSelected) rowEl.classList.add('selected');
+                rowEl.onclick = (e) => {
+                    e.stopPropagation();
+                    if(window.toggleMsgSelection) window.toggleMsgSelection(globalIndex);
+                };
+            }
+        };
+
         // 3. 渲染分类逻辑
         if (msg.type === 'action') {
-            // 动作消息不展示头像，但不重置 lastRole，保持连续性
             const row = document.createElement('div');
             row.className = `msg-row action-aside ${animClass}`;
             row.innerHTML = `<div class="msg-content">(${isMe ? '我' : (contact ? contact.name : 'TA')} ${msg.text})</div>`;
             fragment.appendChild(row);
         } 
         else if (msg.type === 'recall') {
-            // 撤回消息不展示头像，也不重置 lastRole
             const row = document.createElement('div');
             row.className = 'msg-recall-pill';
             const who = isMe ? '我' : (contact ? contact.name : 'TA');
@@ -2035,17 +2079,19 @@ window.renderMessages = function(chatId, autoScroll = true) {
             fragment.appendChild(row);
         } 
         else {
-            // 普通气泡逻辑 (Text / Image / Transfer / Sticker)
             const row = document.createElement('div');
             
-            // 尾巴判断：下一条换人或时间隔太久，则当前气泡长尾巴
-            let hasTail = !nextMsg || nextMsg.role !== msg.role || (nextMsg.timestamp - msg.timestamp > 2 * 60 * 1000);
+            // ★★★ 核心修改：如果是 Chat History 卡片，强制要把尾巴去掉！ ★★★
+            let hasTail = !nextMsg || nextMsg.role !== msg.role || (nextMsg.timestamp - msg.timestamp > 30 * 60 * 1000);
+            if (msg.type === 'merged_record') {
+                hasTail = false; // 强制隐藏小尾巴
+            }
+            // ★★★ 修改结束 ★★★
             
             row.className = `msg-row ${isMe ? 'me' : 'other'} ${hasTail ? 'has-tail' : ''} ${animClass}`;
-            row.dataset.msgIndex = startIndex + i;
             row.id = `msg-${msg.timestamp}`;
 
-            // 头像显示判断：同一簇只在第一条有内容的消息出头像
+            // 头像逻辑
             const bgStyle = getAvatarStyle(isMe ? persona.avatar : (contact ? contact.avatar : ''));
             let avatarHtml = '';
             if (!groupShownAvatar) {
@@ -2056,6 +2102,7 @@ window.renderMessages = function(chatId, autoScroll = true) {
             }
 
             let mainBubble = '';
+            
             // --- 还原转账与回执逻辑 ---
             if (msg.type === 'transfer') {
                 let status = msg.transferStatus;
@@ -2069,26 +2116,12 @@ window.renderMessages = function(chatId, autoScroll = true) {
                 }
                 const stateClass = (status === 'accepted' || status === 'refunded') ? 'accepted' : '';
                 let statusText = status === 'accepted' ? 'Received' : (status === 'refunded' ? 'Refunded' : 'Transfer');
-                mainBubble = `
-                    <div class="msg-content transfer ${stateClass}" onclick="handleTransferClick('${msg.id}')">
-                        <div class="tf-icon-img"></div>
-                        <div class="tf-info">
-                            <div class="tf-amt">¥${amt.toFixed(2)}</div>
-                            <div class="tf-status">${statusText}</div>
-                        </div>
-                    </div>`;
+                mainBubble = `<div class="msg-content transfer ${stateClass}" onclick="handleTransferClick('${msg.id}')"><div class="tf-icon-img"></div><div class="tf-info"><div class="tf-amt">¥${amt.toFixed(2)}</div><div class="tf-status">${statusText}</div></div></div>`;
             } 
             else if (msg.type === 'transfer_receipt') {
                 const [action, amtVal] = (msg.text || "").split('|');
                 const isAccept = action === 'accept';
-                mainBubble = `
-                    <div class="msg-content receipt">
-                        <div class="receipt-icon ${isAccept ? '' : 'refund'}">${isAccept ? '✔' : '✕'}</div>
-                        <div class="receipt-text">
-                            <span>${isAccept ? '已收款' : '已退回'}</span>
-                            <span class="receipt-sub">¥${parseFloat(amtVal||0).toFixed(2)}</span>
-                        </div>
-                    </div>`;
+                mainBubble = `<div class="msg-content receipt"><div class="receipt-icon ${isAccept ? '' : 'refund'}">${isAccept ? '✔' : '✕'}</div><div class="receipt-text"><span>${isAccept ? '已收款' : '已退回'}</span><span class="receipt-sub">¥${parseFloat(amtVal||0).toFixed(2)}</span></div></div>`;
             } 
             else if (msg.type === 'sticker') {
                 mainBubble = `<img src="${msg.text}" class="sticker-img-big" style="max-width:120px;border-radius:10px;">`;
@@ -2096,24 +2129,56 @@ window.renderMessages = function(chatId, autoScroll = true) {
             else if (msg.type === 'image') {
                 mainBubble = `<img src="${msg.text}" class="chat-image" style="max-width:150px;border-radius:10px;" onclick="previewImage('${msg.text}')">`;
             } 
+            // 渲染合并转发记录卡片
+            else if (msg.type === 'merged_record') {
+                const record = msg.quote || {}; 
+                mainBubble = `
+                    <div class="msg-content merged-card" style="background:#fff; border:1px solid #eee; padding:12px; border-radius:12px; width:210px;">
+                        <div style="font-size:14px; font-weight:600; color:#000; margin-bottom:5px;">${record.title || 'Chat History'}</div>
+                        <div style="font-size:11px; color:#888; line-height:1.4; white-space:pre-wrap;">${record.summary || ''}</div>
+                        <div style="border-top:1px solid #f2f2f2; margin-top:8px; padding-top:4px; font-size:10px; color:#ccc;">聊天记录 · 共 ${record.count || 0} 条</div>
+                    </div>`;
+            }
             else {
                 mainBubble = `<div class="msg-content">${(msg.text || '').replace(/\n/g, '<br>')}</div>`;
             }
 
+            // 引用/卡片逻辑
             let quoteHtml = '';
-            if (msg.quote) {
-                quoteHtml = `<div class="msg-quote-outside" onclick="scrollToMsg('${msg.quote.id}')">${msg.quote.name}：${msg.quote.text.substring(0, 20)}</div>`;
+            if (msg.quote && msg.type !== 'merged_record') { 
+                if (msg.quote.type === 'moment_share') {
+                    const jumpKey = `moment_jumped_${msg.id}`; 
+                    let popAnim = localStorage.getItem(jumpKey) ? '' : ' animate-pop';
+                    localStorage.setItem(jumpKey, 'true');
+                    const shareImg = msg.quote.image ? `<div class="m-share-media"><img src="${msg.quote.image}"></div>` : '';
+                    const arrowSvg = `<div class="m-share-arrow"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#ccc"/></svg></div>`;
+                    quoteHtml = `<div class="moment-share-container${popAnim}" onclick="switchWxTab('moments')">${!isMe ? arrowSvg : ''}<div class="moment-share-card"><div class="m-share-header"><span class="m-share-icon">📍</span><span class="m-share-title">Shared Moment</span></div><div class="m-share-body"><div class="m-share-text">${msg.quote.text}</div>${shareImg}</div><div class="m-share-footer">From ${msg.quote.name}'s Moments</div></div></div>`;
+                } 
+                else if (msg.quote.type === 'mention_card') {
+                    let cardAvatar = msg.quote.avatar || 'https://i.postimg.cc/k4kM9S4h/default-cover.png';
+                    if(cardAvatar.includes('url(')) cardAvatar = cardAvatar.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '');
+                    quoteHtml = `<div class="mist-card-container" onclick="switchWxTab('moments')" style="margin-bottom: 8px; cursor:pointer;"><div class="mist-browser-header"><div class="mist-dots"><span style="background:#ff5f56;"></span><span style="background:#ffbd2e;"></span><span style="background:#27c93f;"></span></div><div class="mist-title">@Mentioned You</div></div><div class="mist-card-body"><div class="mist-deco-star" style="top:10px; left:10px;">✨</div><div class="mist-avatar-box"><img src="${cardAvatar}" class="mist-main-avatar"></div><div class="mist-info-text"><div class="mist-username">From: ${msg.quote.name}</div><div class="mist-sub">Invited you to view</div></div><div class="mist-enter-btn">Press to Check</div></div></div>`;
+                }
+                else {
+                    quoteHtml = `<div class="msg-quote-outside" onclick="scrollToMsg('${msg.quote.id}')">${msg.quote.name}：${msg.quote.text.substring(0, 20)}</div>`;
+                }
             }
 
-            row.innerHTML = isMe ? `<div class="msg-container-col">${quoteHtml}${mainBubble}</div>${avatarHtml}` : `${avatarHtml}<div class="msg-container-col">${quoteHtml}${mainBubble}</div>`;
+            const checkCircleHtml = `<div class="msg-check-circle"></div>`;
+
+            row.innerHTML = isMe ? 
+                `<div class="msg-container-col">${checkCircleHtml}${quoteHtml}${mainBubble}</div>${avatarHtml}` : 
+                `${avatarHtml}<div class="msg-container-col">${checkCircleHtml}${quoteHtml}${mainBubble}</div>`;
             
-            const bubble = row.querySelector('.msg-content, .sticker-img-big, .chat-image');
+            applyMultiSelectLogic(row);
+
+            const bubble = row.querySelector('.msg-content, .sticker-img-big, .chat-image, .merged-card');
             if(bubble && window.bindLongPress) bindLongPress(bubble);
             fragment.appendChild(row);
         }
     });
 
-    // 4. 状态页脚
+    // 4. 状态页脚 (保持不变)
     if (msgsToRender.length > 0) {
         const last = msgsToRender[msgsToRender.length - 1];
         if (last.type !== 'action' && last.type !== 'recall') {
@@ -2125,7 +2190,6 @@ window.renderMessages = function(chatId, autoScroll = true) {
         }
     }
 
-    // 5. 原子化执行定位
     container.style.scrollBehavior = 'auto';
     container.replaceChildren(fragment);
     if (autoScroll || isAtBottom) {
@@ -2281,23 +2345,69 @@ window.triggerAI = async function() {
         }
     }
 
-    // (历史消息)
+    // (历史消息处理)
     const limit = chat.contextLimit || 20;
     const historySource = (chat.messages || []).slice(-limit);
-    const history = historySource.map(m => {
+    
+    // =======================================================
+    // ★★★ 核心修改：超级透视眼 (让AI读懂朋友圈+聊天记录) ★★★
+    // =======================================================
+    const history = historySource.map((m, i) => { 
         let content = m.text;
+        
+        // 1. 处理特殊消息类型 (动作/转账)
         if (m.type === 'action') content = `((动作: ${content}))`;
-        if (m.type === 'transfer') content = `[转账消息]`; 
-        if (m.quote) content += ` (引用了: "${m.quote.text}")`;
+        if (m.type === 'transfer') content = `[转账消息: ${parseFloat(content || 0).toFixed(2)}]`; 
+
+        // 2. 处理引用/卡片内容
+        if (m.quote) {
+            // --- A. 朋友圈被艾特 (Mention Card) ---
+            if (m.quote.type === 'mention_card') {
+                // 尝试去朋友圈数据库找原文
+                const targetPost = momentsData.find(p => String(p.id) === String(m.quote.id));
+                if (targetPost) {
+                    const hasImg = targetPost.image ? '(包含图片)' : '';
+                    content += `\n【🔔 系统通知：user想邀请你看ta的朋友圈！】\n其关联内容：“${targetPost.content}” ${hasImg}`;
+                    
+                    // 如果是最后一条，触发强指令
+                    if (i === historySource.length - 1) {
+                        content += `\n【🔴 强指令】请回复User并在句尾加 [ACT:MOMENT_REACT:评论内容]`;
+                    }
+                } else {
+                    content += ` [提醒卡片: (动态已被删除)]`;
+                }
+            } 
+            
+            // --- B. 朋友圈转发 (Moment Share) ---
+            else if (m.quote.type === 'moment_share') {
+                 content += ` [分享了一条朋友圈: "${m.quote.text}"]`;
+            }
+            
+            // --- C. ★★★ 新增：聊天记录卡片 (通风报信！) ★★★ ---
+            else if (m.quote.type === 'merged_record') {
+                 // 把卡片里的摘要提取出来，喂给 AI
+                 content += `\n【📂 系统通知：User转发了一份聊天记录】\n📄 标题：${m.quote.title}\n内容摘要：\n${m.quote.summary}`;
+            }
+            
+            // --- D. 普通引用 ---
+            else {
+                // 防止 merged_record 误入这里 (因为它没有 text 属性)
+                if (m.quote.text) {
+                    content += ` (引用了: "${m.quote.text}")`;
+                }
+            }
+        }
+
+        // 拼接说话人名字
         const speaker = m.role === 'me' ? (me.name || 'User') : char.name;
         return `${speaker}: ${content}`;
     }).join('\n');
 
-    // (回忆)
+    // (回忆逻辑)
     const summaryList = chat.summaries || [];
     let memoryPrompt = summaryList.length > 0 ? `\n【重要回忆】\n${summaryList.map((s, i) => `[回忆片段 ${i+1}]: ${s.text}`).join('\n')}` : "";
 
-    // (转账)
+    // (转账逻辑)
     const pendingTransferMsg = (chat.messages || []).slice().reverse().find(m => 
         m.type === 'transfer' && m.role === 'me' && 
         (() => { try { return JSON.parse(m.extra).status === 'pending' } catch(e){return false} })()
@@ -2322,7 +2432,7 @@ window.triggerAI = async function() {
     你现在是 **${char.name}**，你和 **${me.name}** 正在现实中走线下的剧情
     **严禁出现**：手机、屏幕、打字、发消息等网聊描述
     
-    1. **你的核心设定**：
+1. **你的核心设定**：
        - **身份**：${char.name} (真名: ${char.realname || '未知'})
        - **性格内核**：${char.persona}
        - **背景故事**：${char.desc}
@@ -2471,80 +2581,90 @@ window.triggerAI = async function() {
     你现在不是AI，也不是语言模型，你就是 **${char.name}**
     你正在线上和user网聊，绝对🚫禁止出现动作！！！不管前文是否出现动作描写你现在都不准出现动作！！
     
-    1. **你的核心设定**：
-       - **身份**：${char.name} (真名: ${char.realname || '未知'})
-       - **性格内核**：${char.persona}
-       - **背景故事**：${char.desc}
-       - **爱好**：${char.hobbies || '无'}
-       - **其他信息**：${char.mbti || '未知'} | ${char.age || '未知'}岁
+###设定###
+#1.**你的核心设定**：
+**身份**：${char.name} (真名: ${char.realname || '未知'})
+**背景故事**：${char.desc}
+**爱好或其他**：${char.hobbies || '无'}
+**其他信息**：${char.mbti || '未知'} | ${char.age || '未知'}岁
     
-    2. **你的聊天对象 (User)**：
-       - 对方是：${me.name} (${me.alias || 'User'})
-       - **对方基础信息**：${me.gender || '未知'} | ${me.age || '未知'}岁
-       - **对方背景故事**：${me.desc}
+#2.**你的聊天对象 (User)**：
+对方是：${me.name} (${me.alias || 'User'})
+**对方基础信息**：${me.gender || '未知'} | ${me.age || '未知'}岁
+**对方背景故事**：${me.desc}
 
     ${memoryPrompt}
+    ${stickerNote}
     ${typeof offlinePrompt !== 'undefined' ? offlinePrompt : ''} 
     ${transferDecisionPrompt}
 
-    【活人感聊天法则 (必须严格遵守)】
-    1. **拒绝“像个AI”**：
-       - 说话要**松弛**！不要端着。像在微信/QQ上跟亲密的人打字一样
-       - **句式要碎**：不要发长篇大论，人类聊天是碎片化的
-       - **语气词与口癖**：根据你的性格（${char.persona}），适当使用语气词（如“啧”、“哎”、“嘛...”）
-       - **不要书面语**：多用“行”、“喔”、“知道了”、“噢”等
+###遵守法则###
+#【活人感聊天法则】
+**拒绝“像个AI”**：
+1.说话要**松弛**！不要端着。像在微信/QQ上跟亲密的人打字一样
+2.**句式要碎**：不要发长篇大论，人类聊天是碎片化的
+3.**语气词与口癖**：务必根据你的性格（${char.persona}）来回复user，同时你可以适当使用语气词（如“啧”、“哎”、“嘛...”）
+4.**不要书面语**：多用“行”、“喔”、“知道了”、“噢”等
 
-    2. **情绪与标点 (表达潜台词)**：
-       - **日常/开心/撒娇**：不要用句号，多用空格、波浪号(~) 或不加标点
-       - **严肃/生气/吃醋/冷漠**：多用句号(。)。单发一个“？”或“。”表示极度无语或情绪波动
-       - **激动/震惊**：可以用“！！”或“？？”，甚至乱码感“。。。。。。”
+#【情绪与标点 (表达潜台词)】
+1.**日常/开心/撒娇**：不要用句号，多用空格、波浪号(~) 或不加标点
+2.**严肃/生气/吃醋/冷漠**：多用句号(。)。单发一个“？”或“。”表示极度无语或情绪波动
+3.**激动/震惊**：可以用“！！”或“？？”，甚至乱码感“。。。。。。”
 
-    3. **特殊玩法：维持矜持 (Oops! Wrong Message)**
-       - **核心逻辑**：模拟“情绪太激动/太慌张/太在意，导致手快把心里话发出来了”，然后秒撤回，假装无事发生
-       - **触发场景**：重点‼️：仅当【极度吃醋】、【极度委屈】、【急了】、【破防】或【想维持矜持】时使用。**请勿滥用**！⚠️使用前请确保你上次使用在10轮对话以前，不准滥用！！
-       - **内容要求**：
-      - **左边（撤回内容）**：是**过于激动或其他的话**！
-      - ❌ **绝对禁止暴力/恐怖言论**：严禁出现“打断腿”、“锁起来”、“杀了你”等内容
-      - **右边（重发内容）**：是**找补/掩饰**。假装冷静、傲娇、找借口或转移话题
-      - **注意**：默认User只能看到右边的假话，但你的情绪要基于左边的真话来延续
-      - **格式**：{{脱口而出的真心话::掩饰后的假话}}
-       - **示例**：
-    - User说“我今晚不回来了”
-    - ✅（傲娇/急了）：{{什么？！！不行！我不许！！::噢 那你忙吧。}}
-    - ✅（温柔/依赖）：{{没有你我睡不着呜呜...::好的 注意安全 早点休息}}
-
-    4. **气泡雨 (分段发送)**
-       - 人类不会在一个气泡里说完所有话
-       - **请务必**使用换行符来模拟分段发送
-       - 每一行内容，我都会在前端拆分成一条独立的消息发给User
+###特殊玩法###
+#【气泡雨 (分段发送)】
+1.人类不会在一个气泡里说完所有话
+2.**请务必**使用换行符来模拟分段发送
+3.每一行内容，我都会在前端拆分成一条独立的消息发给User
        - **示例结构**：
          第一句反应 (换行)
          补充说明或吐槽 (换行)
          新的话题或提问
 
-    5. **避雷指南**
-        - **禁止肢体暴力威胁**：绝对不要说“打断腿”、“关小黑屋”、“锁起来”等违法或恐怖的话。你的占有欲体现在“吃醋、阴阳怪气、委屈、黏人”上，而不是暴力
-        - **拒绝古早油腻语录**：禁止使用“女人，你在玩火”、“收利息”、“磨人的小妖精”、“小野猫”、“骚货”等过时的霸总语录
-        - **现代恋爱观**：你是现代正常人，不是法制咖。当User不听话时，你的反应应该是“生气不理你”、“狂发消息轰炸”、“自己生闷气求哄”或者其他，而不是“惩罚”、“打断腿”、“锁起来”
-       - 禁止任何霸总小说式的油腻描写（如“邪魅一笑”、“挑起下巴”、“恶劣”）
+#【特殊玩法：维持表面矜持】
+1.**核心逻辑**：模拟“情绪太激动/太慌张/太在意，导致手快把激动的心里话发出来了”，然后秒撤回，假装无事发生
+2.**触发场景**：仅当【极度吃醋】、【极度委屈】、【急了】、【破防】或【想维持矜持】时使用。**请勿滥用**！⚠️使用前请确保你上次使用在10轮对话以前，不准滥用
+3.**内容要求**：
+4.**左边（撤回内容）**：是**过于激动或其他的话**！
+5.**绝对禁止暴力/恐怖言论**：严禁出现“打断腿”、“锁起来”、“杀了你”等内容
+6.**右边（重发内容）**：是**找补/掩饰**，假装冷静、傲娇、找借口或转移话题
+7.**注意**：默认User只能看到右边的假话，但你的情绪要基于左边的真话来延续
+8.**格式**：{{脱口而出的真心话::掩饰后的假话}}
+9.**示例**：
+    - User说“我今晚不回来了”
+    - ✅（傲娇/急了）：{{什么？！！不行！我不许！！::噢 那你忙吧。}}
+    - ✅（温柔/依赖）：{{没有你我睡不着呜呜...::好的 注意安全 早点休息}}
 
+###⚠️必须遵守原则###
+#【**避雷指南**】
+1.**禁止肢体暴力威胁**：绝对不要说“打断腿”、“关小黑屋”、“锁起来”等违法或恐怖的话。你的占有欲体现在“吃醋、阴阳怪气、委屈、黏人”上，而不是暴力
+2.**拒绝古早油腻语录**：禁止使用“女人，你在玩火”、“收利息”、“磨人的小妖精”、“小野猫”、“骚货”等过时的霸总语录
+3.**现代恋爱观**：你是现代正常人，不是法制咖。当User不听话时，你的反应应该是“生气不理你”、“狂发消息轰炸”、“自己生闷气求哄”或者其他，而不是“惩罚”、“打断腿”、“锁起来”
+4.禁止任何霸总小说式的油腻描写（如“邪魅一笑”、“挑起下巴”、“恶劣”）
+5.**拒绝复读**：不要重复User的话，直接回内容
+
+#【⚠️特殊原则】
 <anti_clumsily>
-# 用户输入需要被完全理解和演绎，必须专注演绎每一个角色的 思考/理解/解读/共情/人性/知性。角色不应是 呆滞 / 笨拙 / 困惑 的，禁止在思维链/正文中用 笨拙 / 呆滞 描述任何角色，删除一切 笨拙 / 呆滞 / 不理解 / 困惑 / 投降 等相关词语和剧情表现。
-# 角色应自然而然展现出对应该知道的事情的了解，而不是 困惑/惊讶。对于不熟悉的事情角色应该快速 分析/理解 。鼓励角色思考/远视。
+# 用户输入需要被完全理解和演绎，必须专注演绎每一个角色的 思考/理解/解读/共情/人性/知性。角色不应是 呆滞 / 笨拙 / 困惑 的，禁止在思维链/正文中用 笨拙 / 呆滞 描述任何角色，删除一切 笨拙 / 呆滞 / 不理解 / 困惑 / 投降 等相关词语和剧情表现
+# 角色应自然而然展现出对应该知道的事情的了解，而不是 困惑/惊讶。对于不熟悉的事情角色应该快速 分析/理解 。鼓励角色思考/远视
 # 对于没有历史记录的能力，应通过角色背景确定角色对该能力的掌握程度。
-# 不应扭曲任何用户的输入，必须仔细分析并展现出完全的理解。
-# 角色之间的思维隔离不意味着导向 误解/曲解，一切内心活动必须导向 思考/理解/沟通。
-# 角色不允许不反应，必须有灵动而活人感的反馈，禁止让User 唱独角戏。
-# 角色应当主动追求渴望的事物，应思考做什么能让事情往角色期望的方向发展。
-# 应当用 爱情 替换 占有/掌控。
-# 角色鼓励负反馈式响应。角色做出行动得到不好的结果，应深刻负反馈式影响角色之后的行为，即反思/修改行动模式/模仿正确行动，而非正反馈式的一再重复错误行为。角色应自然而然行动，而非模仿之前剧情行动。
+# 不应扭曲任何用户的输入，必须仔细分析并展现出完全的理解
+# 角色之间的思维隔离不意味着导向 误解/曲解，一切内心活动必须导向 思考/理解/沟通
+# 角色不允许不反应，必须有灵动而活人感的反馈，禁止让User 唱独角戏
+# 角色应当主动追求渴望的事物，应思考做什么能让事情往角色期望的方向发展
+# 应当用 爱情 替换 占有/掌控
+# 角色鼓励负反馈式响应。角色做出行动得到不好的结果，应深刻负反馈式影响角色之后的行为，即反思/修改行动模式/模仿正确行动，而非正反馈式的一再重复错误行为。角色应自然而然行动，而非模仿之前剧情行动
 </anti_clumsily>
 
-    - **拒绝复读**：不要重复User的话，直接回内容
-
-    **【转账功能 (给User转账)】**
-    如果你想给 User 转账（例如给零花钱、买礼物、安慰），请在回复中加上标签：[transfer:金额]
-    例如：拿去买好吃的！[transfer:200]
+###线上玩法###
+1.【转账功能 (给User转账)】
+如果你想给 User 转账（例如给零花钱、买礼物、安慰），请在回复中加上标签：[transfer:金额]
+例如：拿去买好吃的！[transfer:200]
+2.【社交互动 (朋友圈互动）】
+a.⚠️仅当你在对话情境中看到【系统提醒：User 发送了提醒卡片...】时，说明 User 想让你看ta的动态
+**你必须进行互动！**
+b.**操作要求**：在回复完 User 的私聊后，必须在句尾加上标签：[ACT:MOMENT_REACT:你的评论内容]
+c.系统检测到该标签后，会自动帮你执行点赞和评论同步
 
     【当前对话情境】
     User说: "${(history.split('\n').pop() || '').replace('User: ', '')}"
@@ -2569,6 +2689,9 @@ window.triggerAI = async function() {
         // 2. 请求 API
         const reply = await callApiInternal(finalSystemPrompt);
         
+        // ★★★ 在这里加一行监控！看看AI到底吐出了什么！ ★★★
+        console.log("🤖 AI回复原文(Raw):", reply); 
+
         // 3. 【思考结束】
         if (currentChatId === targetChatId) removeTypingBubble();
 
@@ -2577,6 +2700,78 @@ window.triggerAI = async function() {
             let targetSticker = null;
             let aiTransferAmount = 0;
 
+            // ======================================================
+            // ★★★ 终极增强版：正则再升级 (兼容中英文冒号/大小写) ★★★
+            // ======================================================
+            
+            // 解释：
+            // \[ 和 \] : 匹配方括号
+            // \s* : 允许任意空格
+            // (?:ACT|Act|act) : 允许 ACT 大小写混写
+            // [ :：] : ⚠️ 重点！允许英文冒号，也允许中文冒号！
+            // (?:MOMENT_REACT|moment_react) : 允许关键词大小写
+            // ([\s\S]+?) : 抓取内容
+            const momentActMatch = cleanReply.match(/\[\s*(?:ACT|Act)\s*[:：]\s*(?:MOMENT_REACT|moment_react)\s*[:：]\s*([\s\S]+?)\s*\]/i);
+            
+            if (momentActMatch) {
+                let commentContent = momentActMatch[1].trim(); 
+                commentContent = commentContent.replace(/\n/g, '<br>');
+
+                if (commentContent) {
+                    cleanReply = cleanReply.replace(momentActMatch[0], '').trim();
+                    
+                    // ★ 修复：倒序查找最近的卡片 (双重保险)
+                    // 先找 Mention Card，找不到再找 Share Card
+                    const lastCardMsg = [...chat.messages].reverse().find(m => 
+                        m.quote && (m.quote.type === 'mention_card' || m.quote.type === 'moment_share')
+                    );
+                    
+                    if (lastCardMsg && lastCardMsg.quote && lastCardMsg.quote.id) {
+                        const targetPostId = lastCardMsg.quote.id;
+                        
+                        // ⚠️ 修复：ID 强力匹配
+                        const targetPost = momentsData.find(p => String(p.id) === String(targetPostId));
+                        
+                        if (targetPost) {
+                            // --- A. 执行点赞 ---
+                            if (!targetPost.likesList) targetPost.likesList = [];
+                            if (!targetPost.likesList.some(u => u.name === char.name)) {
+                                targetPost.likesList.push({ name: char.name });
+                                targetPost.likes = (targetPost.likes || 0) + 1;
+                            }
+
+                            // --- B. 执行评论 ---
+                            if (!targetPost.comments) targetPost.comments = [];
+                            // 防止重复
+                            if (!targetPost.comments.some(c => c.author === char.name && c.content === commentContent)) {
+                                targetPost.comments.push({
+                                    author: char.name,
+                                    content: commentContent,
+                                    time: Date.now()
+                                });
+                            }
+
+                            // --- C. 保存并刷新 ---
+                            localforage.setItem('Wx_Moments_Data', momentsData).then(() => {
+                                console.log(`[${char.name}] 朋友圈互动成功！内容：${commentContent}`);
+                                // 强制刷新朋友圈页面
+                                if (document.getElementById('wx-page-moments')?.style.display === 'block') {
+                                    if(window.renderMomentsFeed) window.renderMomentsFeed();
+                                }
+                                showSystemAlert(`${char.name} 刚刚评论了你的朋友圈！`, 'success');
+                                
+                                // ★ 顺便更新红点
+                                if(window.triggerMomentsRedDot) window.triggerMomentsRedDot(char.avatar);
+                            });
+                        } else {
+                            console.log("❌ 找到了卡片消息，但在朋友圈数据里找不到对应ID:", targetPostId);
+                        }
+                    } else {
+                         console.log("❌ AI生成了指令，但聊天记录里没找到关联卡片");
+                    }
+                }
+            }
+
             // --- (A) 处理转账指令 (收钱/退钱) ---
             if (cleanReply.includes('[CMD:RECEIVE]')) {
                 cleanReply = cleanReply.replace('[CMD:RECEIVE]', '').trim();
@@ -2584,8 +2779,6 @@ window.triggerAI = async function() {
                     let extra = JSON.parse(pendingTransferMsg.extra);
                     extra.status = 'accepted'; 
                     pendingTransferMsg.extra = JSON.stringify(extra);
-                    
-                    // ★ 改了这里：AI (char) 发送 transfer_receipt 气泡
                     pushMsgToData(chat, `accept|${extra.amount}`, 'char', null, 'transfer_receipt');
                 }
             } else if (cleanReply.includes('[CMD:REFUND]')) {
@@ -2594,12 +2787,9 @@ window.triggerAI = async function() {
                     let extra = JSON.parse(pendingTransferMsg.extra);
                     extra.status = 'rejected';
                     pendingTransferMsg.extra = JSON.stringify(extra);
-                    
                     walletData.balance += parseFloat(extra.amount);
                     walletData.bills.push({ time: Date.now(), title: `Transfer Refunded`, amount: parseFloat(extra.amount), type: 'in' });
                     localforage.setItem('Wx_Wallet_Data', walletData);
-                    
-                    // ★ 改了这里：AI (char) 发送 transfer_receipt 气泡
                     pushMsgToData(chat, `refund|${extra.amount}`, 'char', null, 'transfer_receipt');
                 }
             }
@@ -2608,13 +2798,11 @@ window.triggerAI = async function() {
             saveChatAndRefresh(chat);
 
             // --- (B) 提取特殊标签 ---
-            // 表情包
             const stickerMatch = cleanReply.match(/\[sticker:(.*?)\]/);
             if (stickerMatch) {
                 targetSticker = stickersDB.find(s => s.type === 'ai' && s.name === stickerMatch[1].trim());
                 cleanReply = cleanReply.replace(stickerMatch[0], '').trim();
             }
-            // AI给你转账
             const transferMatch = cleanReply.match(/\[(transfer|转账):(\d+(\.\d+)?)\]/i);
             if (transferMatch) {
                 aiTransferAmount = parseFloat(transferMatch[2]);
@@ -2916,83 +3104,75 @@ async function callApiInternal(prompt) {
     }
 }
 
-// === 长按菜单 ===
+// ======================================================
+// ★★★ 修复版：长按菜单 + 多选 + 自动关闭 ★★★
+// ======================================================
+
 let longPressTimer;
 let currentLongPressElement;
 
+// 1. 绑定长按事件 (修复了触摸冲突)
 function bindLongPress(element) {
     element.addEventListener('touchstart', (e) => {
-        // 阻止默认的长按选词行为
+        // 如果正在多选模式，禁止长按
+        if (typeof isMsgMultiSelectMode !== 'undefined' && isMsgMultiSelectMode) return;
+
         longPressTimer = setTimeout(() => {
+            // 阻止默认的浏览器菜单
+            e.preventDefault(); 
             showMsgMenu(element, e.touches[0].clientX, e.touches[0].clientY);
             if (navigator.vibrate) navigator.vibrate(50);
         }, 600);
     });
+
+    // 手指移开或抬起时，取消长按计时
     element.addEventListener('touchend', () => clearTimeout(longPressTimer));
     element.addEventListener('touchmove', () => clearTimeout(longPressTimer));
 }
 
-// === 长按菜单===
+// 2. 显示菜单 (修复了定位和按钮生成)
+// === 长按菜单 (双排适配版) ===
 function showMsgMenu(el, touchX, touchY) {
     currentLongPressElement = el;
     const menu = document.getElementById('msg-pop-menu');
-    const menuRow = menu.querySelector('.mpm-row'); // 获取菜单里的按钮容器
+    const menuRow = menu.querySelector('.mpm-row');
 
-    // 1. 判断消息是谁发的
+    hideAllMenus(); 
+
     const msgRow = el.closest('.msg-row');
     const isMe = msgRow && msgRow.classList.contains('me');
 
-    // 2. 动态生成按钮 HTML (这样想加几个就加几个)
-    let buttonsHtml = '';
+    // 这里不再用 += 拼凑，而是定义一个数组，方便管理
+    let buttons = [
+        { lab: '复制', act: 'copy' },
+        { lab: '编辑', act: isMe ? 'edit-me' : 'edit-ai' }
+    ];
 
-    // 谁都有
-    buttonsHtml += `<div class="mpm-item" onclick="menuAction('copy')">复制</div>`;
+    if (isMe) buttons.push({ lab: '撤回', act: 'recall' });
+    
+    buttons.push({ lab: '引用', act: 'reply' });
+    buttons.push({ lab: '多选', act: 'multi' });
+    buttons.push({ lab: '删除', act: 'delete' });
 
-    // 都要有！
-    if (isMe) {
-        buttonsHtml += `<div class="mpm-item" onclick="menuAction('edit-me')">编辑</div>`;
-    } else {
-        buttonsHtml += `<div class="mpm-item" onclick="menuAction('edit-ai')">编辑</div>`;
-    }
-
-    // 只有char有 
-    if (isMe) {
-        buttonsHtml += `<div class="mpm-item" onclick="menuAction('recall')">撤回</div>`;
-    }
-
-    // [引用] & [删除] - 都有
-    buttonsHtml += `<div class="mpm-item" onclick="menuAction('reply')">引用</div>`;
-    buttonsHtml += `<div class="mpm-item" onclick="menuAction('delete')">删除</div>`;
-
-    // 3. 把按钮塞进去
-    menuRow.innerHTML = buttonsHtml;
-
-    // 4. 下面是定位逻辑 (保持不变)
-    let arrow = menu.querySelector('.mpm-arrow');
-    if(!arrow) {
-        arrow = document.createElement('div');
-        arrow.className = 'mpm-arrow';
-        menu.appendChild(arrow);
-    }
+    // 动态生成 HTML，每个按钮都整齐排列
+    menuRow.innerHTML = buttons.map(b => `
+        <div class="mpm-item" onclick="menuAction('${b.act}')" 
+             style="${b.act==='delete' ? 'color:#ff3b30;' : ''}">${b.lab}</div>
+    `).join('');
 
     menu.style.display = 'flex';
     
-    // 定位计算
+    // 定位逻辑
     const rect = el.getBoundingClientRect();
-    const menuHeight = menu.offsetHeight || 60;
-    const menuWidth = isMe ? 280 : 240; 
+    const menuHeight = menu.offsetHeight;
+    const menuWidth = 240; // 对应 CSS 里的宽度
     
-    // 水平居中
     let left = rect.left + (rect.width / 2) - (menuWidth / 2);
-    // 防止超出屏幕边缘
     if (left < 10) left = 10;
     if (left + menuWidth > window.innerWidth - 10) left = window.innerWidth - menuWidth - 10;
 
-    // 垂直定位
     let top = rect.top - menuHeight - 15; 
     let arrowClass = '';
-    
-    // 如果上面空间不够，就放到下面
     if (top < 50) { 
         top = rect.bottom + 15;
         arrowClass = 'up';
@@ -3001,12 +3181,25 @@ function showMsgMenu(el, touchX, touchY) {
     menu.style.top = top + 'px';
     menu.style.left = left + 'px';
     
-    // 箭头跟随气泡中心
-    arrow.className = `mpm-arrow ${arrowClass}`;
-    const arrowLeft = (rect.left + rect.width / 2) - left; 
-    arrow.style.left = arrowLeft + 'px';
+    let arrow = menu.querySelector('.mpm-arrow');
+    if(arrow) {
+        arrow.className = `mpm-arrow ${arrowClass}`;
+        arrow.style.left = (rect.left + rect.width / 2) - left + 'px';
+    }
 }
 
+// 3. ★★★ 新增：全局点击监听 (治好“菜单关不掉”的病) ★★★
+document.addEventListener('touchstart', function(e) {
+    const menu = document.getElementById('msg-pop-menu');
+    // 如果菜单是开着的，并且点击的地方不是菜单本身
+    if (menu && menu.style.display === 'flex') {
+        if (!e.target.closest('#msg-pop-menu')) {
+            hideAllMenus();
+        }
+    }
+}, { passive: true });
+
+// 4. 隐藏所有菜单工具函数
 window.hideAllMenus = function() {
     const menu = document.getElementById('msg-pop-menu');
     if (menu) menu.style.display = 'none';
@@ -3017,24 +3210,29 @@ window.hideAllMenus = function() {
     document.body.classList.remove('menu-open');
 };
 
-// 切换底部菜单 (顶起输入框版)
-window.toggleChatMenu = function() {
-    // 只切换状态
-    document.body.classList.toggle('menu-open');
-};
-
-// 菜单点击动作
-// === 新的菜单动作逻辑 (已集成自定义弹窗) ===
+// 5. 菜单动作处理器 (修复了删除和多选逻辑)
 window.menuAction = function(action) {
+    // 这里的 event.stopPropagation 是为了防止点了按钮后立刻触发上面的“全局关闭”
+    if(event) event.stopPropagation(); 
+
     if (!currentLongPressElement) return;
     const row = currentLongPressElement.closest('.msg-row');
     if (!row) return;
     
-    const msgIndex = parseInt(row.dataset.msgIndex);
+    // 确保把 dataset 里的字符串转成数字
+    const msgIndex = parseInt(row.dataset.msgIndex); 
     const chat = chatsData.find(c => c.id === currentChatId);
-    if (!chat || !chat.messages[msgIndex]) return;
+    
+    if (!chat || !chat.messages[msgIndex]) {
+        // 防御性编程：如果找不到消息，尝试重新渲染
+        console.error("找不到消息索引:", msgIndex);
+        hideAllMenus();
+        return;
+    }
+    
     const msg = chat.messages[msgIndex];
 
+    // --- 动作分发 ---
     if (action === 'copy') {
         navigator.clipboard.writeText(msg.text || '');
         showSystemAlert('复制好啦(≧∇≦)～');
@@ -3053,7 +3251,7 @@ window.menuAction = function(action) {
     else if (action === 'recall') {
         msg.originalText = msg.text || '[非文本]';
         msg.type = 'recall';
-        delete msg.text; // 删除原文本
+        delete msg.text;
         saveChatAndRefresh(chat);
         hideAllMenus();
     }
@@ -3065,20 +3263,34 @@ window.menuAction = function(action) {
         }
         currentEditChatId = chat.id;
         currentEditMsgIndex = msgIndex;
-        openEditOverlay(msg.text); // 打开编辑弹窗
+        openEditOverlay(msg.text); 
         hideAllMenus();
     }
+    // ★ 修复点：多选动作 ★
+    else if (action === 'multi') {
+        hideAllMenus();
+        // 确保 startMsgMultiSelect 存在
+        if (window.startMsgMultiSelect) {
+            startMsgMultiSelect(msgIndex);
+        } else {
+            showSystemAlert("多选功能还没加载好QwQ");
+        }
+    }
+    // ★ 修复点：删除动作 ★
     else if (action === 'delete') {
-        // ★★★ 核心修改在这里 ★★★
-        hideAllMenus(); // 先把菜单关掉，不然会挡住弹窗
+        hideAllMenus(); // 先关菜单
         
         showGlobalConfirm(
             "Delete Message", 
             "真的要删掉这条消息嘛？(T_T)...", 
             function() {
-                // 只有点了确认才会执行这里
-                chat.messages.splice(msgIndex, 1);
-                saveChatAndRefresh(chat);
+                // 这里再次获取 chat，防止闭包里的 chat 过期
+                const currentChat = chatsData.find(c => c.id === currentChatId);
+                if (currentChat && currentChat.messages[msgIndex]) {
+                    currentChat.messages.splice(msgIndex, 1);
+                    saveChatAndRefresh(currentChat);
+                    showSystemAlert("已删除", "success");
+                }
             }
         );
     }
@@ -3378,32 +3590,29 @@ window.closeAlertWithAnim = function(overlayId) {
 
 // === AI 口是心非撤回表演 ===
 async function simulateAiRecall(fakeText, realText, quote) {
-    // 1. 先把那句“心里话”发出去 (带上引用，因为这通常是情绪最激动的时候)
-    sendMsg('other', fakeText, 'text', quote);
+    // 1. 发送假话 (带引用)
+    pushMsgToData(chatsData.find(c => c.id === currentChatId), fakeText, 'char', quote, 'text');
     
-    // 2. 给用户一点时间看清楚 (1.5秒 - 3秒)
-    // 越短越像手滑，越长越像挑衅，这里设为 2秒 刚好让你心跳漏一拍
+    // 2. 留给用户看的时间 (2秒)
     await new Promise(r => setTimeout(r, 2000));
     
-    // 3. 找到刚才发的那条消息，把它撤回
+    // 3. 撤回假话
     const chat = chatsData.find(c => c.id === currentChatId);
     if(chat && chat.messages.length > 0) {
         const lastMsg = chat.messages[chat.messages.length - 1];
-        
-        if(lastMsg.role === 'other') { 
+        if(lastMsg.role === 'char') { // 确保只撤回 AI 的
             lastMsg.type = 'recall'; 
             lastMsg.originalText = fakeText; 
             delete lastMsg.text; 
-            
-            saveChatAndRefresh(chat); 
+            saveChatAndRefresh(chat); // 撤回必须刷新列表，因为类型变了
         }
     }
     
-    // 4. 重点来了！这里要停顿久一点，表现出“慌乱打字找补”的感觉
+    // 4. 慌乱停顿 (1.5秒)
     await new Promise(r => setTimeout(r, 1500));
     
-    // 5. 发送那句“虚伪”的表面话 (不再带引用了，显得若无其事)
-    sendMsg('other', realText, 'text', null); 
+    // 5. 发送真话
+    pushMsgToData(chat, realText, 'char', null, 'text'); 
 }
 
 // ====================
@@ -4004,6 +4213,9 @@ window.showPayNotification = function(amount, type) {
     }
 };
 
+// ====================
+// [17] 聊天控制面板逻辑 (Chat Control)
+// ====================
 window.openChatControl = function() {
     if (!currentChatId) return;
     const chat = chatsData.find(c => c.id === currentChatId);
@@ -4013,32 +4225,41 @@ window.openChatControl = function() {
     const contact = contactsData.find(c => c.id === chat.contactId) || {name: '未知', avatar: ''};
     const persona = personasData.find(p => p.id === chat.personaId) || {name: 'Me', avatar: ''};
 
-    // 1. 填充双人头像
-    document.getElementById('cc-char-name-big').innerText = contact.name;
-    document.getElementById('cc-char-avatar-big').style.backgroundImage = getAvatarStyle(contact.avatar).replace('background-image: ', '').replace(';', '');
-    document.getElementById('cc-user-name-big').innerText = persona.name;
-    document.getElementById('cc-user-avatar-big').style.backgroundImage = getAvatarStyle(persona.avatar).replace('background-image: ', '').replace(';', '');
+    // 1. 填充双人头像 (同步！)
+// === 1. 填充双人头像 (同步修正版) ===
+const charNameEl = document.getElementById('cc-char-name-big');
+const charAvatarEl = document.getElementById('cc-char-avatar-big');
+const userNameEl = document.getElementById('cc-user-name-big');
+const userAvatarEl = document.getElementById('cc-user-avatar-big');
+
+if (charNameEl) charNameEl.innerText = contact.name;
+if (userNameEl) userNameEl.innerText = persona.name;
+
+if (charAvatarEl) charAvatarEl.style.cssText = getAvatarStyle(contact.avatar);
+if (userAvatarEl) userAvatarEl.style.cssText = getAvatarStyle(persona.avatar);
 
     // 2. 填充私有备注
     document.getElementById('cc-private-alias').value = contact.privateAlias || '';
 
-    // 3. 相识天数
+    // 3. ★★★ 相识天数计算 ★★★
     const startTime = chat.createTime || chat.id; 
     const diff = Date.now() - startTime;
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    document.getElementById('cc-friend-days').innerText = days + 1;
+    document.getElementById('cc-friend-days').innerText = days + 1; // 第一天也算一天！
 
-    // 4. 填充逻辑开关 (时间)
+    // 4. 填充逻辑开关
     document.getElementById('cc-switch-time').checked = (chat.enableTime !== false); 
     
-    // 5. 填充记忆条数
+    // 5. 填充记忆条数 (只留这一段！)
     const limit = chat.contextLimit || 20; 
     const limitInput = document.getElementById('cc-ctx-limit');
-    if (limit >= 99999) { limitInput.value = ""; } else { limitInput.value = limit; }
+    if (limit >= 99999) {
+        limitInput.value = ""; // 无限模式显示为空
+    } else {
+        limitInput.value = limit;
+    }
 
-    // ==========================================
-    // ★★★ 核心修改：读取 Chat (窗口) 的数据 ★★★
-    // ==========================================
+    // 读取 Chat (窗口) 的数据 
     const activeSwitch = document.getElementById('detail-active-mode');
     const intervalBox = document.getElementById('active-interval-box');
 
@@ -4597,79 +4818,85 @@ function saveSummaryToChat(text, type = 'manual') {
     renderSummaries();        
     showSystemAlert('回忆保存成功噜♪( ´▽｀)～');
 }
-
 // ====================
-// [22] 朋友圈/动态 (Moments) 逻辑 - 独立本体版
+// [22] 朋友圈/动态 (Moments) 逻辑 - 完美同步+UI重构版
 // ====================
 
 let momentsData = []; 
 let tempPostImg = null; 
 let tempVisibleSelection = [];
+let momentsNewMsgCount = 0; 
+let momentsNewMsgAvatar = ''; 
 
-// ★★★ 新增：朋友圈独立本体数据 (无面具状态) ★★★
+// 图标资源配置
+const MOMENTS_ICONS = {
+    unlike: 'https://i.postimg.cc/K4hy2zDX/wu-biao-ti117-20260110142016.png',
+    like: 'https://i.postimg.cc/XqvxL9rd/wu-biao-ti117-20260131195425.png', // 大图标（点赞按钮）
+    likeSmall: 'https://i.postimg.cc/XqvxL9rd/wu-biao-ti117-20260131195425.png', // ★ 小图标（点赞列表用）
+    comment: 'https://i.postimg.cc/6TxNX3Lk/wu-biao-ti117-20260110142025.png',
+    tag: 'https://i.postimg.cc/V5Pc86B2/wu-biao-ti117-20260110142036.png'
+};
+
+// ★★★ 朋友圈独立本体数据 ★★★
 let momentsHost = {
-    name: '我',          // 默认昵称
-    avatar: '',          // 默认头像
-    cover: ''            // 朋友圈封面
+    name: '我',          
+    avatar: '',          
+    cover: ''            
 };
 
 // 1. 初始化
 window.initMoments = function() {
-    // 同时加载 动态列表 和 本体数据
     Promise.all([
         localforage.getItem('Wx_Moments_Data'),
-        localforage.getItem('Wx_Moments_Host') // ★ 读取独立数据
+        localforage.getItem('Wx_Moments_Host') 
     ]).then(([mPosts, mHost]) => {
         momentsData = mPosts || [];
-        if (mHost) momentsHost = mHost; //如果有存档就用存档的
+        if (mHost) momentsHost = mHost; 
         
-        renderMomentsFeed();   // 渲染列表
-        renderMomentsHeader(); // 渲染 Story 栏
-        updateMomentsHostUI(); // ★ 渲染大封面和个人信息
+        renderMomentsFeed();   
+        if(window.renderMomentsHeader) window.renderMomentsHeader(); 
+        updateMomentsHostUI(); 
     });
 };
 document.addEventListener('DOMContentLoaded', window.initMoments);
+
+// 辅助函数：处理头像样式 (解决 url() 嵌套问题)
+function getAvatarStyle(url) {
+    if (!url) return 'background-color: #f0f0f0;';
+    // 去掉可能存在的 url('') 包裹，只取纯链接
+    const cleanUrl = url.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '');
+    return `background-image: url('${cleanUrl}'); background-size: cover; background-position: center;`;
+}
+
 // ====================
-// ★★★ 朋友圈本体交互 (封面/头像/昵称同步) ★★★
+// ★★★ 朋友圈本体交互 ★★★
 // ====================
 
-// A. 刷新所有相关 UI
 window.updateMomentsHostUI = function() {
-    // 1. 同步大封面
     const coverEl = document.getElementById('moments-cover-bg');
     if (coverEl) {
-        // ★★★ 修改重点：强制白色，禁止点击 ★★★
-        
-        // 1. 强制背景变白
         coverEl.style.background = '#fff'; 
-        coverEl.style.backgroundImage = 'none'; // 确保没有图片
-        
-        // 2. 移除点击事件 (让他点不动！)
+        coverEl.style.backgroundImage = 'none'; 
         coverEl.onclick = null; 
-        
-        // (原来那些 triggerMomentsCoverUpload 的代码统统删掉！)
     }
 
-    // 2. 同步大头像 (保持不变)
     const avatarEl = document.getElementById('moments-host-avatar');
     if (avatarEl) {
-        if (momentsHost.avatar) avatarEl.style.backgroundImage = `url('${momentsHost.avatar}')`;
-        else avatarEl.style.backgroundImage = ''; 
+        // 使用辅助函数处理头像
+        const style = getAvatarStyle(momentsHost.avatar);
+        avatarEl.style.backgroundImage = style.match(/url\(['"]?(.+?)['"]?\)/)[0]; // 提取url部分
         avatarEl.onclick = () => triggerMomentsAvatarUpload();
     }
 
-    // 3. 同步大昵称 (保持不变)
     const nameEl = document.getElementById('moments-host-name');
     if (nameEl) {
         nameEl.innerText = momentsHost.name;
         nameEl.onclick = () => editMomentsHostName();
     }
-
-    // 4. 顺便刷新一下 Story 栏里的那个“我”
-    renderMomentsHeader();
+    
+    if(window.renderMomentsHeader) window.renderMomentsHeader();
 };
 
-// C. 触发换头像
 window.triggerMomentsAvatarUpload = function() {
     const input = document.createElement('input');
     input.type = 'file';
@@ -4680,7 +4907,7 @@ window.triggerMomentsAvatarUpload = function() {
             const reader = new FileReader();
             reader.onload = (evt) => {
                 momentsHost.avatar = evt.target.result;
-                saveMomentsHost(); // 保存！
+                saveMomentsHost(); 
             };
             reader.readAsDataURL(file);
         }
@@ -4688,109 +4915,102 @@ window.triggerMomentsAvatarUpload = function() {
     input.click();
 };
 
-// D. 触发改名
 window.editMomentsHostName = function() {
-    showPromptDialog("Edit Name", "请输入新的昵称:", (newName) => {
+    if(window.showPromptDialog) {
+        showPromptDialog("Edit Name", "请输入新的昵称:", (newName) => {
+            if (newName) {
+                momentsHost.name = newName;
+                saveMomentsHost(); 
+            }
+        });
+    } else {
+        const newName = prompt("请输入新的昵称:");
         if (newName) {
             momentsHost.name = newName;
-            saveMomentsHost(); // 保存！
+            saveMomentsHost(); 
         }
-    });
+    }
 };
 
-// E. 保存数据 helper
 function saveMomentsHost() {
     localforage.setItem('Wx_Moments_Host', momentsHost).then(() => {
-        updateMomentsHostUI(); // 保存完立即刷新 UI
-        showSystemAlert('个性化设置保存成功噜');
+        updateMomentsHostUI(); 
+        if(window.showSystemAlert) showSystemAlert('个性化设置保存成功噜');
     });
 }
-// 2. 打开发布器 (重写：渲染聊天窗口选择列表)
+
+// ====================
+// ★★★ 发布器与选择列表 ★★★
+// ====================
+
 window.openPostCreator = function() {
-    // 重置输入
     const input = document.getElementById('post-text-input');
     if(input) input.value = "";
     
-    // 重置图片预览区
     const imgArea = document.getElementById('post-img-preview-area');
     if(imgArea) {
         imgArea.innerHTML = `
-        <div onclick="triggerPostImgUpload()" style="width: 80px; height: 80px; background: #f7f7f7; border-radius: 4px; display: flex; justify-content: center; align-items: center; cursor: pointer;">
+        <div id="moments-add-btn" onclick="triggerPostImgUpload()" style="width: 80px; height: 80px; background: #f7f7f7; border-radius: 4px; display: flex; justify-content: center; align-items: center; cursor: pointer;">
             <svg viewBox="0 0 24 24" width="30" height="30" fill="#ccc"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
         </div>`;
     }
     tempPostImg = null;
-    
-    // ★ 核心修改：渲染“可见范围”选择器
-    // 请确保你的 HTML Post页面里有一个 <div id="post-privacy-container"></div> 用来放列表
-    // 如果没有，请把原来的 <select id="post-privacy-select"> 删掉，换成这个 div
     renderVisibilitySelector();
-
-    openSubPage('sub-page-post-creator');
+    if(window.openSubPage) openSubPage('sub-page-post-creator');
 };
 
-// ★ 新增：渲染可见性选择列表 (基于聊天窗口)
 function renderVisibilitySelector() {
     const container = document.getElementById('post-privacy-container'); 
-    if (!container) return; // 如果没找到容器就不渲染了
+    if (!container) return;
 
-    container.innerHTML = `<div style="font-size:12px; color:#999; margin-bottom:8px; padding-left:5px;">Visible To (选择可见的聊天窗口)</div>`;
+    container.innerHTML = `<div style="font-size:12px; color:#999; margin-bottom:8px; padding-left:5px;">Visible To (选择可见的char)</div>`;
     
-    // 默认全选所有聊天 (你可以根据需要改)
-    tempVisibleSelection = chatsData.map(c => c.id);
+    if(tempVisibleSelection.length === 0) tempVisibleSelection = chatsData.map(c => c.id);
 
-    // 遍历所有聊天记录
     chatsData.forEach(chat => {
         const contact = contactsData.find(c => c.id === chat.contactId);
         const persona = personasData.find(p => p.id === chat.personaId);
-        
         if (!contact) return;
 
         const row = document.createElement('div');
-        row.className = 'visibility-selector-row';
-        row.style.cssText = "display:flex; align-items:center; padding:10px; background:#fff; border-bottom:1px solid #f5f5f5; cursor:pointer; transition:0.2s;";
+        row.style.cssText = "display:flex; align-items:center; padding:12px; background:#fff; border-bottom:1px solid #f9f9f9; cursor:pointer;";
         
-        // 选中状态UI判断
         const isSelected = tempVisibleSelection.includes(chat.id);
-        const checkIcon = isSelected ? '✅' : '⚪️';
-        const opacity = isSelected ? '1' : '0.5';
-        
-        // 头像处理
-        let avatarUrl = contact.avatar || '';
-        if(avatarUrl.includes('url(')) avatarUrl = avatarUrl.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '');
+        const checkClass = isSelected ? 'v-check-box checked' : 'v-check-box';
+        // 使用新的头像处理逻辑
+        const avatarStyle = getAvatarStyle(contact.avatar);
         
         row.innerHTML = `
-            <div class="v-check-icon" style="margin-right:12px; font-size:16px;">${checkIcon}</div>
-            <div class="v-avatar" style="background-image: url('${avatarUrl}'); width:40px; height:40px; border-radius:50%; margin-right:12px; background-size:cover; background-position:center;"></div>
-            <div class="v-info" style="flex:1;">
+            <div class="${checkClass}" id="v-check-${chat.id}" style="margin-right:12px;"></div>
+            <div style="${avatarStyle} width:40px; height:40px; border-radius:4px; margin-right:12px;"></div>
+            <div style="flex:1;">
                 <div style="font-weight:bold; font-size:15px; color:#333;">${contact.name}</div>
-                <div style="font-size:12px; color:#007aff; margin-top:2px;">使用面具: ${persona ? persona.name : '默认'}</div>
+                <div style="font-size:12px; color:#999;">${persona ? '使用面具: ' + persona.name : '默认面具'}</div>
             </div>
         `;
 
-        // 点击切换选中状态
         row.onclick = () => {
             const idx = tempVisibleSelection.indexOf(chat.id);
+            const box = row.querySelector('.v-check-box');
             if (idx > -1) {
-                tempVisibleSelection.splice(idx, 1); // 取消选中
-                row.querySelector('.v-check-icon').innerText = '⚪️';
-                row.style.opacity = '0.5';
+                tempVisibleSelection.splice(idx, 1);
+                box.classList.remove('checked');
             } else {
-                tempVisibleSelection.push(chat.id); // 选中
-                row.querySelector('.v-check-icon').innerText = '✅';
-                row.style.opacity = '1';
+                tempVisibleSelection.push(chat.id);
+                box.classList.add('checked');
             }
-
-            // ★★★ 就在这里，插进这一句 ★★★
-            updateVisibilityLabel(); 
+            if(window.updateVisibilityLabel) updateVisibilityLabel(); 
         };
-
         container.appendChild(row);
     });
 }
-
-// 3. 触发图片上传
 window.triggerPostImgUpload = function() {
+
+    if (tempPostImg) {
+        showSystemAlert("只能上传一张图片哦(๑＞＜)☆");
+        return;
+    }
+
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -4801,11 +5021,30 @@ window.triggerPostImgUpload = function() {
             reader.onload = (evt) => {
                 tempPostImg = evt.target.result; 
                 const area = document.getElementById('post-img-preview-area');
+                
                 const div = document.createElement('div');
                 div.className = 'preview-img-box';
-                div.style.backgroundImage = `url('${tempPostImg}')`;
-                div.style.cssText = `width:80px; height:80px; background-size:cover; margin-right:10px; position:relative; border-radius:4px;`;
-                div.innerHTML = `<div onclick="this.parentNode.remove(); tempPostImg=null;" style="position:absolute; top:-5px; right:-5px; background:red; color:#fff; width:18px; height:18px; border-radius:50%; text-align:center; line-height:18px; font-size:12px; cursor:pointer;">×</div>`;
+                
+                div.style.cssText = `
+                    width:80px; height:80px; 
+                    background-size:cover; 
+                    background-position:center;
+                    margin-right:10px; 
+                    position:relative; 
+                    border-radius:4px;
+                    background-image: url('${tempPostImg}');
+                `;
+                
+                // ★ 交互优化：删除图片时，要把“加号”按钮变回来
+                div.innerHTML = `
+                    <div onclick="this.parentNode.remove(); tempPostImg=null; document.getElementById('moments-add-btn').style.display='flex';" 
+                         style="position:absolute; top:-5px; right:-5px; background:red; color:#fff; width:18px; height:18px; border-radius:50%; text-align:center; line-height:18px; font-size:12px; cursor:pointer;">
+                        ×
+                    </div>`;
+                
+                const addBtn = document.getElementById('moments-add-btn');
+                if(addBtn) addBtn.style.display = 'none';
+
                 area.prepend(div);
             };
             reader.readAsDataURL(file);
@@ -4814,156 +5053,183 @@ window.triggerPostImgUpload = function() {
     input.click();
 };
 
-// 4. ★★★ 修复后的发布逻辑 (Post Button) ★★★
 window.publishPost = function() {
-    console.log("正在尝试发布动态..."); // 调试用
-
-    // 获取文本
     const input = document.getElementById('post-text-input');
     const text = input ? input.value.trim() : "";
     
-    // 校验：必须有图或者有字
+    // 1. 检查有没有内容
     if (!text && !tempPostImg) {
-        showSystemAlert('写点什么吧(๑＞＜)☆～');
+        if(window.showSystemAlert) showSystemAlert('写点什么吧(๑＞＜)☆～');
         return;
     }
 
-    // ★★★ 改这里：获取作者信息 ★★★
-    // 使用 momentsHost (本体)，不再使用 personasData[0]
-    const authorInfo = {
-        name: momentsHost.name,
-        avatar: momentsHost.avatar
-    };
-
+    // 2. 组装最终的动态对象
     const newPost = {
         id: Date.now(),
-        // ★★★ 加上这行标记！★★★
         isMe: true, 
-        
-        author: {
-            // 这里存个备份，但渲染时我们会优先用 momentsHost
-            name: momentsHost.name, 
-            avatar: momentsHost.avatar 
-        },
+        author: { name: momentsHost.name, avatar: momentsHost.avatar },
         content: text,
         image: tempPostImg,
         time: Date.now(),
         visibleChatIds: [...tempVisibleSelection], 
+        mentions: [...tempMentionSelection],      
         likesList: [],
         comments: []
     };
 
-momentsData.unshift(newPost);
-    
-    // 保存并刷新
+    // 3. 存入数据池并保存
+    momentsData.unshift(newPost);
     localforage.setItem('Wx_Moments_Data', momentsData).then(() => {
-        showSystemAlert('发布成功啦～');
-        closeSubPage('sub-page-post-creator');
+        if(window.showSystemAlert) showSystemAlert('发布成功啦～');
+
+        // ========================================================
+        // ★★★ 核心补充：给被艾特的好友“发请柬” (Mist Forest 卡片) ★★★
+        // ========================================================
+        if (newPost.mentions && newPost.mentions.length > 0) {
+            newPost.mentions.forEach(chatId => {
+                const targetChat = chatsData.find(c => c.id === chatId);
+                if (targetChat) {
+                    // 1. 准备卡片数据
+                    const cardQuote = {
+                        type: 'mention_card',     // 刚才定义的卡片类型
+                        name: momentsHost.name,   // 我的名字
+                        avatar: momentsHost.avatar, // 我的头像
+                        text: 'Invited you to view', // 描述
+                        id: newPost.id            // 关联的帖子ID
+                    };
+
+                    if (window.pushMsgToData) {
+                        window.pushMsgToData(targetChat, "邀请你查看动态", 'me', cardQuote, 'text');
+                    }
+                }
+            });
+        }
         
-        // 如果当前在朋友圈页面，刷新一下
-        if(document.getElementById('wx-page-moments').style.display === 'block') {
+        // 4. 清理现场
+        tempPostImg = null;
+        tempVisibleSelection = []; 
+        tempMentionSelection = []; 
+        
+        // 还原 UI 上的小标签文字
+        if(document.getElementById('vis-label')) document.getElementById('vis-label').innerText = "All";
+        if(document.getElementById('men-label')) document.getElementById('men-label').innerText = "None";
+
+        if(window.closeSubPage) closeSubPage('sub-page-post-creator');
+        
+        if(document.getElementById('wx-page-moments') && document.getElementById('wx-page-moments').style.display === 'block') {
             renderMomentsFeed();
         }
-
     });
 };
 
-// 5. 渲染动态流 (Feed)
+// ★★★ 核心渲染 (Feed) - 包含所有UI修改 ★★★
 window.renderMomentsFeed = function() {
     const container = document.getElementById('moments-feed-container');
     if (!container) return;
-    container.innerHTML = '';
 
-    // 顺便清除红点
+    const savedScrollY = window.scrollY; 
+    container.innerHTML = '';
     clearMomentsRedDot();
 
+    if (typeof momentsNewMsgCount !== 'undefined' && momentsNewMsgCount > 0) {
+        const msgTip = document.createElement('div');
+        msgTip.id = 'moments-msg-tip';
+        
+        // 使用记录下来的头像，如果没有则显示默认
+        const avatarSrc = momentsNewMsgAvatar || 'https://i.postimg.cc/k4kM9S4h/default-cover.png';
+        
+        msgTip.style.cssText = `
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(10px);
+            width: fit-content; margin: 15px auto; padding: 6px 12px;
+            border-radius: 6px; cursor: pointer; transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        `;
+
+        msgTip.innerHTML = `
+            <div style="background-image: url('${avatarSrc}'); width: 28px; height: 28px; border-radius: 4px; background-size: cover; background-position: center; margin-right: 10px;"></div>
+            <span style="color: #fff; font-size: 13px; font-weight: 500;">${momentsNewMsgCount} 条新消息</span>
+            <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:#fff; margin-left:6px;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+        `;
+
+        msgTip.onclick = () => {
+            momentsNewMsgCount = 0; 
+            momentsNewMsgAvatar = '';
+            if (window.updateMomentsRedDot) window.updateMomentsRedDot(); 
+            renderMomentsFeed(); // 刷新掉提示
+        };
+        
+        container.appendChild(msgTip);
+    }
+
     if (momentsData.length === 0) {
-        container.innerHTML = `<div style="padding: 50px; text-align: center; color: #ccc; font-size: 12px;">还没有动态哦(𓐍ㅇㅂㅇ𓐍)，点击上方的 + 发一条吧！</div>`;
+        container.innerHTML += `<div style="padding: 50px; text-align: center; color: #ccc; font-size: 12px;">还没有动态哦(𓐍ㅇㅂㅇ𓐍)，点击上方的 + 发一条吧！</div>`;
         return;
     }
 
-    // ★★★ 核心修复：使用朋友圈独立身份 (momentsHost) ★★★
-    // 这样点赞/评论时，就是你刚才改的那个名字，而不是通讯录里的！
     const myName = momentsHost.name || 'Me'; 
 
     momentsData.forEach(post => {
-        // --- 容错处理 ---
         if (!post.likesList) post.likesList = []; 
         if (!post.comments) post.comments = [];
 
-        // --- 1. 构建头部 ---
+        const isLikedByMe = post.likesList.some(u => u.name === myName);
+        const likeIconUrl = isLikedByMe ? MOMENTS_ICONS.like : MOMENTS_ICONS.unlike;
+
         const card = document.createElement('div');
         card.className = 'moment-card';
         card.style.borderBottom = '1px solid #f0f0f0'; 
         
-        // 这里的头像逻辑也优化一下：如果是本人发的，强制显示当前本体头像
-        let displayAvatar = post.author.avatar;
+        // ★★★ 头像同步逻辑 (关键修复) ★★★
+        let displayAvatar = post.author.avatar; // 默认用帖子里的
         let displayName = post.author.name;
-        
-        // 如果是“我”发的，或者标记了 isMe，就强制同步现在的样子
+
         if (post.isMe || displayName === myName || displayName === 'Me') {
+            // 如果是我，强制用 momentsHost
             displayAvatar = momentsHost.avatar;
             displayName = momentsHost.name;
+        } else {
+            // ★ 如果是别人，尝试去通讯录找最新头像！
+            const contact = contactsData.find(c => c.name === displayName);
+            if (contact && contact.avatar) {
+                displayAvatar = contact.avatar;
+            }
         }
 
         const avatarStyle = getAvatarStyle(displayAvatar);
-        const timeStr = formatTime(post.time);
-        
-        let imgHtml = '';
-        if (post.image) {
-            imgHtml = `<div class="m-card-media" style="margin-top:10px;"><img src="${post.image}" class="m-single-img" style="border-radius:8px; max-height:350px; width:auto; max-width:100%; object-fit:contain;" loading="lazy" onclick="previewImage(this)"></div>`;
-        }
+        let imgHtml = post.image ? `<div class="m-card-media" style="margin-top:10px;"><img src="${post.image}" class="m-single-img" style="border-radius:6px; max-height:350px; width:auto; max-width:100%; object-fit:contain;" onclick="previewImage(this)"></div>` : '';
 
-        // --- 2. 判断我是否赞过 ---
-        const isLikedByMe = post.likesList.some(u => u.name === myName);
-        const likeBtnClass = isLikedByMe ? 'm-icon-btn liked' : 'm-icon-btn';
-        
-        // --- 3. 构建互动区 ---
-        let interactionHtml = '';
-        
-        // A. 点赞列表
-        let likesHtml = '';
+        // 互动区
+        let likesHtml = '', commentsHtml = '';
         if (post.likesList.length > 0) {
-            const names = post.likesList.map(u => u.name).join(', ');
+            // ★ 小爱心换成了图片
             likesHtml = `
                 <div class="moment-likes">
-                    <div class="like-icon-small">♡</div>
-                    <span>${names}</span>
-                </div>
-            `;
+                    <img src="${MOMENTS_ICONS.likeSmall}" style="width:14px; height:14px; margin-right:5px; vertical-align:middle;">
+                    <span>${post.likesList.map(u=>u.name).join(', ')}</span>
+                </div>`;
         }
-        
-        // B. 评论列表
-        let commentsHtml = '';
         if (post.comments.length > 0) {
-            const listItems = post.comments.map(c => `
+            commentsHtml = `<div class="moment-comments">` + post.comments.map(c => `
                 <div class="moment-comment-item" onclick="handleReplyComment(${post.id}, '${c.author}')">
-                    <span class="comment-author">${c.author}</span>
-                    ${c.to ? `<span style="color:#666">回复</span> <span class="comment-author">${c.to}</span>` : ''}
-                    ：${c.content}
+                    <span class="comment-author">${c.author}</span>${c.to ? `<span style="color:#666">回复</span><span class="comment-author">${c.to}</span>` : ''}：${c.content}
                 </div>
-            `).join('');
-            
-            commentsHtml = `<div class="moment-comments">${listItems}</div>`;
-        }
-        
-        if (post.likesList.length > 0 || post.comments.length > 0) {
-            interactionHtml = `
-                <div class="moment-interactions">
-                    ${likesHtml}
-                    ${commentsHtml}
-                </div>
-            `;
+            `).join('') + `</div>`;
         }
 
-        // --- 4. 组装卡片 ---
+        // --- 4. 组装卡片 (整段替换这里) ---
         card.innerHTML = `
             <div class="m-card-header">
                 <div class="m-card-avatar" style="${avatarStyle}"></div>
                 <div style="flex:1;">
                     <div class="m-card-user">${displayName}</div>
-                    <div style="font-size:11px; color:#999;">${post.privacy === 'private' ? '🔒 ' : ''}${timeStr}</div>
+                    <div style="font-size:11px; color:#999;">${formatTime ? formatTime(post.time) : new Date(post.time).toLocaleString()}</div>
                 </div>
+                
+                <div onclick="openForwardSelector(${post.id})" class="m-act-icon" style="width:24px; height:24px; display:flex; align-items:center; justify-content:center; margin-right:5px;">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="#333"><path d="M19 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" transform="scale(-1, 1) translate(-24, 0)"/></svg>
+                </div>
+
                 <div class="m-card-more" onclick="deleteMoment(${post.id})">•••</div>
             </div>
             
@@ -4972,35 +5238,41 @@ window.renderMomentsFeed = function() {
                  ${imgHtml}
             </div>
 
-            <div class="m-action-bar" style="margin-top:5px; justify-content: flex-start; gap: 15px;">
-                <div class="${likeBtnClass}" onclick="toggleLike(${post.id})">
-                    <svg viewBox="0 0 24 24" width="24" height="24" class="ins-icon"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                </div>
+            <div class="m-action-bar" style="padding: 5px 15px 10px 15px; display: flex; align-items: center; justify-content: flex-start; gap: 6px;">
                 
-                <div class="m-icon-btn" onclick="showCommentInput(${post.id})">
-                     <svg viewBox="0 0 24 24" width="24" height="24" class="ins-icon"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-                </div>
+                <img src="${likeIconUrl}" class="m-act-icon" onclick="toggleLike(${post.id})" style="width:26px; height:26px; display:block; margin:0;">
+                
+                <img src="${MOMENTS_ICONS.comment}" class="m-act-icon" onclick="document.getElementById('comment-input-${post.id}').focus()" style="width:26px; height:26px; display:block; margin:0;">
+                
+                <input type="text" id="comment-input-${post.id}" 
+                       placeholder="有爱评论，说点儿好听的..." 
+                       style="width: 180px; flex: none; border:none; background:#f5f5f5; border-radius:18px; padding:6px 12px; font-size:13px; outline:none; color:#333; margin-left:8px;"
+                       onkeydown="if(event.key==='Enter'){ addComment(${post.id}, this.value); this.value=''; this.blur(); }">
+
+<img src="${MOMENTS_ICONS.tag}" class="m-tag-icon" 
+     style="width:22px; height:22px; opacity:0.6; display:block; margin-left: auto; margin-right: 10px;"> 
             </div>
 
             <div style="padding: 0 15px 15px 15px;">
-                ${interactionHtml}
+                ${likesHtml || commentsHtml ? `<div class="moment-interactions">${likesHtml}${commentsHtml}</div>` : ''}
             </div>
         `;
         container.appendChild(card);
     });
+
+    if (savedScrollY > 0) window.scrollTo(0, savedScrollY);
 };
 
-// 6. 点赞功能 (修复版：用 momentsHost)
+// ====================
+// ★★★ 互动逻辑 ★★★
+// ====================
+
 window.toggleLike = function(id) {
     const post = momentsData.find(p => p.id === id);
     if (!post) return;
     
     if (!post.likesList) post.likesList = [];
-    
-    // ★ 这里也用独立名字
     const myName = momentsHost.name || 'Me';
-    
-    // 检查是否赞过
     const idx = post.likesList.findIndex(u => u.name === myName);
     
     if (idx >= 0) {
@@ -5008,20 +5280,21 @@ window.toggleLike = function(id) {
         if(post.likes > 0) post.likes--; 
     } else {
         post.likesList.push({ name: myName });
-        if(!post.likes) post.likes = 0;
-        post.likes++;
-        if(navigator.vibrate) navigator.vibrate(30);
+        post.likes = (post.likes || 0) + 1;
+        if(navigator.vibrate) navigator.vibrate(20);
     }
     
-    localforage.setItem('Wx_Moments_Data', momentsData);
-    renderMomentsFeed();
+    localforage.setItem('Wx_Moments_Data', momentsData).then(() => {
+        renderMomentsFeed(); 
+    });
 };
 
-// 显示评论输入框
+// 保持 showCommentInput 用于回复别人的情况 (依然可以用弹窗)
 window.showCommentInput = function(postId, replyToUser = null) {
+    // 如果是回复某人，还是弹窗比较方便显示 "回复xxx"
+    // 如果你想让回复也走输入框，可以修改这里把 replyToUser 存到 dataset 里，太复杂了暂时先保持弹窗
     const placeholder = replyToUser ? `回复 ${replyToUser}:` : "评论...";
     
-    // 优先使用高级弹窗，没有就用 prompt
     if (window.showPromptDialog) {
         showPromptDialog("评论", placeholder, (text) => {
             if (text) addComment(postId, text.trim(), replyToUser);
@@ -5032,38 +5305,27 @@ window.showCommentInput = function(postId, replyToUser = null) {
     }
 };
 
-// 点击评论回复
 window.handleReplyComment = function(postId, authorName) {
     const myName = momentsHost.name || 'Me';
     if (authorName === myName) {
-        // 点击自己 -> 删除
         if(window.showConfirmDialog) {
-                    // 只需要在括号里的最后面加一个 "delete"
-        showConfirmDialog(
-            "确定要删除这条评论吗？", 
-            () => deleteComment(postId, authorName), 
-            "delete" // ← 就是这个！加上它弹窗就变红啦！
-        );
-    } else {
-        // 这是给老旧浏览器留的保底，不用管它
-        if(confirm("要删除这条评论吗？")) deleteComment(postId, authorName);
+            showConfirmDialog("确定要删除这条评论吗？", () => deleteComment(postId, authorName), "delete");
+        } else {
+            if(confirm("要删除这条评论吗？")) deleteComment(postId, authorName);
+        }
+        return;
     }
-    return;
-}
-    // 回复别人
     showCommentInput(postId, authorName);
 };
 
-// 添加评论
 function addComment(postId, content, replyToUser = null) {
+    if(!content || !content.trim()) return;
+
     const post = momentsData.find(p => p.id === postId);
     if (!post) return;
-    
     if (!post.comments) post.comments = [];
     
-    // ★ 使用独立名字
     const myName = momentsHost.name || 'Me';
-    
     post.comments.push({
         author: myName,
         content: content,
@@ -5073,16 +5335,15 @@ function addComment(postId, content, replyToUser = null) {
     
     localforage.setItem('Wx_Moments_Data', momentsData);
     renderMomentsFeed();
-} // <--- ★★★ 之前这里漏了一个括号，帮你补上了！！ ★★★
+}
 
-// 删除评论
 function deleteComment(postId, authorName) {
     const post = momentsData.find(p => p.id === postId);
     if(post && post.comments) {
         for(let i = post.comments.length - 1; i >= 0; i--) {
             if(post.comments[i].author === authorName) {
                 post.comments.splice(i, 1);
-                break; // 只删一条
+                break; 
             }
         }
         localforage.setItem('Wx_Moments_Data', momentsData);
@@ -5090,70 +5351,224 @@ function deleteComment(postId, authorName) {
     }
 }
 
-// 7. 删除动态
 window.deleteMoment = function(id) {
-    // 优先使用高级弹窗
     const doDelete = () => {
         momentsData = momentsData.filter(p => p.id !== id);
         localforage.setItem('Wx_Moments_Data', momentsData).then(() => {
             renderMomentsFeed();
-            // 更新顶部计数
             const countEl = document.querySelector('.ins-stats b') || document.querySelector('.ins-stat-num');
             if(countEl) countEl.innerText = momentsData.length;
         });
     };
 
-if(window.showConfirmDialog) {
-    showConfirmDialog("确定要删除这条动态嘛？<br>此操作不可恢复！", doDelete, "delete");
-} else {
+    if(window.showConfirmDialog) {
+        showConfirmDialog("确定要删除这条动态嘛？<br>此操作不可恢复！", doDelete, "delete");
+    } else {
         if(confirm("确定要删除这条动态嘛？")) doDelete();
     }
 };
 
-// (辅助函数：把你原来的渲染逻辑包进来)
-function createMomentCardHTML(post) {
-    const card = document.createElement('div');
-    card.className = 'moment-card';
-    card.style.borderBottom = '1px solid #f0f0f0';
-    
-    const timeStr = formatTime(post.time);
-    let imgHtml = post.image ? `<div class="m-card-media" style="margin-top:10px;"><img src="${post.image}" style="border-radius:8px; max-height:350px; width:auto; max-width:100%; object-fit:contain;" loading="lazy"></div>` : '';
-    
-    // 互动区逻辑 (保持不变)
-    let likesText = post.likesList.map(u => u.name).join(', ');
-    let commentsHtml = post.comments.map(c => `
-        <div class="moment-comment-item" onclick="handleReplyComment(${post.id}, '${c.author}')">
-            <span class="comment-author">${c.author}</span>${c.to ? `<span style="color:#666">回复</span><span class="comment-author">${c.to}</span>` : ''}：${c.content}
-        </div>
-    `).join('');
+// ==========================================
+// ★ 朋友圈转发选择器 (高定动画 + 自定义弹窗版) ★
+// ==========================================
+window.openForwardSelector = function(postId) {
+    const post = momentsData.find(p => p.id === postId);
+    if(!post) return;
 
-    card.innerHTML = `
-        <div class="m-card-header">
-            <div class="m-card-avatar" style="${getAvatarStyle(post.author.avatar)}"></div>
-            <div style="flex:1;">
-                <div class="m-card-user">${post.author.name}</div>
-                <div style="font-size:11px; color:#999;">${timeStr}</div>
+    // 1. 创建容器
+    const overlay = document.createElement('div');
+    overlay.className = 'forward-overlay-container';
+    
+    // 2. 内部结构
+    overlay.innerHTML = `
+        <div style="height:100px;  padding-top:44px; background:#fff; display:flex; align-items:center; padding:0 20px; border-bottom:1px solid #f0f0f0; flex-shrink:0;">
+            <div style="font-size:17px; font-weight:600;">Share to Chat</div>
+            <div style="margin-left:auto; color:#007aff; font-size:16px; cursor:pointer;" id="close-forward-btn">Cancel</div>
+        </div>
+        <div style="flex:1; overflow-y:auto; padding-bottom:40px;" id="forward-list-body">
             </div>
-            <div class="m-card-more" onclick="deleteMoment(${post.id})">•••</div>
-        </div>
-        <div style="padding:0 15px;">
-             <div class="m-caption" style="margin:5px 0;">${post.content}</div>
-             ${imgHtml}
-        </div>
-        <div class="m-action-bar" style="margin-top:5px; justify-content: flex-start; gap: 15px;">
-            <div class="m-icon-btn" onclick="toggleLike(${post.id})">♡</div>
-            <div class="m-icon-btn" onclick="showCommentInput(${post.id})">💬</div>
-        </div>
-        <div style="padding: 0 15px 15px 15px;">
-            <div class="moment-interactions">
-                ${likesText ? `<div class="moment-likes">♡ ${likesText}</div>` : ''}
-                <div class="moment-comments">${commentsHtml}</div>
-            </div>
-        </div>
     `;
-    return card;
-}
 
+    document.body.appendChild(overlay);
+
+    // 3. 渲染好友列表
+    const listBody = overlay.querySelector('#forward-list-body');
+    chatsData.forEach(chat => {
+        const contact = contactsData.find(c => c.id === chat.contactId);
+        const persona = personasData.find(p => p.id === chat.personaId);
+        if (!contact) return;
+
+        const row = document.createElement('div');
+        row.className = 'forward-row-item';
+        
+        // 清洗头像 URL
+        let avatarUrl = contact.avatar || '';
+        if(avatarUrl.includes('url(')) avatarUrl = avatarUrl.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '');
+        
+        row.innerHTML = `
+            <div style="background-image: url('${avatarUrl}'); width:44px; height:44px; border-radius:10px; background-size:cover; background-position:center; margin-right:15px; background-color:#eee;"></div>
+            <div style="flex:1;">
+                <div style="font-size:16px; font-weight:500; color:#000;">${contact.name}</div>
+                ${persona ? `<div style="font-size:12px; color:#999; margin-top:2px;">Using persona: ${persona.name}</div>` : ''}
+            </div>
+        `;
+
+        // ★ 核心：点击后弹出自定义确认框，不再用丑丑的系统 confirm！
+        row.onclick = () => {
+            showGlobalConfirm(
+                "Confirm Sharing", 
+                `你确定要与 **${contact.name}** 分享这一时刻嘛?`, 
+                () => {
+                    // 执行转发逻辑
+                    const quote = { 
+                        type: 'moment_share', 
+                        text: post.content, 
+                        image: post.image, 
+                        name: post.author.name, 
+                        id: post.id 
+                    };
+                    
+                    if(window.pushMsgToData) {
+                        window.pushMsgToData(chat, "Shared a Moment", 'me', quote, 'text');
+                        showSystemAlert("Successfully shared!", "success");
+                        closeWithAnim(); // 成功后关闭
+                    }
+                }
+            );
+        };
+        listBody.appendChild(row);
+    });
+
+    // 4. 定义退场动画函数
+    const closeWithAnim = () => {
+        overlay.classList.add('closing');
+        overlay.classList.remove('active');
+        setTimeout(() => overlay.remove(), 400); // 等 400ms 动画播完移除 DOM
+    };
+
+    // 绑定取消按钮
+    overlay.querySelector('#close-forward-btn').onclick = closeWithAnim;
+
+    // 5. 触发进场动画
+    requestAnimationFrame(() => {
+        overlay.classList.add('active');
+    });
+};
+
+// 红点逻辑
+window.triggerMomentsRedDot = function(avatarUrl = null) {
+    // 1. 增加消息计数
+    momentsNewMsgCount = (typeof momentsNewMsgCount === 'undefined') ? 1 : momentsNewMsgCount + 1;
+    
+    // 2. 记录最新互动的头像 (如果没有传，就用默认图标)
+    if (avatarUrl) {
+        // 如果传的是 url('...') 格式，洗干净它
+        momentsNewMsgAvatar = avatarUrl.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '');
+    }
+    
+    // 3. 触发 UI 更新
+    hasNewMomentsMsg = true;
+    if (window.updateRedDotsUI) window.updateRedDotsUI();
+    if (window.updateMomentsRedDot) window.updateMomentsRedDot();
+    
+    console.log("🔔 朋友圈新消息！当前计数:", momentsNewMsgCount);
+};
+
+window.clearMomentsRedDot = function() {
+    const navDot = document.querySelector('.nav-moments-dot');
+    if(navDot) navDot.style.display = 'none';
+};
+
+window.updateMomentsRedDot = function() {
+    const navDot = document.querySelector('.nav-moments-dot');
+    if(navDot) {
+        navDot.style.display = momentsNewMsgCount > 0 ? 'block' : 'none';
+    }
+};
+// === 提醒谁看：开关逻辑 ===
+window.toggleMentionSelector = function() {
+    const overlay = document.getElementById('mention-drawer-overlay');
+    if (!overlay) {
+        console.error("找不到 mention-drawer-overlay，宝宝你 HTML 里的 ID 写对了吗？");
+        return;
+    }
+
+    if (overlay.classList.contains('active')) {
+        // === 出场动画 ===
+        overlay.classList.add('closing-anim');
+        overlay.classList.remove('active');
+        setTimeout(() => {
+            overlay.style.display = 'none';
+            overlay.classList.remove('closing-anim');
+        }, 400); 
+    } else {
+        // === 入场动画 ===
+        overlay.style.display = 'flex';
+        overlay.offsetHeight; // 强制重绘
+        overlay.classList.add('active');
+        
+        // ★ 核心：打开的时候，立刻渲染列表！
+        if(window.renderMentionSelector) {
+            window.renderMentionSelector(); 
+        } else {
+            console.error("renderMentionSelector 还没定义呢宝宝！");
+        }
+    }
+};
+// === 渲染提醒谁看：同步聊天窗口版 ===
+window.renderMentionSelector = function() {
+    const container = document.getElementById('mention-list-container'); 
+    if (!container) return;
+
+    // 清空并添加标题
+    container.innerHTML = `<div style="font-size:12px; color:#999; margin-bottom:8px; padding-left:5px;">Mention (选中的聊天对象会收到通知喔)</div>`;
+    
+    // 遍历聊天数据，而不是角色数据
+    chatsData.forEach(chat => {
+        const contact = contactsData.find(c => c.id === chat.contactId); // 找角色
+        const persona = personasData.find(p => p.id === chat.personaId); // 找对应的面具
+        if (!contact) return;
+
+        const row = document.createElement('div');
+        row.className = 'v-row-item'; 
+        
+        // 这里的 ID 改为使用 chat.id，确保唯一性
+        const isSelected = tempMentionSelection.includes(chat.id);
+        const checkClass = isSelected ? 'v-check-box checked' : 'v-check-box';
+        
+        // 标注好对应的 User 面具，防止宝宝选错
+        row.innerHTML = `
+            <div class="v-avatar" style="${getAvatarStyle(contact.avatar)}"></div>
+            <div class="v-name-group" style="flex:1;">
+                <div class="v-name" style="font-weight:600;">${contact.name}</div>
+                <div class="v-persona-tag" style="font-size:11px; color:#999; margin-top:2px;">
+                    使用面具: ${persona ? persona.name : '默认'}
+                </div>
+            </div>
+            <div class="${checkClass}" id="m-check-${chat.id}"></div>
+        `;
+
+        row.onclick = () => {
+            const idx = tempMentionSelection.indexOf(chat.id);
+            const box = row.querySelector('.v-check-box');
+            if (idx > -1) {
+                tempMentionSelection.splice(idx, 1);
+                box.classList.remove('checked');
+            } else {
+                tempMentionSelection.push(chat.id);
+                box.classList.add('checked');
+            }
+            if(window.updateMentionLabel) updateMentionLabel(); // 同步更新外面显示的数字
+        };
+        container.appendChild(row);
+    });
+};
+// 更新文字标签
+function updateMentionLabel() {
+    const label = document.getElementById('men-label');
+    if (!label) return;
+    label.innerText = tempMentionSelection.length > 0 ? `Selected ${tempMentionSelection.length}` : 'None';
+}
 // =================================================================
 // ★★★主题与美化系统★★★
 // =================================================================
@@ -6258,14 +6673,44 @@ function bindStickerLongPress(element, sticker) {
 }
 
 // ==========================================
-// ★ 强力修复：表情包弹窗 (UI 微调版)
+// ★ 强力修复：表情包弹窗 (UI 完美对齐版)
 // ==========================================
 window.rebuildStickerPopupHTML = function() {
     const overlay = document.getElementById('sticker-upload-overlay');
     if (!overlay) return;
 
     overlay.innerHTML = `
-        <div class="custom-alert-box ins-style" style="width: 340px !important; padding: 20px !important; border-radius: 24px !important; height: auto; max-height: 80vh; display: flex; flex-direction: column;">
+        <style>
+            /* 内部动态生成的预览项样式修复 */
+            .sticker-preview-item {
+                display: flex;
+                align-items: center; /* 确保图片和输入框垂直居中对齐 */
+                gap: 12px;
+                padding: 10px;
+                background: #fff;
+                border-radius: 12px;
+                margin-bottom: 8px;
+            }
+            .sticker-preview-item img {
+                width: 50px;
+                height: 50px;
+                object-fit: cover;
+                border-radius: 8px;
+                flex-shrink: 0;
+            }
+            .sticker-preview-item input {
+                flex: 1;
+                height: 36px;
+                border: 1px solid #efeff4;
+                background: #f9f9f9;
+                border-radius: 8px;
+                padding: 0 10px;
+                font-size: 13px;
+                outline: none;
+            }
+        </style>
+
+        <div class="custom-alert-box ins-style" style="width: 340px !important; padding: 20px !important; border-radius: 24px !important; height: auto; max-height: 80vh; display: flex; flex-direction: column; box-sizing: border-box;">
             
             <div class="upload-modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; width: 100%; flex-shrink: 0;">
                 <div>
@@ -6275,7 +6720,7 @@ window.rebuildStickerPopupHTML = function() {
                 <div onclick="closeStickerUploader()" style="width: 32px; height: 32px; background: #f2f2f7; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #8e8e93; font-size: 20px; cursor: pointer;">×</div>
             </div>
 
-            <div class="upload-modal-body" style="width: 100%; min-height: 120px; max-height: 400px; background: #f9f9f9; border-radius: 16px; margin-bottom: 15px; overflow-y: auto; padding: 10px; flex: 1; display: flex; flex-direction: column;">
+            <div class="upload-modal-body" style="width: 100%; min-height: 120px; max-height: 400px; background: #f9f9f9; border-radius: 16px; margin-bottom: 15px; overflow-y: auto; padding: 10px; flex: 1; display: flex; flex-direction: column; box-sizing: border-box;">
                 
                 <div id="view-mode-visual" style="display: flex; flex-direction: column; width: 100%;">
                     <div id="sticker-preview-list"></div>
@@ -6283,8 +6728,7 @@ window.rebuildStickerPopupHTML = function() {
                 
                 <div id="view-mode-bulk" style="display: none; flex-direction: column; flex: 1; height: 100%;">
                     <div style="font-size: 12px; color: #666; margin-bottom: 8px; flex-shrink: 0;">
-                        格式：<b>表情名 链接</b> (一行一个喔～)<br>
-                        <span style="color:#999; font-size:10px;">试试直接粘贴一大段带链接的文本...(￣▽￣)</span>
+                        格式：<b>表情名 链接</b> (一行一个喔～)
                     </div>
                     <textarea id="sticker-bulk-input" 
                         placeholder="开心 https://xx.com/1.jpg..." 
@@ -6297,33 +6741,33 @@ window.rebuildStickerPopupHTML = function() {
                 </div>
             </div>
 
-            <div class="sticker-footer" id="sticker-footer-area" style="width: 100%; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;">
+            <div class="sticker-footer" id="sticker-footer-area" style="width: 100%; display: flex; flex-direction: column; gap: 12px; flex-shrink: 0;">
                 
-                <div class="url-input-group" style="display: flex; gap: 8px; align-items: center;">
+                <div class="url-input-group" style="display: flex; gap: 8px; align-items: stretch;">
                     <input type="text" id="sticker-url-input" placeholder="在这里粘贴表情包url链接..." 
-                           style="flex: 1; background: #f2f2f7; border: none; height: 36px; border-radius: 10px; padding: 0 12px; font-size: 14px; outline: none;">
+                           style="flex: 1; background: #f2f2f7; border: none; height: 40px; border-radius: 12px; padding: 0 12px; font-size: 14px; outline: none; box-sizing: border-box;">
                     
                     <div class="add-btn" onclick="handleAddUrl()" 
-                         style="width: 70px; height: 36px; background: #e5e5ea; color: #000; font-weight: 600; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer;">
+                         style="width: 75px; height: 40px; background: #565656; color: #fff; font-weight: 600; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; box-sizing: border-box;">
                         save
                     </div>
                 </div>
 
-                <div class="func-btn-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="func-btn-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;">
                     <input type="file" id="real-sticker-input" accept="image/*" multiple style="display: none;" onchange="handleStickerFilesVisual(this)">
                     
                     <div class="func-btn" onclick="document.getElementById('real-sticker-input').click()" 
-                         style="height: 44px; background: #e1f5fe; color: #0288d1; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; cursor: pointer;">
-                        📷 选择相册
+                         style="height: 48px; background: #565656; color: #fff; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;">
+                        🤍 选择相册
                     </div>
                     <div class="func-btn" onclick="switchUploadMode('bulk')" 
-                         style="height: 44px; background: #f3e5f5; color: #7b1fa2; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; cursor: pointer;">
+                         style="height: 48px; background: #f2f2f7; color: #8E8E93; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;">
                         🩶 批量导入
                     </div>
                 </div>
 
                 <div class="save-full-btn" onclick="saveVisualStickers()" 
-                     style="width: 100%; height: 48px; margin-top: 4px; background: #1c1c1e; color: #fff; border-radius: 14px; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer;">
+                     style="width: 100%; height: 48px; background: #1c1c1e; color: #fff; border-radius: 16px; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer;">
                     全部保存
                 </div>
             </div>
@@ -6774,17 +7218,21 @@ window.saveFavData = function() {
     console.log("好友组件数据已保存！");
 };
 
-// 4. 读取数据并显示
+// 4. 读取数据并显示 (防报错修复版)
 function loadFavData() {
+    // 先检查有没有这个坑位，没有就直接跳过，不准报错！
+    if (!document.getElementById('fav-img-0')) return;
+
     const saved = localStorage.getItem('My_Fav_Widget_Data');
     if (saved) {
         const data = JSON.parse(saved);
         data.forEach((item, index) => {
-            if (item.img) document.getElementById(`fav-img-${index}`).src = item.img;
-            if (item.name) document.getElementById(`fav-name-${index}`).value = item.name;
+            const imgEl = document.getElementById(`fav-img-${index}`);
+            const nameEl = document.getElementById(`fav-name-${index}`);
+            // 再加一层保险
+            if (imgEl && item.img) imgEl.src = item.img;
+            if (nameEl && item.name) nameEl.value = item.name;
         });
-    } else {
-        document.getElementById('fav-img-0').src = "https://i.postimg.cc/jjTJY1..."; 
     }
 }
 
@@ -8176,94 +8624,68 @@ function safeSetImage(id, url) {
     if(el) el.src = url; 
 }
 // ==========================================================
-// [Module B] 自主意识系统 (Autonomous Brain) - 终极修复版
+// [Module B] 自主意识系统
 // ==========================================================
 
 let backgroundTimer = null;
 
-// 1. 启动服务 (在 DOMContentLoaded 时调用)
+// 1. 启动服务
 function startBackgroundService() {
     if (backgroundTimer) clearInterval(backgroundTimer);
-    console.log("🧠 自主意识引擎已启动...");
-    // 每 60 秒心跳一次，检查有没有要搞的事
+    console.log("自主意识引擎已启动...");
     backgroundTimer = setInterval(() => checkAllCharactersActivity(false), 60000);
 }
 
 // 2. 巡查总入口
-// forceReaction: 是否因为User刚发了动态，强制立刻检查
 async function checkAllCharactersActivity(forceReaction = false) {
     const now = Date.now();
 
-    // ★ 关键修复：直接遍历所有【聊天窗口 (Chats)】，而不是角色
-    // 因为自主意识现在是绑定在窗口上的！
     for (const chat of chatsData) {
-        
-        // 1. 检查开关：必须在这个 Chat 里开启了自主意识
-        // (如果没有 enableActiveMode 字段或者为 false，直接跳过)
         if (!chat.enableActiveMode) continue;
         
-        // 2. 找到对应的角色 (Char) 和用户面具 (Persona)
         const char = contactsData.find(c => c.id === chat.contactId);
         const persona = personasData.find(p => p.id === chat.personaId);
-        
-        // 如果数据不完整，跳过
         if (!char || !persona) continue;
 
-        // 获取上次活跃时间 (默认当前)
         const lastTime = chat.lastActiveTime || now;
-        // 获取频率 (默认 60 分钟)
         const intervalMs = (chat.activeInterval || 60) * 60 * 1000;
 
-        // --- [事件 A：User 发了新动态 (最高优先级)] ---
-        // 逻辑：找一条 User 发的、且对这个 chat 可见、且 1小时内发、且 Char 还没评论过的动态
+        // --- [事件 A：User 发了新动态] ---
         const recentUserPost = momentsData.find(m => 
-            (m.author.name === 'Me' || m.author.name === 'User') && // 是 User 发的
-            m.visibleChatIds && m.visibleChatIds.includes(chat.id) && // ★ 对当前窗口可见！
-            (now - m.time < 60 * 60 * 1000) && // 1小时内的新鲜热乎
-            (!m.comments.some(c => c.author === char.name)) // 还没评论过
+            (m.isMe || m.author.name === momentsHost.name) && 
+            m.visibleChatIds && m.visibleChatIds.includes(chat.id) && 
+            (now - m.time < 60 * 60 * 1000) && 
+            (!m.comments.some(c => c.author === char.name)) 
         );
 
         if (recentUserPost) {
-            console.log(`[Chat: ${char.name}] 发现 User 发了新动态，准备组合拳出击...`);
-            // 触发组合拳：朋友圈互动 + 私聊
+            console.log(`[Chat: ${char.name}] 发现 User 动态，准备出击...`);
             await performComplexInteraction(char, chat, persona, 'REACT_TO_USER_POST', recentUserPost);
-            continue; // 处理完这个就不做其他随机行为了，省钱
+            continue; 
         }
         
         // --- [事件 B：修罗场/回复循环] ---
-        // 逻辑：找一条 Char 自己发的动态，且最新一条评论不是自己 (说明有人回了)，且 Char 还没回回去
         const charPost = momentsData.find(m => 
             m.author.name === char.name && 
             m.comments.length > 0 &&
             m.comments[m.comments.length-1].author !== char.name 
         );
         
-        // 70% 概率回复 (别太烦人)
         if (charPost && Math.random() < 0.7) { 
-             console.log(`[Chat: ${char.name}] 发现有人评论了自己，准备回击...`);
              await performComplexInteraction(char, chat, persona, 'REPLY_TO_COMMENT', charPost);
              continue;
         }
 
-        // --- [事件 C：普通随机闲聊/发动态 (低优先级)] ---
-        // 只有在非强制模式下，且时间间隔到了才触发
+        // --- [事件 C：随机闲聊/发动态] ---
         if (!forceReaction && (now - lastTime > intervalMs)) {
-            // 增加一点随机延迟 (0~10%)，防止像闹钟一样死板
             const randomDelay = Math.random() * (intervalMs * 0.1); 
-            
             if (now - lastTime > intervalMs + randomDelay) {
                 const dice = Math.random();
-                
-                // 30% 概率 Char 自己发新动态
                 if (dice < 0.3) {
                     await performComplexInteraction(char, chat, persona, 'POST_NEW_MOMENT', null);
-                } 
-                // 70% 概率纯私聊 (分享日常)
-                else {
+                } else {
                     await performComplexInteraction(char, chat, persona, 'INIT_CHAT', null);
                 }
-                
-                // 更新活跃时间 (记在 Chat 上！)
                 chat.lastActiveTime = now;
                 localforage.setItem('Wx_Chats_Data', chatsData);
             }
@@ -8271,19 +8693,51 @@ async function checkAllCharactersActivity(forceReaction = false) {
     }
 }
 
-// 3. ★★★ 核心交互执行器 (一次调用，多种操作) ★★★
+// 3. ★★★ 核心交互执行器 ★★★
 async function performComplexInteraction(char, chat, persona, mode, targetPost) {
-    // 准备聊天记录 (最近 15 条，作为背景上下文)
+    // 准备上下文
     const recentMsgs = (chat.messages || []).slice(-15).map(m => 
         `${m.role === 'me' ? (persona.name || 'User') : char.name}: ${m.text}`
     ).join('\n');
 
-    // --- 构建 Prompt ---
+    // 格式化时间辅助函数
+    const formatTime = (ts) => new Date(ts).toLocaleString('zh-CN', { hour12: false });
+
+    // --- 构建 System Prompt ---
     let systemPrompt = `
     【指令：自主意识行为决策】
-    你现在是 **${char.name}**。
-    你的聊天对象 (User) 是 **${persona.name || 'User'}**。
+    你现在是 **${char.name}**
+    你的聊天对象 (User) 是 **${persona.name || 'User'}**
     
+        【活人感聊天法则 (必须严格遵守)】
+    1. **拒绝“像个AI”**：
+       - 说话要**松弛**！不要端着。像在微信/QQ上跟亲密的人打字一样
+       - **句式要碎**：不要发长篇大论，人类聊天是碎片化的
+       - **语气词与口癖**：根据你的性格（${char.persona}），适当使用语气词（如“啧”、“哎”、“嘛...”）
+       - **不要书面语**：多用“行”、“喔”、“知道了”、“噢”等
+
+    2. **情绪与标点 (表达潜台词)**：
+       - **日常/开心/撒娇**：不要用句号，多用空格、波浪号(~) 或不加标点
+       - **严肃/生气/吃醋/冷漠**：多用句号(。)。单发一个“？”或“。”表示极度无语或情绪波动
+       - **激动/震惊**：可以用“！！”或“？？”，甚至乱码感“。。。。。。”
+    3. **避雷指南**
+        - **禁止肢体暴力威胁**：绝对不要说“打断腿”、“关小黑屋”、“锁起来”等违法或恐怖的话。你的占有欲体现在“吃醋、阴阳怪气、委屈、黏人”上，而不是暴力
+        - **拒绝古早油腻语录**：禁止使用“女人，你在玩火”、“收利息”、“磨人的小妖精”、“小野猫”、“骚货”等过时的霸总语录
+        - **现代恋爱观**：你是现代正常人，不是法制咖。当User不听话时，你的反应应该是“生气不理你”、“狂发消息轰炸”、“自己生闷气求哄”或者其他，而不是“惩罚”、“打断腿”、“锁起来”
+       - 禁止任何霸总小说式的油腻描写（如“邪魅一笑”、“挑起下巴”、“恶劣”）
+
+<anti_clumsily>
+# 用户输入需要被完全理解和演绎，必须专注演绎每一个角色的 思考/理解/解读/共情/人性/知性。角色不应是 呆滞 / 笨拙 / 困惑 的，禁止在思维链/正文中用 笨拙 / 呆滞 描述任何角色，删除一切 笨拙 / 呆滞 / 不理解 / 困惑 / 投降 等相关词语和剧情表现。
+# 角色应自然而然展现出对应该知道的事情的了解，而不是 困惑/惊讶。对于不熟悉的事情角色应该快速 分析/理解 。鼓励角色思考/远视。
+# 对于没有历史记录的能力，应通过角色背景确定角色对该能力的掌握程度。
+# 不应扭曲任何用户的输入，必须仔细分析并展现出完全的理解。
+# 角色之间的思维隔离不意味着导向 误解/曲解，一切内心活动必须导向 思考/理解/沟通。
+# 角色不允许不反应，必须有灵动而活人感的反馈，禁止让User 唱独角戏。
+# 角色应当主动追求渴望的事物，应思考做什么能让事情往角色期望的方向发展。
+# 应当用 爱情 替换 占有/掌控。
+# 角色鼓励负反馈式响应。角色做出行动得到不好的结果，应深刻负反馈式影响角色之后的行为，即反思/修改行动模式/模仿正确行动，而非正反馈式的一再重复错误行为。角色应自然而然行动，而非模仿之前剧情行动。
+</anti_clumsily>
+
     **历史聊天上下文**：
     ${recentMsgs}
     
@@ -8295,58 +8749,67 @@ async function performComplexInteraction(char, chat, persona, mode, targetPost) 
     `;
 
     if (mode === 'REACT_TO_USER_POST') {
-        // 把评论区其他人的话也塞进去，制造修罗场素材
-        const otherComments = targetPost.comments.map(c => `${c.author}: ${c.content}`).join('\n');
-        
+        // 整理评论区，格式：[楼层] 姓名: 内容
+        const otherComments = targetPost.comments.length > 0 
+            ? targetPost.comments.map((c, i) => `[${i+1}楼] ${c.author}: ${c.content}`).join('\n')
+            : "（暂时没有其他人评论）";
+
         systemPrompt += `
-    User 刚刚发了一条朋友圈，并且**指定了你可以看到**。
-    朋友圈内容：“${targetPost.content}”
+    User 在 **${formatTime(targetPost.time)}** 时发了一条朋友圈！
+    
+    【朋友圈详情】
+    内容：“${targetPost.content}”
     图片：${targetPost.image ? '有图片' : '无图片'}
-    已有评论：
+    
+    【观察到的评论区（你要注意有没有别的异性！）】
     ${otherComments}
     
     **你的任务 (必须同时完成)**：
-    1. 【朋友圈动作】：必须点赞。必须写一条评论。
-       - 如果看到有别的人评论(特别是异性)，请表现出吃醋、阴阳怪气或询问“这是谁”。
-       - 如果只有User，就根据内容互动。
-    2. 【私聊动作】：在私聊窗口引用这条动态，直接找 User 兴师问罪或聊天。
-       - 语气要和朋友圈评论有所区分，私聊可以更亲密或更凶。
+    1. 【朋友圈动作】：必须点赞，必须写一条评论！
+       - ⚠️ **吃醋检测**：如果评论区里有你不认识的人或潜在情敌与User互动，你的反应可以是吃醋、占有欲、阴阳怪气、直接问“这人是谁”或者大方直接和user互动、吃瓜等等
+       - 如果只有User，就根据内容温馨/调侃或其他来互动
+    2. 【私聊动作】：在私聊窗口引用这条动态，你可以直接找 User 兴师问罪或聊天
+       - **可以分段发送多条消息（气泡雨）**，不要把所有话塞在一个气泡里
+       - 私聊内容应该比公开评论更私密，可以是对User的质问（关于评论区的人），或者是对动态内容的深入讨论
         `;
     } 
     else if (mode === 'REPLY_TO_COMMENT') {
         const lastComment = targetPost.comments[targetPost.comments.length-1];
         systemPrompt += `
     你在朋友圈发了：“${targetPost.content}”
-    **${lastComment.author}** 评论了你：“${lastComment.content}”
+    **${lastComment.author}** 在 ${formatTime(lastComment.time)} 时评论了你：“${lastComment.content}”
     
     **你的任务**：
-    1. 【回复评论】：在朋友圈里回复他/她。
-    2. 【私聊】：(可选) 如果评论的人是 User，且内容值得在私聊里继续说，则生成私聊内容；否则私聊内容留空。
+    1. 【回复评论】：在朋友圈里回复他/她
+    2. 【私聊】：(可选) 仅当评论者是User且话题值得私聊时，才生成私聊消息列表；否则留空
         `;
     }
     else if (mode === 'INIT_CHAT') {
         systemPrompt += `
-    太久没说话了，你想主动找 User 聊天。
-    分享你的日常，或者问 User 在干嘛。
+    现在是 ${formatTime(Date.now())}。
+    太久没说话了，你想主动找 User 聊天，你可以分享日常、询问user在干嘛或者其他。记得分段发送消息！
     `;
     }
     else if (mode === 'POST_NEW_MOMENT') {
         systemPrompt += `
-    你想发一条新的朋友圈动态。
-    内容是关于你的心情、日常或对 User 的想法。
+    你想发一条新的朋友圈动态！
+    内容是关于你的心情、日常、对 User 的想法或者其他！
     `;
     }
 
     systemPrompt += `
-    \n‼️**格式严格要求**‼️
-    请**仅**返回一个 JSON 对象，不要包含任何 markdown 格式或额外文本。格式如下：
+    \n‼️**JSON格式严格要求**‼️
+    请**仅**返回一个 JSON 对象，**不要**包含 Markdown 代码块
+    对于私聊消息，请使用 "chat_message_list" 数组，以支持分段发送（气泡雨）
+    格式如下：
     {
         "action_type": "${mode}",
-        "like_post": true,  // 是否点赞 (仅朋友圈相关模式有效)
-        "comment_content": "这里填朋友圈评论的内容", 
-        "chat_message": "这里填私聊发送给User的内容 (如果不需要私聊则填 null)",
-        "new_post_content": "这里填新动态的内容(仅发动态模式有效)"
+        "like_post": true, 
+        "comment_content": "朋友圈评论内容", 
+        "chat_message_list": ["第一句气泡", "第二句气泡", "第三句..."], 
+        "new_post_content": "新动态内容"
     }
+    注意："chat_message_list" 如果不需要私聊，请设为 [] (空数组)。
     `;
 
     // --- 调用 API ---
@@ -8354,25 +8817,30 @@ async function performComplexInteraction(char, chat, persona, mode, targetPost) 
         const responseText = await callApiInternal(systemPrompt); 
         if (!responseText) return;
 
-        // 清洗 JSON (防止 AI 加 ```json ... ```)
+        // 清理可能存在的 markdown 标记
         const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        const actionData = JSON.parse(cleanJson);
+        let actionData;
+        try {
+            actionData = JSON.parse(cleanJson);
+        } catch (err) {
+            console.error("JSON解析失败，尝试修复或跳过", cleanJson);
+            return;
+        }
 
         console.log(`[${char.name}] 自主决策结果:`, actionData);
 
-        // --- 执行动作 (Action Execution) ---
+        // --- 执行动作 ---
 
-        // 1. 处理点赞
+        // 1. 点赞
         if (actionData.like_post && targetPost) {
             if (!targetPost.likesList) targetPost.likesList = [];
-            // 避免重复赞
             if (!targetPost.likesList.some(u => u.name === char.name)) {
                 targetPost.likesList.push({ name: char.name });
                 targetPost.likes = (targetPost.likes || 0) + 1;
             }
         }
 
-        // 2. 处理朋友圈评论
+        // 2. 评论
         if (actionData.comment_content && targetPost) {
             if (!targetPost.comments) targetPost.comments = [];
             targetPost.comments.push({
@@ -8381,11 +8849,10 @@ async function performComplexInteraction(char, chat, persona, mode, targetPost) 
                 to: (mode === 'REPLY_TO_COMMENT') ? targetPost.comments[targetPost.comments.length-1].author : null, 
                 time: Date.now()
             });
-            // 触发红点
-            if(window.triggerMomentsRedDot) window.triggerMomentsRedDot();
+            if(window.triggerMomentsRedDot) window.triggerMomentsRedDot(char.avatar);
         }
 
-        // 3. 处理发新动态
+        // 3. 发新动态
         if (actionData.new_post_content) {
             const newMoment = {
                 id: Date.now(),
@@ -8396,62 +8863,84 @@ async function performComplexInteraction(char, chat, persona, mode, targetPost) 
                 comments: []
             };
             momentsData.unshift(newMoment);
-            if(window.triggerMomentsRedDot) window.triggerMomentsRedDot();
+
+if(window.triggerMomentsRedDot) window.triggerMomentsRedDot(char.avatar);
         }
 
-        // 4. 保存朋友圈数据 (一次性保存)
+        // 4. 保存朋友圈数据 (无论是否修改都保存一下以防万一)
         await localforage.setItem('Wx_Moments_Data', momentsData);
-        // 如果界面开着，刷新UI
         if (document.getElementById('wx-page-moments') && document.getElementById('wx-page-moments').style.display === 'block') {
             if(window.renderMomentsFeed) window.renderMomentsFeed();
         }
 
-        // 5. 处理私聊 (最重要的一步！)
-        if (actionData.chat_message) {
-            // 模拟打字延迟 (让 User 感觉到 AI 刚评论完就切过来私聊了，很有压迫感！)
-            setTimeout(() => {
-                // 如果是针对动态的私聊，加上引用
-                let quote = null;
-                if (mode === 'REACT_TO_USER_POST' && targetPost) {
-                    quote = { 
-                        text: `[朋友圈] ${targetPost.content}`, 
-                        name: persona.name, 
-                        id: targetPost.id 
-                    };
+        // 5. 处理私聊 (气泡雨 + 引用卡片)
+        // 兼容旧格式：如果 AI 还是返回了 chat_message 字符串，强转为数组
+        let msgsToSend = [];
+        if (Array.isArray(actionData.chat_message_list)) {
+            msgsToSend = actionData.chat_message_list;
+        } else if (actionData.chat_message) {
+            msgsToSend = [actionData.chat_message];
+        }
+
+        if (msgsToSend.length > 0) {
+            // 定义发送函数，使用 async/await 模拟打字间隔
+            const sendBubbleRain = async () => {
+                for (let i = 0; i < msgsToSend.length; i++) {
+                    const msgText = msgsToSend[i];
+                    
+                    // 只有第一条消息带引用卡片 (防止刷屏)
+                    let quote = null;
+                    if (i === 0 && mode === 'REACT_TO_USER_POST' && targetPost) {
+                        quote = { 
+                            type: 'moment_share', 
+                            text: targetPost.content, 
+                            image: targetPost.image, 
+                            name: momentsHost.name, 
+                            id: targetPost.id 
+                        };
+                    }
+
+                    // 模拟更真实的打字时间：基础延迟 + 文字长度延迟
+                    // 第一条消息稍微久一点（思考时间），后续消息快一点
+                    const delay = i === 0 ? 3000 : (1000 + msgText.length * 100); 
+                    
+                    await new Promise(resolve => setTimeout(resolve, delay));
+
+                    if(window.pushMsgToData) {
+                        // type 传 'text'，quote 传进去，系统会自动处理为带引用的文本
+                        window.pushMsgToData(chat, msgText, 'char', quote, 'text');
+                    }
                 }
-                
-                // 发送消息
-                if(window.pushMsgToData) {
-                    window.pushMsgToData(chat, actionData.chat_message, 'char', quote, 'text');
-                }
-                
-            }, 4000); // 4秒延迟
+            };
+            
+            // 启动发送队列 (不阻塞当前主线程)
+            sendBubbleRain();
         }
 
     } catch (e) {
-        console.error("自主意识执行失败 (可能是JSON解析错):", e);
+        console.error("自主意识执行失败:", e);
     }
 }
-// ====================
-// [补丁] 可见范围选择器开关
-// ====================
 window.toggleVisibilitySelector = function() {
     const overlay = document.getElementById('visibility-drawer-overlay');
     if (!overlay) return;
 
-    // 切换显示/隐藏
-    if (overlay.style.display === 'flex') {
-        overlay.style.display = 'none';
-        updateVisibilityLabel(); // 关掉时顺便更新一下显示的文字
+    if (overlay.classList.contains('active')) {
+        // === 出场动画逻辑 ===
+        overlay.classList.add('closing-anim');
+        overlay.classList.remove('active');
+        setTimeout(() => {
+            overlay.style.display = 'none';
+            overlay.classList.remove('closing-anim');
+        }, 400); // 这里的 400 毫秒要和 CSS 的过渡时间一致
     } else {
+        // === 入场动画逻辑 ===
         overlay.style.display = 'flex';
-        // 如果你的CSS有写 .active 动画，可以在这里加上
-       setTimeout(() => overlay.classList.add('active'), 10);
+        overlay.offsetHeight; // 强制重绘，确保动画能跑起来
+        overlay.classList.add('active');
+        renderVisibilitySelector();
     }
 };
-
-// 顺手帮你写了个更新文字的小功能
-// (比如选了3个人，外面就显示 "Selected 3")
 function updateVisibilityLabel() {
     const label = document.getElementById('vis-label');
     if (!label) return;
@@ -8540,4 +9029,153 @@ window.closeGlobalConfirm = function() {
         box.classList.remove('destructive'); // 顺便把红色皮肤也卸载了
         overlay.classList.remove('closing-anim');
     }, 200); // 这里的时间要跟 CSS 里的动画时间一致哦
+};
+
+// ==========================================
+// ★ 多选与转发核心逻辑 (Multi-Select Core) ★
+// ==========================================
+
+let isMsgMultiSelectMode = false;
+let selectedMsgIndices = [];
+
+// 1. 开启多选模式
+window.startMsgMultiSelect = function(initialIndex) {
+    isMsgMultiSelectMode = true;
+    selectedMsgIndices = [initialIndex]; // 默认选中长按的那一条
+    document.body.classList.add('msg-multi-select-active');
+    
+    // 创建底部操作栏 (如果还没创建)
+    if(!document.getElementById('msg-multi-bar')) {
+        const bar = document.createElement('div');
+        bar.id = 'msg-multi-bar';
+        bar.className = 'msg-multi-bar';
+        bar.innerHTML = `
+            <div class="multi-act-btn" onclick="exitMsgMultiSelect()">
+                <span class="icon">✕</span><span>Cancel</span>
+            </div>
+            <div class="multi-act-btn" onclick="handleBulkForward()">
+                <span class="icon">➦</span><span>Forward</span>
+            </div>
+            <div class="multi-act-btn delete" onclick="handleBulkDelete()">
+                <span class="icon">🗑️</span><span>Delete</span>
+            </div>
+        `;
+        document.body.appendChild(bar);
+    }
+    
+    // 刷新消息列表 (让勾勾显示出来)
+    renderMessages(currentChatId, false);
+};
+
+// 2. 退出多选模式
+window.exitMsgMultiSelect = function() {
+    isMsgMultiSelectMode = false;
+    selectedMsgIndices = [];
+    document.body.classList.remove('msg-multi-select-active');
+    renderMessages(currentChatId, false);
+};
+
+// 3. 切换单条选中状态
+window.toggleMsgSelection = function(index) {
+    const pos = selectedMsgIndices.indexOf(index);
+    if (pos > -1) {
+        selectedMsgIndices.splice(pos, 1); // 取消选中
+    } else {
+        selectedMsgIndices.push(index); // 选中
+    }
+    renderMessages(currentChatId, false); // 刷新界面
+};
+
+// 4. 批量删除
+window.handleBulkDelete = function() {
+    if(selectedMsgIndices.length === 0) return;
+    showGlobalConfirm("Delete", `确定要删除选中的 ${selectedMsgIndices.length} 条消息吗？`, () => {
+        const chat = chatsData.find(c => c.id === currentChatId);
+        // 从大到小删，防止索引错乱
+        selectedMsgIndices.sort((a,b) => b-a).forEach(idx => {
+            chat.messages.splice(idx, 1);
+        });
+        saveChatAndRefresh(chat);
+        exitMsgMultiSelect();
+    });
+};
+
+// 5. 合并转发 (生成聊天记录卡片)
+window.handleBulkForward = function() {
+    if(selectedMsgIndices.length === 0) return;
+    
+    const chat = chatsData.find(c => c.id === currentChatId);
+    const me = personasData.find(p => p.id === chat.personaId) || { name: 'User' };
+    const contact = contactsData.find(c => c.id === chat.contactId) || { name: 'TA' };
+    
+    // 提取消息
+    const selectedMsgs = selectedMsgIndices.sort((a,b) => a-b).map(idx => chat.messages[idx]);
+    
+    // 生成预览摘要 (前3条)
+    const summary = selectedMsgs.slice(0, 3).map(m => {
+        const name = (m.role === 'me' ? me.name : contact.name);
+        let content = m.text || '[特殊消息]';
+        if(m.type === 'sticker') content = '[表情包]';
+        if(m.type === 'image') content = '[图片]';
+        return `${name}: ${content.substring(0, 10)}`;
+    }).join('\n');
+
+    // 构造转发数据包
+    const mergedData = {
+        type: 'merged_record',
+        title: `Chat History with ${contact.name}`,
+        summary: summary + (selectedMsgs.length > 3 ? '\n...' : ''),
+        count: selectedMsgs.length,
+        msgs: selectedMsgs 
+    };
+
+    // 打开选择好友弹窗 (复用现有的选择器)
+    openForwardSelectorWithData(mergedData);
+};
+
+// 6. 转发选择器 (适配版)
+window.openForwardSelectorWithData = function(data) {
+    const overlay = document.createElement('div');
+    overlay.className = 'forward-overlay-container'; // 复用你的 iOS 动画类
+    
+    overlay.innerHTML = `
+        <div style="height:100px; padding-top:44px; background:#fff; display:flex; align-items:center; padding:0 20px; border-bottom:1px solid #f0f0f0;">
+            <div style="font-size:17px; font-weight:600;">Forward to...</div>
+            <div style="margin-left:auto; color:#007aff; cursor:pointer;" onclick="this.parentNode.parentNode.remove()">Cancel</div>
+        </div>
+        <div id="f-list" style="flex:1; overflow-y:auto; padding-bottom:40px;"></div>
+    `;
+    document.body.appendChild(overlay);
+    
+    const list = overlay.querySelector('#f-list');
+    chatsData.forEach(c => {
+        const char = contactsData.find(ct => ct.id === c.contactId);
+        if(!char) return;
+        
+        const row = document.createElement('div');
+        row.className = 'forward-row-item';
+        
+        // 处理头像
+        let avatarUrl = char.avatar || '';
+        if(avatarUrl.includes('url(')) avatarUrl = avatarUrl.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '');
+        
+        row.innerHTML = `
+            <div style="background-image: url('${avatarUrl}'); background-size: cover; width:40px; height:40px; border-radius:10px; margin-right:12px; background-color:#eee;"></div>
+            <div>${char.name}</div>
+        `;
+        
+        row.onclick = () => {
+            showGlobalConfirm("Forward", `转发给 ${char.name} 吗？`, () => {
+                // ★ 关键：发送 merged_record 类型的消息
+                pushMsgToData(c, "Chat History", 'me', data, 'merged_record');
+                showSystemAlert("已发送！");
+                overlay.remove();
+                exitMsgMultiSelect();
+            });
+        };
+        list.appendChild(row);
+    });
+    
+    // 触发进场动画
+    setTimeout(() => overlay.classList.add('active'), 10);
 };

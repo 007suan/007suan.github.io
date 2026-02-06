@@ -458,6 +458,7 @@ html {
 .ins-tab.active svg { fill: #000; }
 .ins-photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
 .ins-grid-item { aspect-ratio: 1/1; background-color: #f0f0f0; background-size: cover; background-position: center; }
+
 /* === Moments Feed Style (仿 Ins Feed) === */
 .moment-card {
     background: #fff;
@@ -517,28 +518,24 @@ html {
     position: absolute; top: -5px; right: -5px;
     width: 18px; height: 18px; background: #ff3b30; color: #fff;
     border-radius: 50%; font-size: 12px; display: flex;
-    justify-content: center; align-items: center; cursor: pointer;
-}
+    justify-content: center; align-items: center; cursor: pointer; }
+
 /* 发现页（仿ins）*/
 .ins-new-header {
     background: #fff;
-    padding: 10px 20px 0;
-}
+    padding: 10px 20px 0; }
 .ins-top-row {
     display: flex;
     align-items: center;
-    margin-bottom: 12px;
-}
+    margin-bottom: 12px; }
 .ins-avatar-section {
     margin-right: 20px;
-    position: relative;
-}
+    position: relative; }
 .ins-stats-section {
     flex: 1;
     display: flex;
     justify-content: space-around;
-    text-align: center;
-}
+    text-align: center; }
 .ins-stat-box { display: flex; flex-direction: column; }
 .ins-stat-num { font-size: 18px; font-weight: 700; color: #000; }
 .ins-stat-label { font-size: 12px; color: #333; }
@@ -556,6 +553,40 @@ html {
 .ins-icon-btn-small {
     width: 32px; height: 32px; background: #EFEFEF; border-radius: 6px;
     display: flex; justify-content: center; align-items: center; cursor: pointer;
+}
+/* 朋友圈专用加载容器 */
+.moments-loading-view {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-top: 100px; /* 避开封面图位置 */
+    color: #999;
+}
+
+/* 漂亮的转圈圈动画 */
+.moments-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(0, 0, 0, 0.05);
+    border-top-color: #07c160; /* 微信绿 */
+    border-radius: 50%;
+    animation: moments-spin 0.8s linear infinite;
+    margin-bottom: 12px;
+}
+
+@keyframes moments-spin {
+    to { transform: rotate(360deg); }
+}
+
+.moments-loading-text {
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+
+/* 进场时的淡入效果 */
+#moments-feed-container {
+    transition: opacity 0.3s ease;
 }
 /* 朋友圈发布界面  */
 .wx-post-header {
@@ -595,18 +626,118 @@ html {
 .m-comment-box.show { display: block; }
 .m-like-row { display: flex; align-items: center; gap: 5px; color: #576b95; font-weight: 600; font-size: 13px; margin-bottom: 5px; }
 .m-like-icon { width: 14px; height: 14px; fill: #576b95; border: 1px solid #576b95; border-radius: 50%; padding: 2px; }
+/* 让小箭头和文字对齐得更完美 */
+.setting-value {
+    display: flex;
+    align-items: center;
+    color: #8e8e93;
+    font-size: 15px;
+}
 
-/* --- 在 style.css 中添加或修改 --- */
+.ios-chevron {
+    flex-shrink: 0;
+}
 
+/* 朋友圈转发卡片容器 */
+.moment-share-container {
+    margin-bottom: 8px;
+    position: relative;
+    max-width: 260px; 
+    animation: bubble-pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+/* 链接头像的箭头 */
+.m-share-arrow {
+    position: absolute;
+    left: -20px;
+    top: 15px;
+    width: 20px;
+    height: 20px;
+    opacity: 0.6;
+    transform: rotate(180deg); }
+/* 卡片主体 */
+.moment-share-card {
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border: 1px solid #f0f0f0; }
+.m-share-header {
+    padding: 8px 12px;
+    background: #fafafa;
+    border-bottom: 1px solid #f5f5f5;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px; }
+.m-share-body {
+    padding: 12px; }
+.m-share-text {
+    font-size: 13px;
+    color: #333;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden; }
+.m-share-media img {
+    width: 100%;
+    border-radius: 8px;
+    max-height: 180px;
+    object-fit: cover; }
+.m-share-footer {
+    padding: 6px 12px;
+    font-size: 10px;
+    color: #ccc;
+    text-align: right;
+    background: #fafafa; }
+/* 转发选择器专属动画 */
+.forward-overlay-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #f7f7f7;
+    z-index: 30000;
+    display: flex;
+    flex-direction: column;
+    /* 进场动画定义 */
+    transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.forward-overlay-container.active {
+    transform: translateY(0);
+}
+
+/* 退场动画状态 */
+.forward-overlay-container.closing {
+    transform: translateY(100%);
+}
+
+/* 里面的列表项稍微加一点点击反馈 */
+.forward-row-item {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    background: #fff;
+    border-bottom: 0.5px solid #f0f0f0;
+    transition: background 0.2s;
+}
+
+.forward-row-item:active {
+    background: #f2f2f2;
+}
 /* 朋友圈操作区容器 */
 .moment-interactions {
     background: #F7F7F7;
     border-radius: 4px;
     margin-top: 10px;
     font-size: 14px;
-    color: #404040;
-}
-
+    color: #404040; }
 /* 点赞列表区域 */
 .moment-likes {
     padding: 6px 10px;
@@ -616,75 +747,43 @@ html {
     flex-wrap: wrap;
 }
 .moment-likes:empty {
-    display: none; /* 没人点赞就不显示 */
-}
-/* 小心心图标 (列表里的) */
-.like-icon-small {
-    width: 14px;
-    height: 14px;
-    margin-right: 5px;
-    background-image: url('https://i.postimg.cc/XqvxL9rd/wu-biao-ti117-20260131195425.png'); /* 这里的图也可以用空心的 */
-    background-size: cover;
+    display: none; }
+/* 朋友圈卡片弹出动画 */
+@keyframes cardPop {
+    0% { transform: scale(0.5); opacity: 0; }
+    60% { transform: scale(1.05); opacity: 1; } 
+    100% { transform: scale(1); opacity: 1; }
 }
 
+.moment-share-container.animate-pop {
+    animation: cardPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; /* 贝塞尔曲线让它更有弹性 */
+    transform-origin: center center; }
 /* 评论列表区域 */
 .moment-comments {
-    padding: 6px 10px;
-}
+    padding: 6px 10px; }
 .moment-comment-item {
     margin-bottom: 2px;
-    line-height: 1.4;
-}
+    line-height: 1.4; }
 .comment-author {
     color: #576B95;
     font-weight: 500;
-    cursor: pointer;
-}
-
-/* 你的实心点赞按钮样式 (用在你提供的那个图) */
-.action-btn.liked {
-    /* 强行覆盖之前的图标 */
-    background-image: url('https://i.postimg.cc/XqvxL9rd/wu-biao-ti117-20260131195425.png') !important;
-    background-size: cover;
-    background-position: center;
-    filter: none !important; /* 去掉可能存在的灰色滤镜 */
-    transform: scale(1.1); /* 点赞时稍微放大一点点 */
-    transition: transform 0.2s;
-}
-
+    cursor: pointer; }
 /* --- 红点提示 --- */
-/* 给底栏“发现”加红点 */
-#dock-btn-discover {
-    position: relative;
-}
-#dock-btn-discover::after {
-    content: '';
+/* 红点基础样式 */
+.nav-red-dot {
     position: absolute;
-    top: 5px;
-    right: 15px; /* 根据你的图标位置微调 */
-    width: 10px;
-    height: 10px;
-    background: #FA5151;
-    border-radius: 50%;
-    display: none; /* 默认隐藏 */
-    border: 1px solid #fff; }
-#dock-btn-discover.has-news::after {
-    display: block; }
-/* 给发现页列表里的“朋友圈”加红点 */
-.discover-cell.moments-cell {
-    position: relative; }
-.discover-cell.moments-cell::before {
-    content: '';
-    position: absolute;
-    right: 40px; /* 箭头左边 */
-    top: 50%;
-    transform: translateY(-50%);
-    width: 8px;
+    top: -2px;      /* 往上挪一点 */
+    right: -2px;    /* 往右挪一点 */
+    width: 8px;     /* 小巧一点才精致 */
     height: 8px;
-    background: #FA5151;
-    border-radius: 50%;
-    display: none; }
-.discover-cell.moments-cell.has-news::before { display: block; }
+    background-color: #ff3b30; /* 苹果红，超醒目 */
+    border-radius: 50%;        /* 变圆圆 */
+    border: 1.5px solid #fff;  /* 加个小白边，防止跟背景混在一起 */
+    z-index: 10; }
+/* 确保父容器是定位参考点 */
+.wx-tab-icon {
+    position: relative;
+    display: inline-block; }
 
 /* WECHAT PROFILE (个人主页) */
 #wx-profile-view { 
@@ -701,6 +800,83 @@ html {
     from { transform: translateX(-100%); opacity: 0.8; } 
     to { transform: translateX(0); opacity: 1; } 
 }
+/* --- 1. 朋友圈操作栏美化 --- */
+.m-action-bar {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    position: relative; /* 为了放右边的标签 */
+}
+
+.m-act-icon {
+    width: 24px;   /* 图标大小，根据你的图调整 */
+    height: 24px;
+    object-fit: contain;
+    margin-right: 20px; /* 图标之间的间距 */
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+.m-act-icon:active { transform: scale(0.9); }
+
+.m-tag-icon {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 20px; /* 标签小一点 */
+    width: auto;
+    opacity: 0.8;
+}
+
+/* --- 2. 只有选中时的绿色复选框美化 --- */
+.v-check-box {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1px solid #c5c5c5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+    background: #fff;
+}
+.v-check-box.checked {
+    background: #07c160; /* 微信绿 */
+    border-color: #07c160;
+}
+.v-check-box::after {
+    content: '';
+    display: block;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    margin-top: -2px;
+    opacity: 0; /* 默认隐藏对勾 */
+}
+.v-check-box.checked::after { opacity: 1; }
+
+/* --- 3. 顶部新消息提示条 (图3的效果) --- */
+#moments-msg-tip {
+    background: #3a3a3a;
+    color: #fff;
+    padding: 10px 15px;
+    margin: 15px auto; /* 居中 */
+    width: 180px;
+    border-radius: 6px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+#moments-msg-tip img {
+    width: 24px; height: 24px; border-radius: 4px; margin-right: 8px;
+}
+
+
 /* 底部出口按钮 & 底部签名 */
 .wx-p3-footer-area {
     position: absolute;
@@ -1591,6 +1767,74 @@ body.offline-active #chat-msg-area {
 .msg-row.new-msg {
     animation: msgSlideUp 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
     transform-origin: bottom center; }
+/* --- 1. 多选小勾勾样式 --- */
+.msg-check-circle {
+    display: none; /* 默认隐藏 */
+    width: 20px;
+    height: 20px;
+    border: 2px solid #c7c7cc;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #fff;
+    transition: all 0.2s;
+    z-index: 10;
+}
+
+/* 选中状态：变蓝 + 打钩 */
+.msg-row.selected .msg-check-circle {
+    background-color: #007aff;
+    border-color: #007aff;
+}
+.msg-row.selected .msg-check-circle::after {
+    content: '';
+    position: absolute;
+    left: 6px; top: 3px;
+    width: 5px; height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+/* 多选开启时显示 */
+.msg-multi-select-active .msg-check-circle { display: block; }
+
+/* 位置偏移：我(右边)的消息勾在左，TA(左边)的消息勾在右 */
+.msg-row.me .msg-check-circle { left: -30px; }
+.msg-row.other .msg-check-circle { right: -30px; }
+
+/* 容器要给位置腾地方 */
+.msg-multi-select-active .msg-container-col { position: relative; margin: 0 40px !important; }
+
+/* --- 2. 两行排版的长按菜单 --- */
+.mpm-row {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr); /* 每行4个 */
+    gap: 8px;
+    padding: 10px !important;
+}
+
+/* 底部操作栏 */
+.msg-multi-bar {
+    position: fixed; bottom: -100px; left: 0; width: 100%; height: 85px;
+    background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px);
+    display: flex; justify-content: space-around; align-items: center;
+    border-top: 0.5px solid #eee; z-index: 20000;
+    transition: bottom 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    padding-bottom: 25px;
+}
+
+.msg-multi-select-active .msg-multi-bar { bottom: 0; }
+
+.multi-act-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #007aff; font-size: 10px; }
+.multi-act-btn .icon { font-size: 22px; }
+.multi-act-btn.delete { color: #ff3b30; }
+/* --- 3. 底部多选栏粗边框 --- */
+.msg-multi-bar {
+    border-top: 1px solid #565656 !important; /* 加粗到3px */
+    box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+}
 /* ============================================================
    6.4. 表情包系统 (Sticker System) 
    ============================================================ */
@@ -1794,22 +2038,26 @@ body.offline-active #chat-msg-area {
     cursor: pointer; flex-shrink: 0; transition: all 0.2s;
 }
 .up-del:hover { background: #ff3b30; color: white; }
-
-/* 弹窗底部按钮 */
-.action-btn-row { display: flex !important; gap: 8px !important; margin-top: auto !important; }
-.action-btn-row .alert-btn {
-    flex: 1 !important; min-height: 38px !important; font-size: 13px !important;
-    border-radius: 10px !important; display: flex !important;
-    align-items: center !important; justify-content: center !important; font-weight: 600 !important;
+/* 预览项：修复图片和输入框对齐 */
+.sticker-preview-item {
+    display: flex;
+    align-items: center; /* 垂直居中对齐的关键 */
+    gap: 12px;
+    padding: 10px;
+    background: #fff;
+    border-radius: 12px;
+    margin-bottom: 8px;
 }
-#multi-select-bar {
-    position: absolute !important; 
-    bottom: 0;
-    left: 0;
-    width: 100% !important;
-    background: white !important;
-    z-index: 1000 !important;
-    box-shadow: 0 -5px 15px rgba(0,0,0,0.05); }
+.sticker-preview-item img {
+    width: 50px; height: 50px; object-fit: cover;
+    border-radius: 8px; flex-shrink: 0;
+}
+.sticker-preview-item input {
+    flex: 1; height: 36px; border: 1px solid #efeff4;
+    background: #f9f9f9; border-radius: 8px; padding: 0 10px;
+    font-size: 13px; outline: none;
+}
+
 /* ------------------------------------------------------------
    6.5. 聊天控制面板 (Control Panel / Settings)
    ------------------------------------------------------------ */
@@ -3727,3 +3975,284 @@ body, button, input, textarea, select, .edit-text {
 }
 .vis-title { font-weight: 700; font-size: 16px; }
 .vis-done-btn { color: #007aff; font-weight: 600; cursor: pointer; flex: 1; text-align: right; }
+/* 抽屉的基础样式 */
+.visibility-drawer-overlay, .mention-drawer-overlay {
+    position: fixed;
+    bottom: -100%; /* 初始在屏幕外 */
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0);
+    transition: background 0.3s ease;
+    z-index: 9999;
+    display: none; /* 逻辑上由 JS 控制显示 */
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+/* 激活状态：背景变黑，面板升起 */
+.visibility-drawer-overlay.active, .mention-drawer-overlay.active {
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+}
+
+.drawer-content {
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    transform: translateY(100%); /* 内容初始向下偏移 */
+    transition: transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.active .drawer-content {
+    transform: translateY(0); /* 升起 */
+}
+
+/* 退出时的过渡类 */
+.closing-anim .drawer-content {
+    transform: translateY(100%);
+}
+/* 1. 遮罩层：背景变暗 + 模糊效果 */
+.mention-drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0); /* 初始透明 */
+    backdrop-filter: blur(0px);
+    transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    z-index: 30000;
+    display: none; /* JS 控制显示 */
+    align-items: flex-end; /* 让内容靠在底部 */
+}
+
+/* 激活状态下的遮罩 */
+.mention-drawer-overlay.active {
+    display: flex !important;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+}
+
+/* 2. 抽屉内容区：Ins 风圆角白底 */
+.mention-drawer-overlay .drawer-content {
+    width: 100%;
+    background: #ffffff;
+    border-radius: 15px 15px 0 0;
+    padding-bottom: env(safe-area-inset-bottom); /* 适配刘海屏底部 */
+    transform: translateY(100%); /* 初始在下方 */
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+}
+
+/* 激活时升起 */
+.mention-drawer-overlay.active .drawer-content {
+    transform: translateY(0);
+}
+
+/* 退出时的动画 */
+.mention-drawer-overlay.closing-anim .drawer-content {
+    transform: translateY(100%);
+}
+
+/* 3. 顶部 Header：极简居中标题 */
+.drawer-header {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    border-bottom: 0.5px solid #efefef;
+}
+
+.drawer-header span {
+    font-size: 16px;
+    font-weight: 600;
+    color: #262626;
+    flex: 1;
+    text-align: center;
+    margin-left: 40px; /* 为了让文字绝对居中 */
+}
+
+.drawer-close {
+    font-size: 15px;
+    font-weight: 600;
+    color: #0095f6; /* 经典的 Ins 蓝色 */
+    cursor: pointer;
+    padding: 10px 0;
+}
+
+/* 4. 列表区域 */
+.drawer-list {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 10px 0;
+}
+
+/* 5. 每一行好友列表 */
+.v-row-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    transition: background 0.2s;
+}
+
+.v-row-item:active {
+    background: #fafafa;
+}
+
+/* 圆形头像 */
+.v-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    border: 0.5px solid #efefef;
+    margin-right: 12px;
+}
+
+/* 名字样式 */
+.v-name {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    color: #262626;
+}
+
+/* 6. Ins 风格勾选框：蓝色圆圈 */
+.v-check-box {
+    width: 22px;
+    height: 22px;
+    border: 2px solid #dbdbdb;
+    border-radius: 50%;
+    position: relative;
+    transition: all 0.2s;
+}
+
+.v-check-box.checked {
+    background: #0095f6;
+    border-color: #0095f6;
+}
+
+/* 勾选框里的那个白色对钩 */
+.v-check-box.checked::after {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 3px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+/* === Mist Forest 风格提醒卡片 === */
+.mist-card-container {
+    width: 240px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.05);
+    transition: transform 0.2s;
+}
+.mist-card-container:active {
+    transform: scale(0.98);
+}
+
+/* 浏览器头部 */
+.mist-browser-header {
+    height: 28px;
+    background: linear-gradient(to bottom, #e8e8e8, #dcdcdc); /* 银灰色渐变 */
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    border-bottom: 1px solid #ccc;
+    position: relative;
+}
+
+/* 红黄绿三个点 */
+.mist-dots {
+    display: flex;
+    gap: 5px;
+}
+.mist-dots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: block;
+}
+
+/* 标题 */
+.mist-title {
+    position: absolute;
+    left: 0; 
+    width: 100%;
+    text-align: center;
+    font-size: 10px;
+    color: #666;
+    font-weight: 600;
+    font-family: monospace; /* 复古字体感 */
+    pointer-events: none; /* 防止遮挡 */
+}
+
+/* 卡片主体 */
+.mist-card-body {
+    padding: 20px 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    background: linear-gradient(135deg, #fff 0%, #f9f9f9 100%);
+}
+
+/* 头像 */
+.mist-avatar-box {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    padding: 3px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 10px;
+}
+.mist-main-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* 装饰星星 */
+.mist-deco-star {
+    position: absolute;
+    font-size: 12px;
+    color: #ccc;
+    opacity: 0.6;
+}
+
+/* 文字 */
+.mist-info-text {
+    text-align: center;
+    margin-bottom: 15px;
+}
+.mist-username {
+    font-size: 12px;
+    font-weight: bold;
+    color: #333;
+}
+.mist-sub {
+    font-size: 10px;
+    color: #999;
+    letter-spacing: 0.5px;
+}
+
+/* 按钮 */
+.mist-enter-btn {
+    background: #666; /* 深灰色胶囊 */
+    color: #fff;
+    font-size: 10px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-weight: 500;
+}
