@@ -155,7 +155,7 @@ html {
 .app-name { font-size: 11px; color: #333; text-align: center; cursor: pointer; }
 .search-pill { margin: 10px auto 0; background: rgba(255,255,255,0.5); padding: 4px 12px; border-radius: 20px; display: flex; align-items: center; gap: 5px; font-size: 11px; color: #555; backdrop-filter: blur(10px); cursor: pointer; width: fit-content; }
 /* Dock */
-.dock { position: absolute; bottom: 15px; left: 15px; right: 15px; height: 100px; background: var(--dock-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border-radius: 38px; display: flex; justify-content: space-around; align-items: center; padding: 0 10px; z-index: 50; }
+.dock { position: absolute; bottom: 14px; left: 15px; right: 15px; height: 100px; background: var(--dock-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border-radius: 38px; display: flex; justify-content: space-around; align-items: center; padding: 0 10px; z-index: 50; }
 /* ==================== 
    ★ Page 2: 第二页组件 */
 .widgy-container {
@@ -236,7 +236,7 @@ html {
     backdrop-filter: none !important;
     box-shadow: none !important;
     border: none !important;
-    margin: 50px 0 10px 0; 
+    margin: 30px 0 10px 0; 
     
     padding: 0 15px !important;
     width: 100%; }
@@ -343,8 +343,356 @@ html {
 @keyframes waveJump {
     0%, 100% { height: 4px; } 50% { height: 12px; }
 }
+/* --- Page 3 新布局 CSS --- */
 
+/* 2. 第二行分栏布局 */
+.p3-split-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 15px;
+    margin-top: 15px;
+    gap: 15px;
+}
 
+/* 1. 调整外层容器，防止溢出屏幕 */
+.p3-split-row {
+    display: flex;
+    padding: 0 3px;
+    margin-top: 15px;
+    gap: 12px; /* 间距稍微收敛一点 */
+    align-items: stretch;
+    width: 100%;
+    box-sizing: border-box; /* 核心：确保边距不撑大容器 */
+}
+
+.p3-contact-card {
+    width: 160px;  /* 宽度：你想要多宽就写多少 */
+    height: 175px; /* 高度：想做成正方形就让宽高一样 */
+    
+    /* 下面这些保持你的设置 */
+    display: flex;
+    flex-direction: column; 
+    align-items: center;
+    justify-content: space-between; 
+    padding: 20px 10px;
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(15px);
+    border-radius: 28px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+}
+
+/* 2. 头像部分：保持圆润挺拔 */
+.p3-cc-avatar {
+    flex-shrink: 0;
+    width: 75px; /* 上下布局时，头像可以稍微大一点 */
+    height: 75px;
+    border-radius: 50%;
+    background-color: #eee;
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* 3. 名字部分 */
+.p3-cc-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
+    margin: 2px 0;
+}
+
+/* 4. 底部按钮：横向并排 */
+.p3-cc-actions {
+    display: flex;
+    gap: 20px; /* 两个按钮之间的缝隙，方便宝宝操作 */
+    justify-content: center;
+    width: 100%;
+}
+
+.p3-cc-btn {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.p3-cc-btn:active {
+    transform: scale(0.9);
+}
+
+/* 右侧：APP矩阵 */
+.p3-app-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 25px; 
+}
+
+/* 3. 中间卡片 (JiDan Bing 风格) */
+.p3-mid-card {
+    width: 320px;  
+    height: 200px; 
+    margin: 20px 20px;
+    background: #444; 
+    color: #fff;
+    border-radius: 20px;
+    padding: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+
+.p3-mc-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.p3-mc-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #444;
+    margin-right: 10px;
+}
+
+.p3-mc-info {
+    flex: 1;
+}
+
+.p3-mc-name {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.p3-mc-sub {
+    font-size: 11px;
+    opacity: 0.6;
+}
+
+.p3-mc-heart {
+    font-size: 20px;
+}
+
+.p3-mc-content {
+    display: flex;
+    gap: 10px;
+}
+
+.p3-mc-img-box {
+    flex: 1;
+    height: 70px;
+    background-color: #666; /* 默认灰色 */
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.p3-mc-label {
+    position: absolute;
+    bottom: 6px;
+    left: 8px;
+    font-size: 10px;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.p3-mc-footer {
+    margin-top: 12px;
+    font-size: 9px;
+    text-align: right;
+    opacity: 0.5;
+    letter-spacing: 1px;
+}
+/* --- 记录卡片 --- */
+.ins-record-card {
+    width: 100%;
+    background: #fff;
+    border-radius: 24px;
+    padding: 15px;
+    margin-top: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+}
+.rc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+.rc-user { display: flex; align-items: center; gap: 10px; }
+.rc-avatar { width: 34px; height: 34px; border-radius: 50%; background: #eee; }
+.rc-name { font-size: 13px; font-weight: 700; color: #333; }
+.rc-meta { font-size: 10px; color: #bbb; }
+.rc-nav { display: flex; gap: 12px; font-size: 12px; font-weight: 600; color: #bbb; }
+.rc-nav .active { color: #3a3a3a; border-bottom: 2px solid #3a3a3a; padding-bottom: 2px; }
+
+.rc-body { display: flex; gap: 15px; }
+.rc-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 3px;
+}
+.grid-item { aspect-ratio: 1/1; background: #eee; border-radius: 2px; }
+.rc-content {
+    flex: 1.2;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.rc-content p { font-size: 12px; color: #666; line-height: 1.6; }
+.rc-actions { display: flex; gap: 10px; font-size: 14px; justify-content: flex-end; }
+
+/* 头像框效果 */
+.p3-cc-avatar {
+    width: 75px;
+    height: 75px;
+    border-radius: 50%;
+    border: 6px solid rgba(255, 255, 255, 0.8); /* 头像框 */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 8px;
+}
+
+/* App 组外容器：半透明正方形 */
+.p3-app-group-container {
+    width: 175px;
+    height: 175px;
+    background: rgba(255, 255, 255, 0.3); /* 半透明背景 */
+    border-radius: 28px; /* 圆角更有果味 */
+    display: flex;
+    align-items: center;
+    justify-content: center; }
+
+/* 内部网格微调 */
+.p3-app-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    row-gap: 0.5px;    /* 调大这个，上下就宽裕了 */
+    column-gap: 7px; /* 调大这个，左右就分开了 */
+    padding: 10px;
+}
+/* 专门针对第三页那 4 个 App 的昵称间距 */
+.p3-app-grid .app-item {
+    /* 把间距从 6px 缩小到 2px，数值越小贴得越死哦 (♯｀∧´) */
+    gap: 2px !important; 
+}
+
+/* 缩小版小组件卡片 */
+.social-card-mini {
+    width: 350px; /* 进一步缩小宽度 */
+    background: #ffffff;
+    border: 1px solid #f0f0f0;
+    border-radius: 20px;
+    padding: 12px 15px;
+    /* 严格维持图2的长宽比 */
+    aspect-ratio: 2.1 / 1; 
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+/* 顶部装饰 */
+.card-header {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    color: #eee;
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+
+/* 主体区域 */
+.card-body {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    gap: 12px;
+}
+
+/* 头像：等比例缩小 */
+.avatar-wrapper {
+    position: relative;
+    width: 54px;
+    height: 54px;
+}
+
+.avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    background-color: #dcdcdc; /* 纯灰色块 */
+    border-radius: 14px;
+}
+
+.wing {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: #f8f8f8;
+    border-radius: 50%;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: -1;
+}
+.wing-left { left: -6px; }
+.wing-right { right: -6px; }
+
+/* 气泡文字 */
+.content-bubble {
+    background: #fcfcfc;
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    color: #555;
+    line-height: 1.4;
+    border: 1px solid #f5f5f5;
+    flex: 1;
+}
+
+/* 底部功能区 */
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 8px;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    border-left: 2px solid #7a94e0;
+    padding-left: 8px;
+}
+
+.username {
+    font-size: 12px;
+    font-weight: bold;
+    color: #444;
+}
+
+.user-id {
+    font-size: 9px;
+    color: #bbb;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 4px;
+    background: #f7f7f7;
+    padding: 3px 8px;
+    border-radius: 15px;
+}
+
+.btn {
+    border: none;
+    background: none;
+    font-size: 10px;
+    color: #888;
+    cursor: pointer;
+}
 /* ==========================================================================
    4. APP WINDOWS SYSTEM (窗口系统)
    ========================================================================== */
@@ -2938,12 +3286,11 @@ body, button, input, textarea, select, .edit-text {
 /* ==========================================================================
    9. 酷狗音乐全套样式 
    ========================================================================== */
-
-/* ==================== 1. 桌面小组件 (Widget) ==================== */
+/* 桌面小组件 (Widget)  */
 .widget-music-ios {
     position: relative;
     width: 310px;
-    height: 150px;
+    height: 140px;
     /* 核心：半透明磨砂玻璃 */
     background: rgba(30, 30, 35, 0.65);
     backdrop-filter: blur(25px) saturate(180%);
@@ -2952,7 +3299,7 @@ body, button, input, textarea, select, .edit-text {
     border-radius: 22px;
     overflow: hidden;
     margin: 15px auto 0;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.03);
     color: white;
     transition: transform 0.2s;
     z-index: 10;
@@ -3344,7 +3691,7 @@ body, button, input, textarea, select, .edit-text {
     width: 340px;
     height: 145px;
     /* ★ 改了这里：透明度从 0.6 变成 0.4，更通透了！ */
-    background: rgba(30, 30, 30, 0.4); 
+    background: rgba(30, 30, 30, 0.2); 
     /* 核心：毛玻璃效果保持不变 */
     backdrop-filter: blur(25px) saturate(180%);
     -webkit-backdrop-filter: blur(25px) saturate(180%);
@@ -3356,7 +3703,7 @@ body, button, input, textarea, select, .edit-text {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    margin: 10px auto;
+    margin: 5px auto;
     box-shadow: 0 8px 24px rgba(0,0,0,0.25);
     color: #fff;
 }
