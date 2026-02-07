@@ -51,8 +51,8 @@
                     <div class="cal-day-text" id="widget_day_text">星期五</div>
                 </div>
                 <div class="cal-text-area">
-                    <div class="edit-text cal-sub-text" style="text-align:right;">幸福的秘诀是拥有苹果时只在意苹果。<br>(๑＞＜)☆</div>
-                    <div class="edit-text cal-main-text" style="margin-top:4px; text-align:right;">𝗪𝗶𝗻𝘁𝗲𝗿.🌨</div>
+                    <div class="edit-text cal-sub-text" style="text-align:right;" id="widget_text">幸福的秘诀是拥有苹果时只在意苹果。<br>(๑＞＜)☆</div>
+                    <div class="edit-text cal-main-text" style="margin-top:4px; text-align:right;" id="widget_text-2">𝗪𝗶𝗻𝘁𝗲𝗿.🌨</div>
                 </div>
             </div>
             <div class="cal-photo-grid">
@@ -66,7 +66,7 @@
     <div class="outer-glass-wrapper">
         <div class="social-card-mini" id="widget_large">
             <div class="card-header">
-                <div class="stars edit-text">★★★</div>
+                <div class="stars edit-text" id="widget_large_text">★★★</div>
                 <div class="menu-icon">≡</div>
             </div>
             
@@ -79,7 +79,7 @@
                     </div>
                 </div>
                 <div class="text-section">
-                    <div class="edit-text content-bubble">
+                    <div class="edit-text content-bubble" id="widget_large_text-2">
 我只是想要一个拥抱 这很难做到吗( ˘•ω•˘ )那行吧…我不计较了
                     </div>
                 </div>
@@ -87,8 +87,8 @@
 
             <div class="card-footer">
                 <div class="user-info">
-                    <span class="edit-text username">(っˊ⸝⸝>ㅅ<)ω<ˋ⸝⸝)♡</span>
-                    <span class="edit-text user-id">THIS IS OUR SPACE!</span>
+                    <span class="edit-text username" id="widget_large_text-3">(っˊ⸝⸝>ㅅ<)ω<ˋ⸝⸝)♡</span>
+                    <span class="edit-text user-id" id="widget_large_text-4">THIS IS OUR SPACE!</span>
                 </div>
                 <div class="action-buttons">
                     <button class="btn">评论</button>
@@ -116,7 +116,7 @@
         <div class="widgy-large-card">
             <div class="w-top-part">
                 <div class="w-mini-cover upload-img"></div>
-                <div class="w-star-icon edit-text">★</div>
+                <div class="w-star-icon edit-text" id="w-text">★</div>
             </div>
             <div class="w-bottom-part">
                 <div class="w-thumb-item upload-img" style="background-color: #ddd;"></div>
@@ -128,7 +128,7 @@
 
         <div class="widgy-mid-row">
             <div class="big-photo-widget upload-img">
-                <div class="photo-tag edit-text">Focus</div>
+                <div class="photo-tag edit-text" id="w-text-2">Focus</div>
             </div>
             <div class="widgy-small-grid">
                 <div class="app-item" onclick="openApp('music')">
@@ -237,35 +237,35 @@
                     <div class="fav-img upload-img" id="fav_head_1"></div>
                     <img src="https://i.postimg.cc/SQTJkb6z/wu-biao-ti119-20260117234002.png" class="fav-frame">
                 </div>
-                <div class="fav-name">TvT</div>
+                <div class="fav-name edit-text" id="fav_head_text">TvT</div>
             </div>
             <div class="fav-item">
                 <div class="fav-avatar-box">
                     <div class="fav-img upload-img" id="fav_head_2"></div>
                     <img src="https://i.postimg.cc/SQTJkb6z/wu-biao-ti119-20260117234002.png" class="fav-frame">
                 </div>
-                <div class="fav-name">(𓐍ㅇㅂㅇ𓐍)</div>
+                <div class="fav-name edit-text" id="fav_head_text-2">(𓐍ㅇㅂㅇ𓐍)</div>
             </div>
             <div class="fav-item">
                 <div class="fav-avatar-box">
                     <div class="fav-img upload-img" id="fav_head_3"></div>
                     <img src="https://i.postimg.cc/SQTJkb6z/wu-biao-ti119-20260117234002.png" class="fav-frame">
                 </div>
-                <div class="fav-name">(⸝⸝> ω <⸝⸝)</div>
+                <div class="fav-name edit-text" id="fav_head_text-3">(⸝⸝> ω <⸝⸝)</div>
             </div>
             <div class="fav-item">
                 <div class="fav-avatar-box">
                     <div class="fav-img upload-img" id="fav_head_4"></div>
                     <img src="https://i.postimg.cc/SQTJkb6z/wu-biao-ti119-20260117234002.png" class="fav-frame">
                 </div>
-                <div class="fav-name">ㅋㅋㅋ…</div>
+                <div class="fav-name edit-text" id="fav_head_text-4">ㅋㅋㅋ…</div>
             </div>
             <div class="fav-item">
                 <div class="fav-avatar-box">
                     <div class="fav-img upload-img" id="fav_head_5"></div>
                     <img src="https://i.postimg.cc/SQTJkb6z/wu-biao-ti119-20260117234002.png" class="fav-frame">
                 </div>
-                <div class="fav-name">★₊⁺๑!!♪ 🤍ྀི</div>
+                <div class="fav-name edit-text" id="fav_head_text-5">★₊⁺๑!!♪ 🤍ྀི</div>
             </div>
         </div>
     </div>
@@ -301,33 +301,13 @@
     </div>
 </div>
 
-    <div class="p3-mid-card">
-        <div class="p3-mc-header">
-            <div class="p3-mc-avatar upload-img" style="background-color: #333;"></div>
-            <div class="p3-mc-info">
-                <div class="p3-mc-name edit-text">JiDan Bing</div>
-                <div class="p3-mc-sub edit-text">@lo428ly</div>
-            </div>
-            <div class="p3-mc-heart">♥</div>
-        </div>
-        <div class="p3-mc-content">
-            <div class="p3-mc-img-box upload-img" id="p3_mid_img_1">
-                <div class="p3-mc-label edit-text">01. MY LOVE! ↗</div>
-            </div>
-            <div class="p3-mc-img-box upload-img" id="p3_mid_img_2">
-                <div class="p3-mc-label edit-text">02. OUR SONG? ↗</div>
-            </div>
-        </div>
-        <div class="p3-mc-footer edit-text">THIS IS U&ME IN OUR BEST YEARS TOGETHER ★</div>
-    </div>
-
     <div class="ins-record-card">
         <div class="rc-header">
             <div class="rc-user">
                 <div class="rc-avatar upload-img"></div>
                 <div class="rc-user-info">
-                    <div class="rc-name edit-text">えぇぇ(๑°ㅁ°๑)ぇぇ ！</div>
-                    <div class="rc-meta edit-text">625天前</div>
+                    <div class="rc-name edit-text" id="p3-mid-text-4">えぇぇ(๑°ㅁ°๑)ぇぇ ！</div>
+                    <div class="rc-meta edit-text" id="p3-mid-text-5">625天前</div>
                 </div>
             </div>
             <div class="rc-nav">
@@ -346,18 +326,42 @@
                 <div class="grid-item upload-img"></div>
             </div>
             <div class="rc-content">
-                <p class="edit-text">日子总是时好时坏坏坏坏坏坏坏坏坏坏坏（๑-ㅅ-๑）...zZ乙</p>
-                <div class="rc-actions edit-text">於你而言我是一顆星嗎？
+                <p class="edit-text" id="p3-mid-text-5">日子总是时好时坏坏坏坏坏坏坏坏坏坏坏（๑-ㅅ-๑）...zZ乙</p>
+                <div class="rc-actions edit-text" id="p3-mid-text-6">於你而言我是一顆星嗎？
                 </div>
             </div>
         </div>
     </div>
 </div>
+<div class="desktop-page" id="page-4" style="overflow-y: auto;">
+    <div style="height: 10px;"></div>
+
+    <div class="p3-mid-card">
+        <div class="p3-mc-header">
+            <div class="p3-mc-avatar upload-img" style="background-color: #333;"></div>
+            <div class="p3-mc-info">
+                <div class="p3-mc-name edit-text" id="p3-mid-text">Daily</div>
+                <div class="p3-mc-sub edit-text" id="p3-mid-text-2">@Cat</div>
+            </div>
+            <div class="p3-mc-heart">♥</div>
+        </div>
+        <div class="p3-mc-content">
+            <div class="p3-mc-img-box upload-img" id="p3_mid_img_1">
+                <div class="p3-mc-label edit-text" id="p3-mid-text-3">01. MY LOVE! ↗</div>
+            </div>
+            <div class="p3-mc-img-box upload-img" id="p3_mid_img_2">
+                <div class="p3-mc-label edit-text" id="p3-mid-text-3">02. OUR SONG? ↗</div>
+            </div>
+        </div>
+        <div class="p3-mc-footer edit-text" id="p3-mid-text-3">THIS IS U&ME IN OUR BEST YEARS TOGETHER ★</div>
+    </div>
+</div>
+
 <div class="desktop-footer-controls">
     <div class="search-pill edit-text" id="desktop_search_text">
 <span style="font-size: 12px; display: flex; align-items: center; gap: 4px;">
     <img src="https://i.postimg.cc/tJwpcBxk/wu-biao-ti119-20260203173406.png" 
-         style="width: 12px; height: 12px; object-fit: contain;"> 
+         style="width: 12px; height: 12px; object-fit: contain;" id="search-text"> 
     搜索
 </span>
     </div>
@@ -366,6 +370,7 @@
         <div class="d-dot active" id="d-dot-1"></div>
         <div class="d-dot" id="d-dot-2"></div>
         <div class="d-dot" id="d-dot-3"></div>
+        <div class="d-dot" id="d-dot-4"></div>
     </div>
 </div>
 
