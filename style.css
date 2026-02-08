@@ -4916,7 +4916,7 @@ body, button, input, textarea, select, .edit-text {
     
     /* ★ 修改：宽度加宽到 340px (只要不超过屏幕宽就行)，让中间缝隙变大 */
     width: 350px; 
-    margin: 15px auto 0;
+    margin: 30px auto 0;
     padding: 0 2px; /* 左右稍微留点余地 */
 }
 
