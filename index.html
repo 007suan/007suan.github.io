@@ -23,6 +23,29 @@
     <meta name="referrer" content="no-referrer">
     <link rel="stylesheet" href="style.css">
 </head>
+<div id="activation-gate">
+    <div class="ins-box">
+        <div class="ins-logo">
+            <img src="https://api.iconify.design/fluent-emoji:sparkles.svg" alt="Logo">
+        </div>
+
+        <div class="ins-title">Welcome</div>
+        <div class="ins-subtitle">请输入访问口令以继续</div>
+
+        <div class="ins-input-wrapper">
+            <input type="text" id="activation-input" placeholder="输入激活码 (Code)" autocomplete="off">
+        </div>
+
+        <button onclick="checkActivation()" class="gate-btn">解锁进入</button>
+        
+        <div id="gate-error">口令错误，请重试</div>
+    </div>
+
+    <div class="ins-footer">
+        <span class="from-text">From</span>
+        <span class="brand-text">Doris 2026</span>
+    </div>
+</div>
 <body>
 
     <div class="phone-screen" id="phoneScreen">
@@ -2054,8 +2077,12 @@
     </div>
 </div>
 
-    </div> <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
-    <script src="script.js"></script>
+    </div> 
+    
+    <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
 
+    <script src="security.js"></script>
+
+    <script src="script.js"></script>
 </body>
 </html>

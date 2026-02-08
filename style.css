@@ -11,7 +11,7 @@
     --app-icon-size: 62px;
     
     /* Dock 颜色 (带磨砂感) */
-    --dock-bg: rgba(208, 208, 208, 0.8);
+    --dock-bg: rgba(208, 208, 208, 0.7);
     
     /* 汽水音乐主题色 */
     --soda-yellow: #fce76d;
@@ -126,8 +126,145 @@ html {
 /* 隐形大按钮 */
 .home-bar.hidden-mode { bottom: 10px; width: 200px; height: 30px; background-color: transparent !important; padding: 10px; }
 .home-bar:active { background-color: #555; }
+/* =========================================
+   ✨ 升级版：淡淡Ins风毛玻璃门禁
+   ========================================= */
+#activation-gate {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    /* 【核心改动】背景变半透明+超级毛玻璃 */
+    background: rgba(255, 255, 255, 0.3); /* 淡淡的白色遮罩 */
+    backdrop-filter: blur(35px);          /* 强力模糊后面的背景 */
+    -webkit-backdrop-filter: blur(35px);  /* 兼容苹果手机 */
+    z-index: 9999999;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    animation: fadeIn 0.5s ease; /* 加个淡入动画 */
+}
 
+/* 中间的大盒子 - 变成悬浮的磨砂玻璃卡片 */
+.ins-box {
+    width: 340px;
+    padding: 40px 30px; /* 加大一点内边距更通透 */
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 60px;
+    
+    /* 【核心改动】卡片本身的材质 */
+    background: rgba(255, 255, 255, 0.75); /* 比背景稍微不透明一点 */
+    border-radius: 32px; /* 超级圆润 */
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15); /* 柔和的悬浮投影 */
+    border: 1px solid rgba(255, 255, 255, 0.6); /* 加一个发光的小白边 */
+}
 
+/* Logo 图片 */
+.ins-logo img {
+    width: 80px; height: 80px;
+    margin-bottom: 25px;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.1)); /* Logo投影加深一点 */
+}
+
+.ins-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: #1a1a1a; /* 字体颜色加深一点点 */
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+}
+
+.ins-subtitle {
+    font-size: 15px;
+    color: #666;
+    margin-bottom: 35px;
+}
+
+/* 输入框样式优化 */
+.ins-input-wrapper {
+    width: 100%;
+    margin-bottom: 18px;
+}
+
+#activation-input {
+    width: 100%;
+    padding: 16px;
+    background: #f0f2f5; /* 稍微深一点的灰底，不用边框了 */
+    border: none; 
+    border-radius: 12px;
+    font-size: 16px;
+    color: #1a1a1a;
+    outline: none;
+    transition: all 0.3s;
+    text-align: center; /* 文字居中输入更好看 */
+    font-weight: 500;
+}
+
+/* 输入框聚焦时 - 变成蓝色光圈 */
+#activation-input:focus {
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(0, 149, 246, 0.3); /* Ins蓝光圈 */
+}
+
+/* 按钮样式 (保持Ins蓝，加点质感) */
+.gate-btn {
+    width: 100%;
+    padding: 16px 0;
+    background: linear-gradient(45deg, #0095f6, #0074cc); /* 微变色渐变 */
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(0, 149, 246, 0.3); /* 蓝色按钮投影 */
+}
+
+.gate-btn:active { transform: scale(0.98); }
+.gate-btn:disabled {
+    background: #b2dffc;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+/* 错误提示 */
+#gate-error {
+    color: #ed4956;
+    font-size: 13px;
+    margin-top: 20px;
+    display: none;
+    font-weight: 600;
+    animation: shake 0.4s ease-in-out;
+}
+
+/* 底部 Logo 区域 - 颜色调浅一点适应深色背景 */
+.ins-footer {
+    position: absolute;
+    bottom: 40px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    opacity: 0.8;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.5); /* 加点文字描边防背景太花 */
+}
+.from-text { font-size: 13px; color: #666; }
+.brand-text { 
+    font-size: 15px; font-weight: 700; color: #333; 
+    letter-spacing: 1px; margin-top: 4px;
+}
+
+/* 进场和摇晃动画 */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+}
 /* ==========================================================================
    3. DESKTOP WIDGETS (桌面与组件)
    ========================================================================== */
@@ -1826,7 +1963,6 @@ html {
 .c-h-name { font-weight: 600; font-size: 16px; color: #000; }
 .c-h-status { font-size: 10px; color: #8e8e93; }
 .c-h-right { flex: 1; display: flex; justify-content: flex-end; color: #007aff; }
-.chat-body-ios { padding-top: 150px; padding-bottom: 90px; min-height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 0; padding-left: 10px; padding-right: 10px; }
 .chat-footer-ios {
     position: absolute;
     bottom: 0;
@@ -1885,7 +2021,32 @@ html {
 .cf-emoji-icon svg { width: 100%; height: 100%; fill: #8e8e93; }
 
 /* 聊天主体区域 */
-.chat-body-ios { padding-top: 150px; padding-bottom: 90px; min-height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 0; padding-left: 10px; padding-right: 10px; }
+.chat-body-ios {
+    /* 1. 间距保持你的设置 */
+    padding-top: 150px; 
+    padding-bottom: 90px;
+    padding-left: 10px; 
+    padding-right: 10px;
+
+    /* 2. 布局模式 */
+    display: flex; 
+    flex-direction: column; 
+    gap: 0; 
+
+    /* ★★★ 3. 核心修复 (重点在这里！) ★★★ */
+    
+    /* 把 min-height: 100% 删掉！改成下面这三句： */
+    flex: 1;                  /* 自动占满剩余空间 */
+    height: 100% !important;  /* 锁死高度，不许乱长 */
+    min-height: 0 !important; /* 允许压缩，这是Flex滚动的关键 */
+    
+    /* 4. 开启滚动 */
+    overflow-y: auto !important; 
+    
+    /* 5. 让苹果手机滚动更丝滑 */
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: contain; 
+}
 #chat-msg-area { transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), padding-bottom 0.3s; position: relative; z-index: 0; scroll-behavior: smooth; }
 body.menu-open #chat-msg-area { padding-bottom: 380px !important; transform: translateY(-280px); }
 
@@ -4966,7 +5127,6 @@ body, button, input, textarea, select, .edit-text {
 }
 
 /* -- 下半部分：音乐卡片 -- */
-/* -- 下半部分：音乐卡片 -- */
 .tcw-music-card {
     /* ★ 核心修改：背景改为从左上(淡灰)到右下(纯白)的渐变 */
     background: linear-gradient(to bottom right, #e8e8e8 0%, #ffffff 100%);
@@ -5009,57 +5169,20 @@ body, button, input, textarea, select, .edit-text {
 .tmc-birthday { font-size: 8px; color: #666; font-family: monospace; }
 .tmc-controls { display: flex; gap: 8px; align-items: center; }
 .tmc-controls svg { width: 12px; height: 12px; cursor: pointer; }
-
-/* 3. 右侧：2x2 APP 矩阵 */
-.twp-app-grid-box {
-    /* ★ 修改：稍微改窄一点点，给中间腾位置 */
-    width: 140px; 
-    
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    
-    /* App 之间的间距 */
-    row-gap: 20px; 
-    column-gap: 15px; 
-    
-    /* 顶部对齐微调，让它跟左边头像平齐 */
-    padding-top: 15px; 
-    justify-items: center;
-}
-
-/* 确保App图标大小 */
-.twp-app-grid-box .app-icon {
-    width: 56px; height: 56px;
-    border-radius: 14px;
-    margin-bottom: 5px;
-    /* 阴影淡一点，清爽 */
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-}
 /* ============================================================
    ★ Page 2 右侧 APP 组盒子 (仿 Page 3 风格)
    ============================================================ */
 
 /* 右侧容器：半透明大圆角方块 */
 .twp-app-group-container {
-    /* 宽度跟左边差不多，保持平衡 */
     width: 175px; 
-    height: 175px; /* 做成正方形 */
-    
-    /* ★ 核心风格：半透明白底 + 模糊 */
+    height: 175px; 
     background: rgba(255, 255, 255, 0.45); 
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    
-    border-radius: 26px; /* 大圆角 */
+    border-radius: 24px; 
     box-shadow: 0 5px 20px rgba(0,0,0,0.02);
-    
-    /* 居中里面的 Grid */
     display: flex;
     align-items: center;
-    justify-content: center;
-}
-
+    justify-content: center; }
 /* 内部 Grid 布局 */
 .twp-group-inner-grid {
     display: grid;
@@ -5067,13 +5190,7 @@ body, button, input, textarea, select, .edit-text {
     grid-template-rows: repeat(2, 1fr);
     row-gap: 0.5px;    /* 调大这个，上下就宽裕了 */
     column-gap: 15px; /* 调大这个，左右就分开了 */
-    padding: 10px;
-}
-
-/* 针对盒子内部 App 图标的微调 */
-.twp-group-inner-grid .app-icon {
-    gap: 2px !important; 
-}
+    padding: 10px; }
 /* 当键盘弹出时，允许内容区域稍微灵活一点 */
 @media (max-height: 600px) {
     .phone-screen {
@@ -5081,4 +5198,19 @@ body, button, input, textarea, select, .edit-text {
         min-height: 100vh !important;
         overflow: auto !important; /* 允许必要时滚动 */
     }
+}
+/* 1. 找到这个，把 gap 改小 */
+.twp-group-inner-grid .app-item {
+    /* 原来可能没写或者继承了全局的 6px */
+    gap: 2px !important; /* 这个数字越小，文字离图标越近 */
+}
+
+/* 2. 找到这个，把 margin-bottom 删掉或改小 */
+.twp-group-inner-grid .app-icon {
+    /* ...其他样式保持不变... */
+    
+    /* 原来是 margin-bottom: 4px; */
+    margin-bottom: 1 !important; /* 改成 0 就彻底贴上去了 */
+    
+    /* ...其他样式保持不变... */
 }
