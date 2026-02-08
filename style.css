@@ -145,24 +145,6 @@ html {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     animation: fadeIn 0.5s ease; /* 加个淡入动画 */
 }
-
-/* 中间的大盒子 - 变成悬浮的磨砂玻璃卡片 */
-.ins-box {
-    width: 340px;
-    padding: 40px 30px; /* 加大一点内边距更通透 */
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 60px;
-    
-    /* 【核心改动】卡片本身的材质 */
-    background: rgba(255, 255, 255, 0.75); /* 比背景稍微不透明一点 */
-    border-radius: 32px; /* 超级圆润 */
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15); /* 柔和的悬浮投影 */
-    border: 1px solid rgba(255, 255, 255, 0.6); /* 加一个发光的小白边 */
-}
-
 /* Logo 图片 */
 .ins-logo img {
     width: 80px; height: 80px;
@@ -209,30 +191,6 @@ html {
     background: #fff;
     box-shadow: 0 0 0 3px rgba(0, 149, 246, 0.3); /* Ins蓝光圈 */
 }
-
-/* 按钮样式 (保持Ins蓝，加点质感) */
-.gate-btn {
-    width: 100%;
-    padding: 16px 0;
-    background: linear-gradient(45deg, #0095f6, #0074cc); /* 微变色渐变 */
-    color: #fff;
-    border: none;
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: 0 4px 12px rgba(0, 149, 246, 0.3); /* 蓝色按钮投影 */
-}
-
-.gate-btn:active { transform: scale(0.98); }
-.gate-btn:disabled {
-    background: #b2dffc;
-    box-shadow: none;
-    cursor: not-allowed;
-}
-
-/* 错误提示 */
 #gate-error {
     color: #ed4956;
     font-size: 13px;
@@ -241,8 +199,6 @@ html {
     font-weight: 600;
     animation: shake 0.4s ease-in-out;
 }
-
-/* 底部 Logo 区域 - 颜色调浅一点适应深色背景 */
 .ins-footer {
     position: absolute;
     bottom: 40px;
@@ -264,6 +220,41 @@ html {
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-6px); }
     75% { transform: translateX(6px); }
+}
+.ins-logo img {
+    width: 80px; height: 80px;
+    margin-bottom: 25px;
+    border-radius: 24px; 
+    object-fit: cover;  /* 【新加】保证照片填满圆形不变形 */
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.2)); /* 投影稍微加深一点点 */
+}
+/* 按钮样式 (改成高级深灰渐变) */
+.gate-btn {
+    width: 100%;
+    padding: 16px 0;
+    /* 【核心改动】背景色换成深灰渐变 */
+    background: linear-gradient(45deg, #333333, #5a5a5a); 
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    /* 【核心改动】投影也换成黑色系的 */
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3); 
+}
+
+.gate-btn:active { 
+    transform: scale(0.98);
+    background: linear-gradient(45deg, #222222, #444444); /* 按下时更深 */
+}
+
+/* 禁用状态 (比如验证中) */
+.gate-btn:disabled {
+    background: #999999; /* 变成浅灰色 */
+    box-shadow: none;
+    cursor: not-allowed;
 }
 /* ==========================================================================
    3. DESKTOP WIDGETS (桌面与组件)
