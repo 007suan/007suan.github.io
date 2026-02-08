@@ -853,6 +853,7 @@ window.loadAllData = function() {
     });
 };
 
+
 // ==========================================================
 // [2] 视觉与记忆 (Visual & Memory)
 // ==========================================================
@@ -985,7 +986,6 @@ window.loadMemory = function() {
         if(window.updateGlobalToastStyle) window.updateGlobalToastStyle(); 
     });
 };
-
 // ==========================================================
 // [3] 全局交互 (Interactions)
 // ==========================================================
@@ -1753,6 +1753,9 @@ function createChatItem(chat) {
     div.id = `chat-item-${chat.id}`;
     const avatarStyle = getAvatarStyle(contact.avatar);
 
+    // ★★★ [修复] 定义显示的名字：优先取 chat.privateAlias ★★★
+    const displayName = chat.privateAlias || contact.name;
+
     div.innerHTML = `
         <div class="ili-actions">
             <div class="ili-btn pin" onclick="togglePin(${chat.id})">${chat.pinned ? '取消' : '置顶'}</div>
@@ -1764,8 +1767,7 @@ function createChatItem(chat) {
             </div>
             <div class="ili-info">
                 <div class="ili-top">
-                    <span class="ili-name">${contact.name}</span>
-                    <span class="ili-time">${formatTime(chat.lastTime)}</span>
+                    <span class="ili-name">${displayName}</span> <span class="ili-time">${formatTime(chat.lastTime)}</span>
                 </div>
                 <div class="ili-bottom">
                     <span class="ili-msg">${chat.lastMsg || 'New Chat'}</span>
@@ -1883,7 +1885,12 @@ window.enterChat = function(chat) {
     // 2. 更新UI元素 (保持不变)
     // ---------------------------------------------------
     const nameEl = document.getElementById('chat_layer_name');
-    if(nameEl) nameEl.innerText = contact ? (contact.privateAlias || contact.name) : 'Unknown';
+    
+    // ★★★ [修复] 优先显示 chat.privateAlias，没有则显示 contact.name ★★★
+    if(nameEl) {
+        nameEl.innerText = chat.privateAlias || (contact ? contact.name : 'Unknown');
+    }
+
     const avatarEl = document.getElementById('chat_layer_avatar');
     if(avatarEl && contact) avatarEl.style.backgroundImage = contact.avatar;
     const frameEl = document.getElementById('chat_layer_frame');
@@ -2029,11 +2036,14 @@ window.renderMessages = function(chatId, autoScroll = true) {
         const globalIndex = startIndex + i;
         const isSelected = typeof isMsgMultiSelectMode !== 'undefined' && isMsgMultiSelectMode && selectedMsgIndices.includes(globalIndex);
 
-        // 1. 时间胶囊
+        // 1. 时间胶囊 
         if (i === 0 || msg.timestamp - lastTime > 30 * 60 * 1000) {
             const timePill = document.createElement('div');
             timePill.className = 'msg-time-pill';
-            timePill.innerText = `${new Date(msg.timestamp).getHours()}:${new Date(msg.timestamp).getMinutes().toString().padStart(2, '0')}`;
+            
+            // ★★★ 核心修改：这里不再只显示 HH:mm，而是调用我们刚写的 formatTime！ ★★★
+            timePill.innerText = formatTime(msg.timestamp);
+            
             fragment.appendChild(timePill);
             lastRole = null; 
         }
@@ -2199,7 +2209,7 @@ window.renderMessages = function(chatId, autoScroll = true) {
 };
 
 // ==========================================================
-// ★★★ 发送消息 ★★★
+// ★★★ 发送消息 (User侧) - 修复版：重置搞事倒计时 ★★★
 // ==========================================================
 window.sendMsg = function(role, text = null, type = 'text', customQuote = null, extra = null) {
     if (!currentChatId) return;
@@ -2212,10 +2222,9 @@ window.sendMsg = function(role, text = null, type = 'text', customQuote = null, 
     const input = document.getElementById('chat-input');
     const content = text || input.value;
     
-    // 如果没有内容且不是特殊类型，直接返回
     if (!content && type === 'text') return; 
 
-    // 2. 处理线下动作 (User输入的动作)
+    // 2. 处理线下动作
     if (role === 'me' && type === 'text' && window.isOfflineMode) {
         const actionInput = document.getElementById('offline-action-input');
         if (actionInput) {
@@ -2248,7 +2257,13 @@ window.sendMsg = function(role, text = null, type = 'text', customQuote = null, 
     
     chatsData[chatIndex].lastMsg = previewText;
     chatsData[chatIndex].lastTime = Date.now();
-    
+
+    // ★★★★★ [核心修改] 重置自主意识倒计时！★★★★★
+    // 只要 User 发话了，说明现在正在热聊，不要在这个时候突然搞事！
+    // 把“最后活跃时间”更新为现在，那么倒计时就会从现在开始重新计算2小时！
+    chatsData[chatIndex].lastActiveTime = Date.now(); 
+    // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+
     // 5. 自动顶置
     let targetChat = chatsData[chatIndex]; 
     if (!targetChat.pinned) {
@@ -2261,7 +2276,6 @@ window.sendMsg = function(role, text = null, type = 'text', customQuote = null, 
     if (role === 'me' && type === 'text') input.value = ''; 
     
     // 7. 立即渲染上墙
-    // (优先用 append 丝滑上墙，没有就重绘)
     if(window.appendMessageToView) {
         window.appendMessageToView(newMsg);
     } else {
@@ -2955,7 +2969,7 @@ window.removeTypingBubble = function() {
 };
 
 // ====================
-// [19] 后台消息助手 (增强版：实时刷新列表 + 红点)
+// [19] 后台消息助手 (修复版：弹窗显示备注 + 实时红点)
 // ====================
 function pushMsgToData(chatObj, text, role, quote, type = 'text', extra = null) { 
     if (!chatObj.messages) chatObj.messages = [];
@@ -2973,33 +2987,31 @@ function pushMsgToData(chatObj, text, role, quote, type = 'text', extra = null) 
     
     chatObj.messages.push(newMsg);
     
-    // 2. 更新最后一条消息预览 (系统消息不更新预览)
+    // 2. 更新最后一条消息预览
     if (role !== 'system') {
         chatObj.lastMsg = (type === 'action') ? `[Action]` : 
                           (type === 'sticker') ? `[表情包]` :
                           (type === 'transfer') ? `[转账]` : text;
         chatObj.lastTime = Date.now();
         
-        // ★★★ 核心修复：增加未读红点 (实时累加) ★★★
-        // 只有当“我没在这个聊天里”时，才加红点
         if (currentChatId !== chatObj.id) {
             chatObj.unread = (chatObj.unread || 0) + 1;
         }
     }
 
-    // 3. 弹窗通知 (视线接管逻辑)
-    // 只有当 (不是我发的) && (不是系统消息) && (我没在看这个聊天) 时才弹
+    // 3. 弹窗通知 (★ 修复重点：优先显示备注)
     if (role !== 'me' && role !== 'system') {
-        // 如果当前正好在这个聊天里，就不弹窗了，直接看消息上屏
         if (currentChatId === chatObj.id) {
-            // do nothing (suppress notification)
+            // do nothing
         } else {
             const contact = contactsData.find(c => c.id === chatObj.contactId);
-            const name = contact ? contact.name : 'New Message';
+            
+            // ★★★ 修改了这里：如果聊天有备注，就用备注；没有才用原名 ★★★
+            const name = (chatObj.privateAlias) || (contact ? contact.name : 'New Message');
+            
             const avatar = contact ? contact.avatar : '';
             const preview = (type === 'sticker') ? '[表情包]' : text;
             
-            // 传 chatObj.id 进去，配合之前的门禁系统
             if (window.showNotification) window.showNotification(name, preview, avatar, chatObj.id);
         }
     }
@@ -3013,24 +3025,18 @@ function pushMsgToData(chatObj, text, role, quote, type = 'text', extra = null) 
         }
     }
 
-    // 5. 保存数据
+    // 5. 保存并刷新
     localforage.setItem('Wx_Chats_Data', chatsData);
-    
-    // 6. ★★★ 强力刷新 UI (解决红点不亮的问题) ★★★
-    
-    // A. 刷新全局红点 (桌面图标/底部Tab)
     if (window.updateGlobalBadges) window.updateGlobalBadges();
     
-    // B. 如果当前正在看“微信列表页”，强制刷新列表！让红点立马跳出来！
     const listPage = document.getElementById('wx-page-chat');
     if (listPage && listPage.style.display !== 'none') {
         if(window.renderChatList) window.renderChatList();
     }
     
-    // 7. 实时上屏 (如果正在看这个聊天)
     if (currentChatId === chatObj.id) {
         if (window.appendMessageToView) {
-            appendMessageToView(newMsg); 
+            window.appendMessageToView(newMsg); 
         } else {
             renderMessages(currentChatId);
         }
@@ -3498,46 +3504,59 @@ window.confirmDeletePreset = function() {
 };
 
 // ====================
-// [工具] 时间格式化 (智能版)
+// [工具] 时间格式化 (英文氛围感 Pro Max 版)
 // ====================
 function formatTime(timestamp) {
     if (!timestamp) return '';
     const date = new Date(timestamp);
     const now = new Date();
     
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const hour = date.getHours().toString().padStart(2, '0');
-    const minute = date.getMinutes().toString().padStart(2, '0');
+    // 计算时间差 (天数)
+    const diffMs = now - date;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     
-    // 1. 跨年判断：如果不是今年，显示完整年份
-    if (year !== now.getFullYear()) {
-        return `${year}年${month}月${day}日 ${hour}:${minute}`;
-    }
+    // 准备基础数据
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const timeStr = `${hours}:${minutes}`;
     
-    // 2. 如果是今天，只显示时间
-    if (date.toDateString() === now.toDateString()) {
-        return `${hour}:${minute}`;
-    }
-    
-    // 3. 今年其他时间，显示日期+时间
-    return `${month}月${day}日 ${hour}:${minute}`;
-}
+    const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-// ★ 新增：专门给总结页用的详细时间格式 (YYYY/MM/DD)
-function formatSummaryTime(timestamp) {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const hour = date.getHours().toString().padStart(2, '0');
-    const minute = date.getMinutes().toString().padStart(2, '0');
-    
-    // 比如：2025/01/09 14:30
-    return `${year}/${month}/${day} ${hour}:${minute}`;
+    // 辅助：日期序数词 (1st, 2nd, 3rd...)
+    const getOrdinal = (n) => {
+        const s = ["th", "st", "nd", "rd"];
+        const v = n % 100;
+        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    };
+
+    // 1. 今天 (Today HH:mm)
+    if (date.toDateString() === now.toDateString()) {
+        return `Today ${timeStr}`;
+    }
+
+    // 2. 一周内 (Monday HH:mm)
+    // 只要过去了今天，但在7天内，就显示星期几
+    if (diffDays < 7) {
+        return `${weekDays[date.getDay()]} ${timeStr}`;
+    }
+
+    // 3. 一个月内 (Weeks ago)
+    if (diffDays < 30) {
+        const weeks = Math.floor(diffDays / 7);
+        const numberWords = ['Zero', 'One', 'Two', 'Three', 'Four']; // 数字转英文
+        const weekWord = (weeks >= 1 && weeks <= 4) ? numberWords[weeks] : weeks;
+        return `${weekWord} week${weeks > 1 ? 's' : ''} ago`;
+    }
+
+    // 4. 一年内 (1st January)
+    if (date.getFullYear() === now.getFullYear()) {
+        return `${getOrdinal(date.getDate())} ${months[date.getMonth()]}`;
+    }
+
+    // 5. 超过一年 (DD MM YY)
+    // 这里的格式按照你的要求：15 January 2025
+    return `${date.getDate().toString().padStart(2, '0')} ${months[date.getMonth()]} ${date.getFullYear()}`;
 }
 
 // 覆盖 Alert
@@ -3629,25 +3648,42 @@ window.updatePlusDots = function(el) {
     document.getElementById('p-dot-1').className = pageIndex === 1 ? 'plus-dot active' : 'plus-dot';
 };
 
-// ✅
+// ====================
+// [新版] 切换加号菜单 (悬浮窗模式)
+// ====================
 window.toggleChatMenu = function() {
-    // 只切换开关，剩下的全交给 CSS 动画！
-    document.body.classList.toggle('menu-open');
+    const menu = document.getElementById('chat-plus-menu');
+    const btn = document.querySelector('.cf-icon-btn'); // 加号按钮
+    
+    if (menu) {
+        // 切换 active 类，触发 CSS 动画
+        menu.classList.toggle('active');
+        
+        // 可选：让加号按钮旋转一下，增加交互感
+        if (btn) {
+            if (menu.classList.contains('active')) {
+                btn.style.transform = 'rotate(45deg)';
+            } else {
+                btn.style.transform = 'rotate(0deg)';
+            }
+        }
+    }
 };
 
-// 点击消息区域关闭菜单 (增强版)
+// [全局点击监听] 点击空白处关闭菜单
 document.addEventListener('click', (e) => {
-    // 如果菜单打开了，且点击的地方既不是加号按钮，也不是菜单本身
-    if (document.body.classList.contains('menu-open')) {
-        const isMenu = e.target.closest('.chat-plus-menu');
-        const isBtn = e.target.closest('.cf-icon-btn'); // 加号按钮
-        
-        if (!isMenu && !isBtn) {
-            document.body.classList.remove('menu-open');
+    const menu = document.getElementById('chat-plus-menu');
+    const btn = document.querySelector('.cf-icon-btn'); // 加号按钮本身
+    
+    // 如果菜单是打开的
+    if (menu && menu.classList.contains('active')) {
+        // 如果点击的既不是菜单内部，也不是加号按钮，就关闭
+        if (!menu.contains(e.target) && !btn.contains(e.target)) {
+            menu.classList.remove('active');
+            if (btn) btn.style.transform = 'rotate(0deg)';
         }
     }
 });
-
 
 let currentFrameTarget = null; // 记住你正在给谁换装
 
@@ -4221,78 +4257,52 @@ window.openChatControl = function() {
     const chat = chatsData.find(c => c.id === currentChatId);
     if (!chat) return;
 
-    // 获取双方数据
     const contact = contactsData.find(c => c.id === chat.contactId) || {name: '未知', avatar: ''};
     const persona = personasData.find(p => p.id === chat.personaId) || {name: 'Me', avatar: ''};
 
-    // 1. 填充双人头像 (同步！)
-// === 1. 填充双人头像 (同步修正版) ===
-const charNameEl = document.getElementById('cc-char-name-big');
-const charAvatarEl = document.getElementById('cc-char-avatar-big');
-const userNameEl = document.getElementById('cc-user-name-big');
-const userAvatarEl = document.getElementById('cc-user-avatar-big');
+    // 1. 填充双人头像
+    const charNameEl = document.getElementById('cc-char-name-big');
+    const charAvatarEl = document.getElementById('cc-char-avatar-big');
+    const userNameEl = document.getElementById('cc-user-name-big');
+    const userAvatarEl = document.getElementById('cc-user-avatar-big');
 
-if (charNameEl) charNameEl.innerText = contact.name;
-if (userNameEl) userNameEl.innerText = persona.name;
+    if (charNameEl) charNameEl.innerText = contact.name; // 这里显示真名，方便你知道原本是谁
+    if (userNameEl) userNameEl.innerText = persona.name;
+    if (charAvatarEl) charAvatarEl.style.cssText = getAvatarStyle(contact.avatar);
+    if (userAvatarEl) userAvatarEl.style.cssText = getAvatarStyle(persona.avatar);
 
-if (charAvatarEl) charAvatarEl.style.cssText = getAvatarStyle(contact.avatar);
-if (userAvatarEl) userAvatarEl.style.cssText = getAvatarStyle(persona.avatar);
+    // 2. ★★★ [修复] 填充私有备注 (优先读取 chat.privateAlias) ★★★
+    document.getElementById('cc-private-alias').value = chat.privateAlias || '';
 
-    // 2. 填充私有备注
-    document.getElementById('cc-private-alias').value = contact.privateAlias || '';
-
-    // 3. ★★★ 相识天数计算 ★★★
+    // 3. 相识天数
     const startTime = chat.createTime || chat.id; 
     const diff = Date.now() - startTime;
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    document.getElementById('cc-friend-days').innerText = days + 1; // 第一天也算一天！
+    document.getElementById('cc-friend-days').innerText = days + 1;
 
-    // 4. 填充逻辑开关
+    // 4. 其他开关填充
     document.getElementById('cc-switch-time').checked = (chat.enableTime !== false); 
-    
-    // 5. 填充记忆条数 (只留这一段！)
-    const limit = chat.contextLimit || 20; 
     const limitInput = document.getElementById('cc-ctx-limit');
-    if (limit >= 99999) {
-        limitInput.value = ""; // 无限模式显示为空
-    } else {
-        limitInput.value = limit;
-    }
+    limitInput.value = (chat.contextLimit >= 99999) ? "" : (chat.contextLimit || 20);
 
-    // 读取 Chat (窗口) 的数据 
+    // 5. 自主意识回显
     const activeSwitch = document.getElementById('detail-active-mode');
     const intervalBox = document.getElementById('active-interval-box');
-
     if (activeSwitch) {
-        // 1. 读取 chat.enableActiveMode (而不是 contact)
         activeSwitch.checked = (chat.enableActiveMode === true);
-
-        // 2. 根据状态显示/隐藏下面的频率框
-        if (intervalBox) {
-            intervalBox.style.display = activeSwitch.checked ? 'flex' : 'none';
-        }
-        
-        // 3. 点击事件只负责切换 UI 显示 (不保存！)
+        if (intervalBox) intervalBox.style.display = activeSwitch.checked ? 'flex' : 'none';
         activeSwitch.onclick = function() {
-            if (intervalBox) {
-                intervalBox.style.display = this.checked ? 'flex' : 'none';
-            }
+            if (intervalBox) intervalBox.style.display = this.checked ? 'flex' : 'none';
         };
     }
-    
-    // 填充频率数值 (优先读 Chat 的，没有就读默认值)
     const activeInterval = document.getElementById('detail-active-interval');
-    if (activeInterval) {
-        activeInterval.value = chat.activeInterval || 60;
-    }
-    // ==========================================
+    if (activeInterval) activeInterval.value = chat.activeInterval || 60;
 
     // 显示面板
     const panel = document.getElementById('chat-control-overlay');
     panel.style.display = 'flex';
     setTimeout(() => panel.classList.add('active'), 10);
 };
-
 // ====================
 // [补丁] 关闭聊天控制面板 (关门钥匙)
 // ====================
@@ -4331,9 +4341,12 @@ window.saveDetailSettings = function() {
     if (!chat || !contact) return;
 
     // --- 2. 抓取数据 ---
-    // (A) 备注 (这个还是属于人的属性)
+    
+    // ★★★ [修复] 备注存到 chat 对象里，而不是 contact 对象里！ ★★★
     const aliasInput = document.getElementById('cc-private-alias');
-    if (aliasInput) contact.privateAlias = aliasInput.value.trim(); 
+    if (aliasInput) {
+        chat.privateAlias = aliasInput.value.trim(); 
+    }
 
     // (B) 记忆条数
     const limitInput = document.getElementById('cc-ctx-limit');
@@ -4346,23 +4359,16 @@ window.saveDetailSettings = function() {
     const timeSwitch = document.getElementById('cc-switch-time');
     if (timeSwitch) chat.enableTime = timeSwitch.checked;
 
-    // ==========================================
-    // ★★★ 核心修改：保存到 Chat (窗口) ★★★
-    // ==========================================
+    // (D) 自主意识设置
     const activeSwitch = document.getElementById('detail-active-mode');
     if (activeSwitch) {
-        // 保存开关到 chat
         chat.enableActiveMode = activeSwitch.checked;
-        
-        // 如果开启了，且没有记录过时间，初始化一个时间
         if (chat.enableActiveMode && !chat.lastActiveTime) {
             chat.lastActiveTime = Date.now();
         }
     }
-    
     const activeInterval = document.getElementById('detail-active-interval');
     if (activeInterval) {
-        // 保存频率到 chat
         chat.activeInterval = parseInt(activeInterval.value) || 60;
     }
 
@@ -4371,11 +4377,17 @@ window.saveDetailSettings = function() {
         localforage.setItem('Wx_Contacts_Data', contactsData),
         localforage.setItem('Wx_Chats_Data', chatsData) // 重点是保存这个！
     ]).then(() => {
-        // 更新界面显示
+        // ★★★ [修复] 立即刷新顶部标题，优先显示 chat.privateAlias ★★★
         const nameEl = document.getElementById('chat_layer_name');
-        if (nameEl) nameEl.innerText = contact.privateAlias || contact.name;
+        if (nameEl) {
+            // 优先读聊天专属备注，没有才读通讯录名字
+            nameEl.innerText = chat.privateAlias || contact.name;
+        }
         
         showSystemAlert('设定已保存！(^w^)', 'success');
+        
+        // 刷新列表，让列表页的备注也变过来
+        if(window.renderChatList) window.renderChatList();
         
         if(window.closeChatControl) window.closeChatControl(); 
         
@@ -5122,7 +5134,25 @@ window.publishPost = function() {
     });
 };
 
-// ★★★ 核心渲染 (Feed) - 包含所有UI修改 ★★★
+// ★★★ 辅助函数：根据名字反查聊天备注 ★★★
+function getAliasByContactName(originalName) {
+    if (!originalName) return 'Unknown';
+    // 1. 如果是“我”，直接返回
+    if (originalName === (momentsHost.name || 'Me')) return originalName;
+
+    // 2. 先找到对应的 contact ID
+    const contact = contactsData.find(c => c.name === originalName);
+    if (!contact) return originalName; // 没找到人，就显示原名
+
+    // 3. 再去 chatsData 里找，有没有跟这个 contactID 的聊天
+    // (如果有多个聊天，取第一个有备注的)
+    const chat = chatsData.find(c => c.contactId === contact.id && c.privateAlias);
+    
+    // 4. 如果找到了聊天且有备注，返回备注；否则返回原名
+    return chat ? chat.privateAlias : originalName;
+}
+
+// ★★★ 完整修复版 renderMomentsFeed ★★★
 window.renderMomentsFeed = function() {
     const container = document.getElementById('moments-feed-container');
     if (!container) return;
@@ -5131,11 +5161,11 @@ window.renderMomentsFeed = function() {
     container.innerHTML = '';
     clearMomentsRedDot();
 
+    // === 修复重点：把这段新消息提示的完整代码补全了，不会再是黑杠杠了 ===
     if (typeof momentsNewMsgCount !== 'undefined' && momentsNewMsgCount > 0) {
         const msgTip = document.createElement('div');
         msgTip.id = 'moments-msg-tip';
         
-        // 使用记录下来的头像，如果没有则显示默认
         const avatarSrc = momentsNewMsgAvatar || 'https://i.postimg.cc/k4kM9S4h/default-cover.png';
         
         msgTip.style.cssText = `
@@ -5156,11 +5186,12 @@ window.renderMomentsFeed = function() {
             momentsNewMsgCount = 0; 
             momentsNewMsgAvatar = '';
             if (window.updateMomentsRedDot) window.updateMomentsRedDot(); 
-            renderMomentsFeed(); // 刷新掉提示
+            renderMomentsFeed(); 
         };
         
         container.appendChild(msgTip);
     }
+    // ========================================================
 
     if (momentsData.length === 0) {
         container.innerHTML += `<div style="padding: 50px; text-align: center; color: #ccc; font-size: 12px;">还没有动态哦(𓐍ㅇㅂㅇ𓐍)，点击上方的 + 发一条吧！</div>`;
@@ -5180,56 +5211,58 @@ window.renderMomentsFeed = function() {
         card.className = 'moment-card';
         card.style.borderBottom = '1px solid #f0f0f0'; 
         
-        // ★★★ 头像同步逻辑 (关键修复) ★★★
-        let displayAvatar = post.author.avatar; // 默认用帖子里的
-        let displayName = post.author.name;
+        // --- 名字显示逻辑：应用备注 ---
+        let rawAuthorName = post.author.name;
+        // 如果是自己，用 momentsHost.name；如果是别人，查备注
+        let displayAuthorName = (post.isMe || rawAuthorName === myName) ? myName : getAliasByContactName(rawAuthorName);
 
-        if (post.isMe || displayName === myName || displayName === 'Me') {
-            // 如果是我，强制用 momentsHost
+        // 头像逻辑
+        let displayAvatar = post.author.avatar;
+        if (post.isMe || rawAuthorName === myName) {
             displayAvatar = momentsHost.avatar;
-            displayName = momentsHost.name;
         } else {
-            // ★ 如果是别人，尝试去通讯录找最新头像！
-            const contact = contactsData.find(c => c.name === displayName);
-            if (contact && contact.avatar) {
-                displayAvatar = contact.avatar;
-            }
+            const contact = contactsData.find(c => c.name === rawAuthorName);
+            if (contact && contact.avatar) displayAvatar = contact.avatar;
         }
-
         const avatarStyle = getAvatarStyle(displayAvatar);
+        
         let imgHtml = post.image ? `<div class="m-card-media" style="margin-top:10px;"><img src="${post.image}" class="m-single-img" style="border-radius:6px; max-height:350px; width:auto; max-width:100%; object-fit:contain;" onclick="previewImage(this)"></div>` : '';
 
-        // 互动区
+        // --- 互动区 (点赞和评论也要显示备注) ---
         let likesHtml = '', commentsHtml = '';
         if (post.likesList.length > 0) {
-            // ★ 小爱心换成了图片
+            const likeNames = post.likesList.map(u => {
+                return (u.name === myName) ? myName : getAliasByContactName(u.name);
+            }).join(', ');
+
             likesHtml = `
                 <div class="moment-likes">
                     <img src="${MOMENTS_ICONS.likeSmall}" style="width:14px; height:14px; margin-right:5px; vertical-align:middle;">
-                    <span>${post.likesList.map(u=>u.name).join(', ')}</span>
+                    <span>${likeNames}</span>
                 </div>`;
         }
         if (post.comments.length > 0) {
-            commentsHtml = `<div class="moment-comments">` + post.comments.map(c => `
+            commentsHtml = `<div class="moment-comments">` + post.comments.map(c => {
+                const authorAlias = (c.author === myName) ? myName : getAliasByContactName(c.author);
+                const toAlias = c.to ? ((c.to === myName) ? myName : getAliasByContactName(c.to)) : null;
+
+                return `
                 <div class="moment-comment-item" onclick="handleReplyComment(${post.id}, '${c.author}')">
-                    <span class="comment-author">${c.author}</span>${c.to ? `<span style="color:#666">回复</span><span class="comment-author">${c.to}</span>` : ''}：${c.content}
+                    <span class="comment-author">${authorAlias}</span>${toAlias ? `<span style="color:#666">回复</span><span class="comment-author">${toAlias}</span>` : ''}：${c.content}
                 </div>
-            `).join('') + `</div>`;
+            `}).join('') + `</div>`;
         }
 
-        // --- 4. 组装卡片 (整段替换这里) ---
         card.innerHTML = `
             <div class="m-card-header">
                 <div class="m-card-avatar" style="${avatarStyle}"></div>
                 <div style="flex:1;">
-                    <div class="m-card-user">${displayName}</div>
+                    <div class="m-card-user">${displayAuthorName}</div>
                     <div style="font-size:11px; color:#999;">${formatTime ? formatTime(post.time) : new Date(post.time).toLocaleString()}</div>
                 </div>
-                
                 <div onclick="openForwardSelector(${post.id})" class="m-act-icon" style="width:24px; height:24px; display:flex; align-items:center; justify-content:center; margin-right:5px;">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="#333"><path d="M19 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" transform="scale(-1, 1) translate(-24, 0)"/></svg>
                 </div>
-
                 <div class="m-card-more" onclick="deleteMoment(${post.id})">•••</div>
             </div>
             
@@ -5239,18 +5272,13 @@ window.renderMomentsFeed = function() {
             </div>
 
             <div class="m-action-bar" style="padding: 5px 15px 10px 15px; display: flex; align-items: center; justify-content: flex-start; gap: 6px;">
-                
                 <img src="${likeIconUrl}" class="m-act-icon" onclick="toggleLike(${post.id})" style="width:26px; height:26px; display:block; margin:0;">
-                
                 <img src="${MOMENTS_ICONS.comment}" class="m-act-icon" onclick="document.getElementById('comment-input-${post.id}').focus()" style="width:26px; height:26px; display:block; margin:0;">
-                
                 <input type="text" id="comment-input-${post.id}" 
                        placeholder="有爱评论，说点儿好听的..." 
                        style="width: 180px; flex: none; border:none; background:#f5f5f5; border-radius:18px; padding:6px 12px; font-size:13px; outline:none; color:#333; margin-left:8px;"
                        onkeydown="if(event.key==='Enter'){ addComment(${post.id}, this.value); this.value=''; this.blur(); }">
-
-<img src="${MOMENTS_ICONS.tag}" class="m-tag-icon" 
-     style="width:22px; height:22px; opacity:0.6; display:block; margin-left: auto; margin-right: 10px;"> 
+                <img src="${MOMENTS_ICONS.tag}" class="m-tag-icon" style="width:22px; height:22px; opacity:0.6; display:block; margin-left: auto; margin-right: 10px;"> 
             </div>
 
             <div style="padding: 0 15px 15px 15px;">
@@ -8636,7 +8664,7 @@ function startBackgroundService() {
     backgroundTimer = setInterval(() => checkAllCharactersActivity(false), 60000);
 }
 
-// 2. 巡查总入口
+// 2. 巡查总入口 (修复版：基于真实聊天记录计算沉默时间)
 async function checkAllCharactersActivity(forceReaction = false) {
     const now = Date.now();
 
@@ -8647,10 +8675,27 @@ async function checkAllCharactersActivity(forceReaction = false) {
         const persona = personasData.find(p => p.id === chat.personaId);
         if (!char || !persona) continue;
 
-        const lastTime = chat.lastActiveTime || now;
-        const intervalMs = (chat.activeInterval || 60) * 60 * 1000;
+        // ★★★★★ [核心修改] 智能计算“沉默时长” ★★★★★
+        // 1. 获取最后一条聊天消息的时间 (User或Char发的都算)
+        // (优先读 chat.lastTime，如果没有就去 messages 数组里找最后一条)
+        let lastMsgTime = chat.lastTime || 0;
+        if (lastMsgTime === 0 && chat.messages && chat.messages.length > 0) {
+            lastMsgTime = chat.messages[chat.messages.length - 1].timestamp;
+        }
 
-        // --- [事件 A：User 发了新动态] ---
+        // 2. 获取 AI 上次搞事(比如发朋友圈)的时间
+        let lastActionTime = chat.lastActiveTime || 0;
+
+        // 3. 真正的“最后互动时间”是这两个里最近的那个
+        // (也就是说：只要发了消息，或者AI刚搞了事，时间就重置了！)
+        const effectiveLastTime = Math.max(lastMsgTime, lastActionTime);
+
+        // 4. 计算沉默了多久
+        const silenceDuration = now - effectiveLastTime;
+        const intervalMs = (chat.activeInterval || 60) * 60 * 1000;
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+
+        // --- [事件 A：User 发了新动态] (保持不变) ---
         const recentUserPost = momentsData.find(m => 
             (m.isMe || m.author.name === momentsHost.name) && 
             m.visibleChatIds && m.visibleChatIds.includes(chat.id) && 
@@ -8664,7 +8709,7 @@ async function checkAllCharactersActivity(forceReaction = false) {
             continue; 
         }
         
-        // --- [事件 B：修罗场/回复循环] ---
+        // --- [事件 B：修罗场/回复循环] (保持不变) ---
         const charPost = momentsData.find(m => 
             m.author.name === char.name && 
             m.comments.length > 0 &&
@@ -8676,17 +8721,21 @@ async function checkAllCharactersActivity(forceReaction = false) {
              continue;
         }
 
-        // --- [事件 C：随机闲聊/发动态] ---
-        if (!forceReaction && (now - lastTime > intervalMs)) {
+        // --- [事件 C：随机闲聊/发动态] (逻辑修正) ---
+        // 只有当“沉默时间”超过设定的频率时，才搞事
+        if (!forceReaction && (silenceDuration > intervalMs)) {
             const randomDelay = Math.random() * (intervalMs * 0.1); 
-            if (now - lastTime > intervalMs + randomDelay) {
+            
+            // 这里判断也要用 silenceDuration
+            if (silenceDuration > intervalMs + randomDelay) {
                 const dice = Math.random();
                 if (dice < 0.3) {
                     await performComplexInteraction(char, chat, persona, 'POST_NEW_MOMENT', null);
                 } else {
                     await performComplexInteraction(char, chat, persona, 'INIT_CHAT', null);
                 }
-                chat.lastActiveTime = now;
+                // 搞事完成后，更新最后搞事时间
+                chat.lastActiveTime = Date.now();
                 localforage.setItem('Wx_Chats_Data', chatsData);
             }
         }
