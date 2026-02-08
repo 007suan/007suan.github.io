@@ -70,30 +70,44 @@ html {
    2. PHONE CONTAINER & LAYOUT (手机容器与布局)
    ========================================================================== */
 .phone-screen {
-            width: 100%;
-            height: 100vh; 
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            background-color: #ffffff; 
-        }
+    width: 100%;
+    
+    /* ★ 核心修改：用 100dvh (动态高度) 并且加一个最小高度锁死 */
+    height: 100dvh; 
+    min-height: 100dvh; 
+    
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff; 
+}
 
+/* 找到 style.css 里的这一段，按下面修改 */
 .phone-screen::before {
     content: '';
-    position: absolute;
-    top: -20px; left: -20px;
-    width: calc(100% + 40px);
-    height: calc(100% + 40px);
+    
+    /* ★ 核心修改：改成 fixed，让它永远钉在屏幕上，键盘顶不动它 */
+    position: fixed !important; 
+    
+    /* ★ 强制占满整个物理屏幕 */
+    top: 0; 
+    left: 0;
+    width: 100vw !important;
+    height: 100vh !important;
+    
     z-index: -1;
     background-image: var(--wall-url, none); 
     background-color: #8e8e93;
     background-size: cover;
     background-position: center;
     
-    /* 特效滤镜 */
+    /* 特效滤镜保持不变 */
     filter: blur(var(--bg-blur, 0px)) brightness(var(--bg-dim, 100%));
     transition: filter 0.3s ease, background-image 0.3s ease;
+    
+    /* 防止触摸背景导致滑动 */
+    pointer-events: none; 
 }
 .phone-screen::after {
     content: '';
@@ -155,7 +169,7 @@ html {
 .app-name { font-size: 11px; color: #333; text-align: center; cursor: pointer; }
 .search-pill { margin: 10px auto 0; background: rgba(255,255,255,0.5); padding: 4px 12px; border-radius: 20px; display: flex; align-items: center; gap: 5px; font-size: 11px; color: #555; backdrop-filter: blur(10px); cursor: pointer; width: fit-content; }
 /* Dock */
-.dock { position: absolute; bottom: 14px; left: 15px; right: 15px; height: 100px; background: var(--dock-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border-radius: 38px; display: flex; justify-content: space-around; align-items: center; padding: 0 10px; z-index: 50; }
+.dock { position: absolute; bottom: 15px; left: 15px; right: 15px; height: 100px; background: var(--dock-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border-radius: 38px; display: flex; justify-content: space-around; align-items: center; padding: 0 10px; z-index: 50; }
 /* ==================== 
    ★ Page 2: 第二页组件 */
 .widgy-container {
@@ -5074,4 +5088,12 @@ body, button, input, textarea, select, .edit-text {
 /* 针对盒子内部 App 图标的微调 */
 .twp-group-inner-grid .app-icon {
     gap: 2px !important; 
+}
+/* 当键盘弹出时，允许内容区域稍微灵活一点 */
+@media (max-height: 600px) {
+    .phone-screen {
+        height: auto !important;
+        min-height: 100vh !important;
+        overflow: auto !important; /* 允许必要时滚动 */
+    }
 }
