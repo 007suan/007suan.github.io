@@ -33,7 +33,7 @@ async function checkActivation() {
     if (!userCode) return;
 
     // 按钮变灰，防止重复点
-    btn.innerText = "正在连接云端...";
+    btn.innerText = "Wait a moment...";
     btn.disabled = true;
     errorMsg.style.display = 'none';
 
@@ -61,7 +61,7 @@ async function checkActivation() {
 
         // --- 第二步：检查这个码是不是被人用过了 ---
         if (codeInfo.is_used === true) {
-            throw new Error("此激活码已被使用！请获取新的码。");
+            throw new Error("此激活码已被使用！请获取新的哦。");
         }
 
         // --- 第三步：验证通过！把它标记为“已使用” (焚毁) ---
@@ -89,7 +89,7 @@ async function checkActivation() {
         setTimeout(() => gate.remove(), 500);
         document.body.style.overflow = 'auto';
         
-        alert(`激活成功！欢迎回来，Doris！\n(激活码 ${userCode} 已失效)`);
+        alert(`欢迎就餐！激活码 ${userCode} 将会失效～`);
 
     } catch (error) {
         // 如果出错了

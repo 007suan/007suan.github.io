@@ -43,7 +43,7 @@
 
     <div class="ins-footer">
         <span class="from-text">From</span>
-        <span class="brand-text">Doris 2026</span>
+        <span class="brand-text">Jin Huan 2026</span>
     </div>
 </div>
 <body>
@@ -124,12 +124,21 @@
 </div>
         <div class="app-grid">
 <div class="app-item" onclick="openAlipay()">
-    <div class="app-icon" style="background-image: url('https://i.postimg.cc/Kv8ysdkp/wu-biao-ti119-20260117103413.png');"></div>
+                    <div id="app-icon-Alipay-p1" class="app-icon" style="background-image: url('https://i.postimg.cc/Kv8ysdkp/wu-biao-ti119-20260117103413.png');"></div>
     <div class="app-name">Alipay</div>
 </div>
-            <div class="app-item placeholder"><div class="app-icon"></div></div>
-            <div class="app-item placeholder"><div class="app-icon"></div></div>
-            <div class="app-item placeholder"><div class="app-icon"></div></div>
+                <div class="app-item" onclick="openApp('contacts')">
+                    <div id="app-icon-contacts-p1" class="app-icon" style="background-image: url('https://i.postimg.cc/mDTWfrYB/wu-biao-ti124-20260209111417.png');"></div>
+                    <div class="app-name">通讯录</div>
+</div>
+                <div class="app-item" onclick="openApp('Memo')">
+                    <div id="app-icon-Memo-p1" class="app-icon" style="background-image: url('https://i.postimg.cc/YqQc9gbz/wu-biao-ti124-20260209110952.png');"></div>
+                    <div class="app-name">备忘录</div>
+</div>
+                <div class="app-item" onclick="openApp('xiaohongshu')">
+                    <div id="app-icon-xiaohongshu-p1" class="app-icon" style="background-image: url('https://i.postimg.cc/yY0qd9vr/wu-biao-ti124-20260209111026.png');"></div>
+                    <div class="app-name">小红书</div>
+</div>
         </div>
     </div>
 <div class="desktop-page" id="page-2" style="overflow-y: auto; padding-top: 60px; padding-bottom: 80px;">
@@ -222,160 +231,34 @@
                 </div>
             </div>
         </div>
-        <div class="twp-app-group-container">
-            <div class="twp-group-inner-grid">
-                <div class="app-item" onclick="openApp('gallery')">
-                    <div class="app-icon" style="background-image: url('https://i.postimg.cc/xCZd1nbx/wu-biao-ti119-20260117101708.png');"></div>
-                    <div class="app-name">照片</div>
-                </div>
-                <div class="app-item" onclick="openApp('douyin')">
-                <div id="app-icon-douyin" class="app-icon" style="background-image: url('https://i.postimg.cc/nchtw6jd/wu-biao-ti119-20260117103441.png');"></div>
-                <div class="app-name">抖音</div>
-                </div>
-            <div class="app-item" onclick="openApp('settings')">
-                <div id="app-icon-settings-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/85YCzNr0/wu-biao-ti119-20260117101553.png');"></div>
-                <div class="app-name">设置</div>
-                </div>
-            <div class="app-item" onclick="openApp('map')">
-                <div id="app-icon-map-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/26t5SrBx/wu-biao-ti119-20260117102041.png');"></div>
-                <div class="app-name">地图</div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-</div>
-<div class="desktop-page" id="page-3" style="overflow-y: auto;">
-    <div style="height: 10px;"></div>
-
-    <div class="fav-contacts-widget">
-        <div class="fav-list">
-            <div class="fav-item">
-                <div class="fav-avatar-box">
-                    <div class="fav-img upload-img" id="fav_head_1"></div>
-                    <img src="https://i.postimg.cc/SQTJkb6z/wu-biao-ti119-20260117234002.png" class="fav-frame">
-                </div>
-                <div class="fav-name edit-text" id="fav_head_text">TvT</div>
-            </div>
-            <div class="fav-item">
-                <div class="fav-avatar-box">
-                    <div class="fav-img upload-img" id="fav_head_2"></div>
-                    <img src="https://i.postimg.cc/SQTJkb6z/wu-biao-ti119-20260117234002.png" class="fav-frame">
-                </div>
-                <div class="fav-name edit-text" id="fav_head_text-2">(𓐍ㅇㅂㅇ𓐍)</div>
-            </div>
-            <div class="fav-item">
-                <div class="fav-avatar-box">
-                    <div class="fav-img upload-img" id="fav_head_3"></div>
-                    <img src="https://i.postimg.cc/SQTJkb6z/wu-biao-ti119-20260117234002.png" class="fav-frame">
-                </div>
-                <div class="fav-name edit-text" id="fav_head_text-3">(⸝⸝> ω <⸝⸝)</div>
-            </div>
-            <div class="fav-item">
-                <div class="fav-avatar-box">
-                    <div class="fav-img upload-img" id="fav_head_4"></div>
-                    <img src="https://i.postimg.cc/SQTJkb6z/wu-biao-ti119-20260117234002.png" class="fav-frame">
-                </div>
-                <div class="fav-name edit-text" id="fav_head_text-4">ㅋㅋㅋ…</div>
-            </div>
-            <div class="fav-item">
-                <div class="fav-avatar-box">
-                    <div class="fav-img upload-img" id="fav_head_5"></div>
-                    <img src="https://i.postimg.cc/SQTJkb6z/wu-biao-ti119-20260117234002.png" class="fav-frame">
-                </div>
-                <div class="fav-name edit-text" id="fav_head_text-5">★₊⁺๑!!♪ 🤍ྀི</div>
-            </div>
-        </div>
-    </div>
-<div class="p3-split-row">
-    <div class="p3-contact-card">
-        <div class="p3-cc-avatar upload-img" id="p3_contact_avatar"></div>
-        <div class="p3-cc-name edit-text">昵称</div>
-        <div class="p3-cc-actions">
-            <img src="https://i.postimg.cc/0NgnC8gy/wu-biao-ti109-20251128210955.png" class="p3-cc-btn" onclick="alert('Calling...')">
-            <img src="https://i.postimg.cc/k5rsynrM/wu-biao-ti109-20251128211011.png" class="p3-cc-btn" onclick="openApp('messages')">
-        </div>
-    </div>
-
     <div class="p3-app-group-container">
         <div class="p3-app-grid">
             <div class="app-item">
-                <div class="app-icon" style="background-color: #ddd;"></div>
-                <div class="app-name">App</div>
+                <div id="app-icon-photos-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/xCZd1nbx/wu-biao-ti119-20260117101708.png');"></div>
+                <div class="app-name">相册</div>
             </div>
-            <div class="app-item">
-                <div class="app-icon" style="background-color: #ccc;"></div>
-                <div class="app-name">App</div>
+            <div class="app-item" onclick="openApp('douyin')">
+                <div id="app-icon-douyin" class="app-icon" style="background-image: url('https://i.postimg.cc/nchtw6jd/wu-biao-ti119-20260117103441.png');"></div>
+                <div class="app-name">抖音</div>
             </div>
-            <div class="app-item">
-                <div class="app-icon" style="background-color: #bbb;"></div>
-                <div class="app-name">App</div>
+            <div class="app-item" onclick="openApp('settings')">
+                <div id="app-icon-settings-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/85YCzNr0/wu-biao-ti119-20260117101553.png');"></div>
+                <div class="app-name">设置</div>
             </div>
-            <div class="app-item">
-                <div class="app-icon" style="background-color: #aaa;"></div>
-                <div class="app-name">App</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-    <div class="ins-record-card" style="margin-top: 30px;">
-        <div class="rc-header">
-            <div class="rc-user">
-                <div class="rc-avatar upload-img"></div>
-                <div class="rc-user-info">
-                    <div class="rc-name edit-text" id="p3-mid-text-4">えぇぇ(๑°ㅁ°๑)ぇぇ ！</div>
-                    <div class="rc-meta edit-text" id="p3-mid-text-10">625天前</div>
-                </div>
-            </div>
-            <div class="rc-nav">
-                <span class="active">記錄</span>
-                <span>通訊</span>
-                <span>訂閱</span>
-            </div>
-        </div>
-        <div class="rc-body">
-            <div class="rc-grid">
-                <div class="grid-item upload-img"></div>
-                <div class="grid-item upload-img"></div>
-                <div class="grid-item upload-img"></div>
-                <div class="grid-item upload-img"></div>
-                <div class="grid-item upload-img"></div>
-                <div class="grid-item upload-img"></div>
-            </div>
-            <div class="rc-content">
-                <p class="edit-text" id="p3-mid-text-5">日子总是时好时坏坏坏坏坏坏坏坏坏坏坏（๑-ㅅ-๑）...zZ乙</p>
-                <div class="rc-actions edit-text" id="p3-mid-text-6">於你而言我是一顆星嗎？
-                </div>
+                <div class="app-item" onclick="openApp('contacts')">
+                    <div id="app-icon-contacts-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/mDTWfrYB/wu-biao-ti124-20260209111417.png');"></div>
+                    <div class="app-name">通讯录</div>
             </div>
         </div>
     </div>
 </div>
-<div class="desktop-page" id="page-4" style="overflow-y: auto;">
-    <div style="height: 10px;"></div>
 
-    <div class="p3-mid-card">
-        <div class="p3-mc-header">
-            <div class="p3-mc-avatar upload-img" style="background-color: #333;"></div>
-            <div class="p3-mc-info">
-                <div class="p3-mc-name edit-text" id="p3-mid-text">Daily</div>
-                <div class="p3-mc-sub edit-text" id="p3-mid-text-2">@Cat</div>
-            </div>
-            <div class="p3-mc-heart">♥</div>
-        </div>
-        <div class="p3-mc-content">
-            <div class="p3-mc-img-box upload-img" id="p3_mid_img_1">
-                <div class="p3-mc-label edit-text" id="p3-mid-text-3">01. MY LOVE! ↗</div>
-            </div>
-            <div class="p3-mc-img-box upload-img" id="p3_mid_img_2">
-                <div class="p3-mc-label edit-text" id="p3-mid-text-3">02. OUR SONG? ↗</div>
-            </div>
-        </div>
-        <div class="p3-mc-footer edit-text" id="p3-mid-text-3">THIS IS U&ME IN OUR BEST YEARS TOGETHER ★</div>
     </div>
-
+<div class="desktop-page" id="page-3" style="overflow-y: auto;">
+    
     <div class="widgy-container" style="margin-top: 20px;">
-        <div class="widgy-large-card">
+        
+        <div class="widgy-large-card" style="position: relative;">
             <div class="w-top-part">
                 <div class="w-mini-cover upload-img"></div>
                 <div class="w-star-icon edit-text" id="w-text">★</div>
@@ -386,84 +269,83 @@
                 <div class="w-thumb-item upload-img" style="background-color: #bbb;"></div>
                 <div class="w-thumb-item upload-img" style="background-color: #aaa;"></div>
             </div>
+            <div class="tw-bottom-label">Top Widgets⁺</div>
         </div>
 
-        <div class="widgy-mid-row">
+        <div class="widgy-mid-row" style="margin-top: 20px;">
             <div class="big-photo-widget upload-img">
                 <div class="photo-tag edit-text" id="w-text-2">Focus</div>
-            </div>
+            <div class="tw-bottom-label">Top Widgets⁺</div>
+        </div>
+
             <div class="widgy-small-grid">
-                <div class="app-item" onclick="openApp('music')">
-                    <div id="app-icon-kugou" class="app-icon" style="background-image: url('https://i.postimg.cc/J4YWwPZb/wu-biao-ti119-20260117103559.png');"></div>
-                    <div class="app-name">酷狗音乐</div>
+                <div class="app-item" onclick="openApp('edge')">
+                    <div id="app-icon-edge-p3" class="app-icon" style="background-image: url('https://i.postimg.cc/V6zPQNjZ/wu-biao-ti124-20260209111457.png');"></div>
+                    <div class="app-name">edge</div>
                 </div>
-                <div class="app-item" onclick="openApp('clock')">
-                    <div id="app-icon-clock-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/XJPvY4y2/wu-biao-ti119-20260117101753.png');"></div>
-                    <div class="app-name">时钟</div>
+                <div class="app-item" onclick="openApp('icity')">
+                    <div id="app-icon-icity-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/V6zPQNjD/wu-biao-ti124-20260209111551.png');"></div>
+                    <div class="app-name">icity</div>
                 </div>
-                <div class="app-item" onclick="openApp('camera')">
-                    <div id="app-icon-camera-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/j51jStJv/wu-biao-ti119-20260117101925.png');"></div>
-                    <div class="app-name">相机</div>
+                <div class="app-item" onclick="openApp('YouTube')">
+                    <div id="app-icon-YouTube" class="app-icon" style="background-image: url('https://i.postimg.cc/rp12P4tR/wu-biao-ti124-20260209111832.png');"></div>
+                    <div class="app-name">YouTube</div>
                 </div>
-                <div class="app-item" onclick="openApp('browser')">
-                    <div id="app-icon-safari" class="app-icon" style="background-image: url('https://i.postimg.cc/sDHRFw7Y/wu-biao-ti119-20260117103533.png');"></div>
-                    <div class="app-name">Safari浏览器</div>
+                <div class="app-item" onclick="openApp('X')">
+                    <div id="app-icon-X-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/LXmFKszV/wu-biao-ti124-20260209111803.png');"></div>
+                    <div class="app-name">X</div>
                 </div>
             </div>
         </div>
 
-        <div class="app-grid" style="margin-top: -1px;">
-            <div class="app-item" onclick="openApp('settings')">
-                <div id="app-icon-settings-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/85YCzNr0/wu-biao-ti119-20260117101553.png');"></div>
-                <div class="app-name">设置</div>
-            </div>
-            <div class="app-item" onclick="openApp('gallery')">
-                <div id="app-icon-photos-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/xCZd1nbx/wu-biao-ti119-20260117101708.png');"></div>
-                <div class="app-name">相册</div>
-            </div>
-            <div class="app-item" onclick="openApp('douyin')">
-                <div id="app-icon-douyin" class="app-icon" style="background-image: url('https://i.postimg.cc/nchtw6jd/wu-biao-ti119-20260117103441.png');"></div>
-                <div class="app-name">抖音</div>
-            </div>
-            <div class="app-item" onclick="openApp('map')">
-                <div id="app-icon-map-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/26t5SrBx/wu-biao-ti119-20260117102041.png');"></div>
-                <div class="app-name">地图</div>
+        <div style="width: 340px; height: 160px; margin: 0 auto; position: relative;">
+            
+            <div class="doris-music-card">
+                <div class="dm-profile-area">
+                    <div class="dm-avatar-box">
+                        <img src="" class="dm-avatar upload-img">
+                        <div class="dm-note-bubble">🎵</div>
+                    </div>
+                    <div class="dm-user-info">
+                        <div class="dm-name edit-text" id="page-3-text">昵称</div>
+                        <div class="dm-handle edit-text" id="page-3-text-1">@Driz2leo · 99k followers</div>
+                    </div>
+                    <button class="dm-edit-btn edit-text" id="page-3-text-2">Edit</button>
+                </div>
+
+                <div class="dm-player-box">
+                    <div class="dm-cover-wrapper" onclick="openApp('kugou')">
+                        <img id="widget-cover-2" src="default.jpg" class="dm-album-art">
+                    </div>
+                    
+                    <div class="dm-track-content">
+                        <div class="dm-text-info">
+                            <div id="widget-title-2" class="dm-song-title">Not Playing</div>
+                            <div class="dm-meta-row">
+                                <div id="widget-lyric-line" style="font-size:11px; color:#666; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:0.9;">暂无歌词...</div>
+                            </div> 
+                        </div>
+
+                        <div class="dm-progress-mini" onclick="seekFromWidget(event)">
+                            <div id="widget-prog-fill" class="dm-prog-fill" style="width: 0%;"></div>
+                        </div>
+
+                        <div class="dm-controls">
+                            <img src="https://i.postimg.cc/TwY8Xt2n/wu-biao-ti118-20260131105352.png" onclick="playPrev()" class="dm-ctrl-btn">
+                            <img id="widget-play-btn-2" src="https://i.postimg.cc/rmF6LfyG/wu-biao-ti119-20260131105316.png" onclick="toggleMusic()" class="dm-ctrl-btn dm-play-big">
+                            <img src="https://i.postimg.cc/W3bRP5pG/wu-biao-ti118-20260131105343.png" onclick="playNext()" class="dm-ctrl-btn">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tw-bottom-label">Top Widgets⁺</div>
             </div>
         </div>
 
-        <div class="ios-music-widget-flat">
-            <div class="imw-top-flat">
-                <div onclick="openApp('kugou')" class="ios-click-anim" style="flex-shrink:0;">
-                    <img id="widget-cover-2" class="imw-cover-flat" >
-                </div>
-                <div onclick="openApp('kugou')" style="flex:1; overflow:hidden; display:flex; flex-direction:column; justify-content:center; margin-left: 2px;">
-                    <div id="widget-title-2" style="font-size:15px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Not Playing</div>
-                    <div id="widget-artist-2" style="font-size:12px; color:rgba(255,255,255,0.6); margin-top:1px;">SODA MUSIC</div>
-                    <div id="widget-lyric-line" style="font-size:11px; color:#fce76d; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:0.9;">𐌉𐌌 𐌔𐌏 𐌔𐌀𐌃！</div>
-                </div>
-            </div>
-            <div style="display:flex; flex-direction:column; gap:4px; margin-top:2px;">
-                <div class="imw-bar-bg" onclick="seekFromWidget(event)" style="height:3px;">
-                    <div id="widget-prog-fill" class="imw-bar-fill" style="width: 0%;"></div>
-                </div>
-                <div class="imw-time" style="font-size:9px; opacity:0.5;">
-                    <span id="widget-curr-time">0:00</span>
-                    <span id="widget-total-time">0:00</span>
-                </div>
-            </div>
-            <div class="imw-controls-flat">
-                <img id="widget-like-btn" src="https://i.postimg.cc/C1vPCJ8s/wu-biao-ti118-20260117003824.png" onclick="toggleFavorite()" class="ios-click-anim" style="width:30px; height:30px;">
-                <div class="imw-center-group">
-                    <img src="https://i.postimg.cc/FRPWbGSC/wu-biao-ti118-20260116221202.png" onclick="playPrev()" class="ios-click-anim" style="width:36px; height:36px;">
-                    <img id="widget-play-btn-2" src="https://i.postimg.cc/ydYqzL6F/wu-biao-ti119-20260131105300.png" onclick="toggleMusic()" class="ios-click-anim" style="width:40px; height:40px;">
-                    <img src="https://i.postimg.cc/d1WHRnC5/wu-biao-ti118-20260117003643.png" onclick="playNext()" class="ios-click-anim" style="width:36px; height:36px;">
-                </div>
-                <img src="https://i.postimg.cc/rmhnGg4Q/wu-biao-ti118-20260117003704.png" onclick="openApp('kugou'); setTimeout(toggleMusicList, 300);" class="ios-click-anim" style="width:30px; height:30px;">
-            </div>
-        </div>
     </div>
 </div>
-
+        </div>
+    </div> </div>
 <div class="desktop-footer-controls">
     <div class="search-pill edit-text" id="desktop_search_text">
 <span style="font-size: 12px; display: flex; align-items: center; gap: 4px;">
@@ -477,7 +359,6 @@
         <div class="d-dot active" id="d-dot-1"></div>
         <div class="d-dot" id="d-dot-2"></div>
         <div class="d-dot" id="d-dot-3"></div>
-        <div class="d-dot" id="d-dot-4"></div>
     </div>
 </div>
 
@@ -648,7 +529,7 @@
                         <div class="wx-blink-tabs">
                             <div class="blink-tab active" onclick="switchChatSubTab('chat', this)">Chat</div>
                             <div class="blink-tab" onclick="switchChatSubTab('group', this)">Group</div>
-                            <div class="blink-tab" onclick="switchChatSubTab('me', this)">Me</div>
+                            <div class="blink-tab">Me</div>
                         </div>
 
                         <div class="wx-h-action-box" style="position: relative; margin-left: 10px;">
@@ -747,16 +628,16 @@
         </div>
         
         <div class="ins-stats-section">
-            <div class="ins-stat-box"><span class="ins-stat-num edit-text">11</span><span class="ins-stat-label">posts</span></div>
-            <div class="ins-stat-box"><span class="ins-stat-num edit-text">1314</span><span class="ins-stat-label">followers</span></div>
-            <div class="ins-stat-box"><span class="ins-stat-num edit-text">520</span><span class="ins-stat-label">following</span></div>
+            <div class="ins-stat-box"><span class="ins-stat-num edit-text" id="moments-host- text-1">11</span><span class="ins-stat-label">posts</span></div>
+            <div class="ins-stat-box"><span class="ins-stat-num edit-text" id="moments-host- text-2">1314</span><span class="ins-stat-label">followers</span></div>
+            <div class="ins-stat-box"><span class="ins-stat-num edit-text" id="moments-host- text-3">520</span><span class="ins-stat-label">following</span></div>
         </div>
     </div>
 
     <div class="ins-bio-section">
         <div class="ins-bio-name" id="moments-host-name">昵称</div>
         
-        <div class="ins-bio-text edit-text">誓言是一场有时差的雨 🌧️<br>instagram: @lover</div>
+        <div class="ins-bio-text edit-text" id="moments-host- text-4">誓言是一场有时差的雨 🌧️<br>instagram: @lover</div>
     </div>
 
     <div class="ins-action-btns">
@@ -1046,18 +927,20 @@
                 <div class="s-left"><img src="https://i.postimg.cc/W38qvySV/wu-biao-ti115-20260101190744.png" class="ios-icon-img"><span style="margin-left: 12px;">API Settings</span></div>
                 <div class="s-right"><span class="s-status" id="api_status_text" style="font-size:14px;">未配置</span><span class="s-arrow">›</span></div>
             </div>
-            <div class="s-item" onclick="alert('世界书功能正在构建中...★')">
-                <div class="s-left"><img src="https://i.postimg.cc/769JkR9F/wu-biao-ti115-20260101190850.png" class="ios-icon-img"><span style="margin-left: 12px;">世界书</span></div>
-                <span class="s-arrow">›</span>
-            </div>
+<div class="s-item" onclick="openSubPage('sub-page-worldbook')">
+    <div class="s-left">
+        <img src="https://i.postimg.cc/769JkR9F/wu-biao-ti115-20260101190850.png" class="ios-icon-img">
+        <span style="margin-left: 12px;">世界书</span>
+    </div>
+    <span class="s-arrow">›</span>
+</div>
             <div class="s-item" onclick="openSubPage('sub-backup')">
                 <div class="s-left"><img src="https://i.postimg.cc/DZ64TN57/wu-biao-ti115-20260101190925.png" class="ios-icon-img"><span style="margin-left: 12px;">备份与恢复</span></div>
                 <span class="s-arrow">›</span>
-            </div>
+            </div>                        </div>
                         </div>
                     </div>
-                </div>
-
+ </div>
 <div id="sub-api-config" class="sub-page">
     <div class="sub-header">
         <div class="back-btn" onclick="closeSubPage('sub-api-config')">‹</div>
@@ -1125,7 +1008,35 @@
                 <div class="ins-btn-full" onclick="showDeletePresetAlert()" style="background:#f0f0f0; color:#ff3b30;">Delete（删除）</div>
             </div>
         </div>
+<div id="sub-page-worldbook" class="sub-page">
+    <div class="ios-sub-header">
+        <div class="header-back" onclick="closeSubPage('sub-page-worldbook')">‹ 通用</div>
+        <div class="header-title">世界书</div>
+        <div class="header-more"></div>
+    </div>
+    <div class="wb-folder-grid" id="wb-folder-container"></div>
+</div>
 
+<div id="sub-page-wb-list" class="sub-page">
+    <div class="ios-sub-header">
+        <div class="header-back" onclick="closeSubPage('sub-page-wb-list')">‹ 返回</div>
+        <div class="header-title" id="wb-current-folder-name">列表</div>
+        <div class="header-more" onclick="openWbEditor()">+</div>
+    </div>
+    <div class="wb-entry-list" id="wb-entry-container"></div>
+</div>
+
+<div id="sub-page-wb-editor" class="sub-page wb-editor-bg">
+    <div class="ios-sub-header transparent">
+        <div class="header-back" onclick="closeSubPage('sub-page-wb-editor')">取消</div>
+        <div class="header-more primary" onclick="saveAndExitWbEditor()">完成</div>
+    </div>
+    <div class="wb-editor-container">
+        <input type="text" id="wb-edit-title" class="wb-main-title" placeholder="设定名称">
+        <div id="wb-sections-container"></div>
+        <div class="wb-add-section-btn" onclick="addWbSection()">+ 添加栏目</div>
+    </div>
+</div>
         <div style="height:50px;"></div>
     </div>
 </div>
@@ -1277,43 +1188,43 @@
 <div id="chat-plus-menu" class="chat-plus-menu">
     
     <div class="plus-item" onclick="handleImageUpload(this)">
-        <img src="https://i.postimg.cc/Jhm0d58M/IMG-9500.png" class="plus-icon-img">
-        <div class="plus-label">照片</div>
+        <img src="https://i.postimg.cc/xCZd1nbx/wu-biao-ti119-20260117101708.png" class="plus-icon-img">
+        <div class="plus-label">相册</div>
     </div>
 
-    <div class="plus-item" onclick="alert('咔嚓！(模拟拍摄)')">
-        <img src="https://i.postimg.cc/jdpLyrkW/IMG-9501.png" class="plus-icon-img">
-        <div class="plus-label">拍摄</div>
+    <div class="plus-item" onclick="alert('还没搓出来...')">
+        <img src="https://i.postimg.cc/j51jStJv/wu-biao-ti119-20260117101925.png" class="plus-icon-img">
+        <div class="plus-label">相机</div>
     </div>
 
     <div class="plus-item" onclick="startTransferFlow()">
-        <img src="https://i.postimg.cc/3J4kyw95/IMG-9498.png" class="plus-icon-img">
+        <img src="https://i.postimg.cc/Kv8ysdkp/wu-biao-ti119-20260117103413.png" class="plus-icon-img">
         <div class="plus-label">转账</div>
     </div>
 
-    <div class="plus-item" onclick="alert('嘟嘟嘟...')">
-        <img src="https://i.postimg.cc/5t3ycQ9v/IMG-9502.png" class="plus-icon-img">
+    <div class="plus-item" onclick="alert('还没搓完！...')">
+        <img src="https://i.postimg.cc/SNr6W67H/wu-biao-ti124-20260209132051.png" class="plus-icon-img">
         <div class="plus-label">语音</div>
     </div>
 
-    <div class="plus-item" onclick="alert('视频通话中...')">
-        <img src="https://i.postimg.cc/G3SBhDFx/IMG-9497.png" class="plus-icon-img">
+    <div class="plus-item" onclick="alert('还没搓出来呢...')">
+        <img src="https://i.postimg.cc/L6Ttzt3K/wu-biao-ti124-20260209131919.png" class="plus-icon-img">
         <div class="plus-label">视频</div>
     </div>
 
-    <div class="plus-item" onclick="alert('我在你心里呀')">
-        <img src="https://i.postimg.cc/528j3kZs/IMG-9499.png" class="plus-icon-img">
-        <div class="plus-label">位置</div>
+    <div class="plus-item" onclick="alert('还没搓出来呢...')">
+        <img src="https://i.postimg.cc/26t5SrBx/wu-biao-ti119-20260117102041.png" class="plus-icon-img">
+        <div class="plus-label">地图</div>
     </div>
 
     <div class="plus-item" onclick="openApp('music')">
-        <img src="https://i.postimg.cc/W3SqQW7h/IMG-9529-removebg-preview.png" class="plus-icon-img">
+        <img src="https://i.postimg.cc/8PHRhRB9/wu-biao-ti124-20260209132130.png" class="plus-icon-img">
         <div class="plus-label">音乐</div>
     </div>
 
     <div class="plus-item" onclick="toggleOfflineMode()">
-        <img src="https://i.postimg.cc/7L8z7T6Y/IMG-9533-removebg-preview.png" class="plus-icon-img">
-        <div class="plus-label" id="offline-mode-label">线下模式</div>
+        <img src="https://i.postimg.cc/kggxw2Tx/wu-biao-ti124-20260209131822.png" class="plus-icon-img">
+        <div class="plus-label" id="offline-mode-label">线下</div>
     </div>
         </div>
         
@@ -1506,20 +1417,6 @@
 
         <div id="summary-list-container" class="ins-memory-feed">
             </div>
-        <div class="ins-diary-card">
-    
-    <div class="polaroid-frame" onclick="document.getElementById('upload-1').click()">
-        <img class="polaroid-img" id="img-preview-1">
-        <div class="polaroid-caption">My Memory ☁️</div>
-    </div>
-    
-    <input type="file" id="upload-1" style="display: none;" accept="image/*" onchange="previewImage(this, 'img-preview-1')">
-
-    <div class="diary-real-date">2025.11.30 <span>★</span></div>
-    <div class="diary-content">
-        今天也很开心！(≧∇≦)ﾉ
-    </div>
-</div>
 
   </div>  </div>  </div> </div>
 <div id="app-window-alipay" class="app-window" style="background: #f5f7fa; display: none;">
@@ -1755,14 +1652,14 @@
     <div class="sticker-glass-panel">
         <div class="sticker-header">
             <div class="sticker-tab active" onclick="switchStickerTab('fav')">(＞人＜;)</div>
-            <div class="sticker-tab" onclick="switchStickerTab('ai')">★ char专属</div>
-            <div class="sticker-tab" onclick="switchStickerTab('sys')">(𓐍ㅇㅂㅇ𓐍)</div>
+            <div class="sticker-tab" onclick="switchStickerTab('ai')">For Char</div>
+            <div class="sticker-tab">(𓐍ㅇㅂㅇ𓐍)</div>
             <div class="sticker-close" onclick="toggleStickerMenu()">×</div>
         </div>
 
         <div class="sticker-grid-scroll" id="sticker-grid-view"></div>
 
-        <div class="sticker-footer">
+        <div class="sticker-footer" id="sticker-normal-footer">
             <div class="sticker-add-btn" onclick="showAddChoiceMenu(event)">
                 <span>+</span> Add Stickers
             </div>
@@ -2080,9 +1977,7 @@
     </div> 
     
     <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
-
     <script src="security.js"></script>
-
     <script src="script.js"></script>
 </body>
 </html>

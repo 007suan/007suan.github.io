@@ -127,7 +127,7 @@ html {
 .home-bar.hidden-mode { bottom: 10px; width: 200px; height: 30px; background-color: transparent !important; padding: 10px; }
 .home-bar:active { background-color: #555; }
 /* =========================================
-   ✨ 升级版：淡淡Ins风毛玻璃门禁
+  升级版：淡淡Ins风毛玻璃门禁
    ========================================= */
 #activation-gate {
     position: fixed;
@@ -283,8 +283,7 @@ html {
 .search-pill { margin: 10px auto 0; background: rgba(255,255,255,0.5); padding: 4px 12px; border-radius: 20px; display: flex; align-items: center; gap: 5px; font-size: 11px; color: #555; backdrop-filter: blur(10px); cursor: pointer; width: fit-content; }
 /* Dock */
 .dock { position: absolute; bottom: 15px; left: 15px; right: 15px; height: 100px; background: var(--dock-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border-radius: 38px; display: flex; justify-content: space-around; align-items: center; padding: 0 10px; z-index: 50; }
-/* ==================== 
-   ★ Page 2: 第二页组件 */
+/* Page 3: 第三页组件 */
 .widgy-container {
     width: 100%;
     padding: 6px 6px;
@@ -324,14 +323,14 @@ html {
 
 /* 左边的大方块 */
 .big-photo-widget {
-    width: 48%; 
+    width: 50%; 
     aspect-ratio: 1/1;
     background: #fff;
     border-radius: 24px;
     position: relative;
     box-shadow: 0 5px 20px rgba(0,0,0,0.06);
     background-size: cover; background-position: center;
-    overflow: hidden;
+    overflow: visible !important;
 }
 .photo-tag {
     position: absolute;
@@ -414,6 +413,23 @@ html {
     padding: 0;
     margin-top: 2px;
     font-weight: 500; }
+/* =========================================
+  Top Widgets 底部水印样式
+   ========================================= */
+.tw-bottom-label {
+    position: absolute;
+    bottom: -20px;       /* 距离底部 6像素 */
+    left: 50%;
+    transform: translateX(-50%); /* 绝对居中 */
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.5); /* 淡淡的灰色 */
+    pointer-events: none; /* 不挡点击 */
+    font-family: -apple-system, sans-serif;
+    z-index: 10;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
 /* NEW DESKTOP SWIPER  */
 /* 桌面容器 */
 .desktop-wrapper {
@@ -470,86 +486,7 @@ html {
 @keyframes waveJump {
     0%, 100% { height: 4px; } 50% { height: 12px; }
 }
-/* --- Page 3 新布局 CSS --- */
-
-/* 2. 第二行分栏布局 */
-.p3-split-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 0 15px;
-    margin-top: 15px;
-    gap: 15px;
-}
-
-/* 1. 调整外层容器，防止溢出屏幕 */
-.p3-split-row {
-    display: flex;
-    padding: 0 3px;
-    margin-top: 15px;
-    gap: 12px; /* 间距稍微收敛一点 */
-    align-items: stretch;
-    width: 100%;
-    box-sizing: border-box; /* 核心：确保边距不撑大容器 */
-}
-
-.p3-contact-card {
-    width: 160px;  /* 宽度：你想要多宽就写多少 */
-    height: 175px; /* 高度：想做成正方形就让宽高一样 */
-    
-    /* 下面这些保持你的设置 */
-    display: flex;
-    flex-direction: column; 
-    align-items: center;
-    justify-content: space-between; 
-    padding: 20px 10px;
-    background: rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(15px);
-    border-radius: 28px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-}
-
-/* 2. 头像部分：保持圆润挺拔 */
-.p3-cc-avatar {
-    flex-shrink: 0;
-    width: 75px; /* 上下布局时，头像可以稍微大一点 */
-    height: 75px;
-    border-radius: 50%;
-    background-color: #eee;
-    background-size: cover;
-    background-position: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
-
-/* 3. 名字部分 */
-.p3-cc-name {
-    font-size: 14px;
-    font-weight: 700;
-    color: #333;
-    margin: 2px 0;
-}
-
-/* 4. 底部按钮：横向并排 */
-.p3-cc-actions {
-    display: flex;
-    gap: 20px; /* 两个按钮之间的缝隙，方便宝宝操作 */
-    justify-content: center;
-    width: 100%;
-}
-
-.p3-cc-btn {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
-    cursor: pointer;
-    transition: transform 0.2s;
-}
-
-.p3-cc-btn:active {
-    transform: scale(0.9);
-}
-
-/* 右侧：APP矩阵 */
+/* 2x2：APP矩阵 */
 .p3-app-grid {
     flex: 1;
     display: grid;
@@ -557,142 +494,15 @@ html {
     grid-template-rows: 1fr 1fr;
     gap: 25px; 
 }
-
-/* 3. 中间卡片 (JiDan Bing 风格) */
-.p3-mid-card {
-    width: 320px;  
-    height: 200px; 
-    margin: 20px 20px;
-    background: #444; 
-    color: #fff;
-    border-radius: 20px;
-    padding: 15px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-}
-
-.p3-mc-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.p3-mc-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-color: #444;
-    margin-right: 10px;
-}
-
-.p3-mc-info {
-    flex: 1;
-}
-
-.p3-mc-name {
-    font-size: 14px;
-    font-weight: 700;
-}
-
-.p3-mc-sub {
-    font-size: 11px;
-    opacity: 0.6;
-}
-
-.p3-mc-heart {
-    font-size: 20px;
-}
-
-.p3-mc-content {
-    display: flex;
-    gap: 10px;
-}
-
-.p3-mc-img-box {
-    flex: 1;
-    height: 70px;
-    background-color: #666; /* 默认灰色 */
-    border-radius: 12px;
-    position: relative;
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.1);
-}
-
-.p3-mc-label {
-    position: absolute;
-    bottom: 6px;
-    left: 8px;
-    font-size: 10px;
-    font-weight: 700;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-}
-
-.p3-mc-footer {
-    margin-top: 12px;
-    font-size: 9px;
-    text-align: right;
-    opacity: 0.5;
-    letter-spacing: 1px;
-}
-/* --- 记录卡片 --- */
-.ins-record-card {
-    width: 100%;
-    background: #fff;
-    border-radius: 24px;
-    padding: 15px;
-    margin-top: 15px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-}
-.rc-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-}
-.rc-user { display: flex; align-items: center; gap: 10px; }
-.rc-avatar { width: 34px; height: 34px; border-radius: 50%; background: #eee; }
-.rc-name { font-size: 13px; font-weight: 700; color: #333; }
-.rc-meta { font-size: 10px; color: #bbb; }
-.rc-nav { display: flex; gap: 12px; font-size: 12px; font-weight: 600; color: #bbb; }
-.rc-nav .active { color: #3a3a3a; border-bottom: 2px solid #3a3a3a; padding-bottom: 2px; }
-
-.rc-body { display: flex; gap: 15px; }
-.rc-grid {
-    flex: 1;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: 3px;
-}
-.grid-item { aspect-ratio: 1/1; background: #eee; border-radius: 2px; }
-.rc-content {
-    flex: 1.2;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-.rc-content p { font-size: 12px; color: #666; line-height: 1.6; }
-.rc-actions { display: flex; gap: 10px; font-size: 14px; justify-content: flex-end; }
-
-/* 头像框效果 */
-.p3-cc-avatar {
-    width: 75px;
-    height: 75px;
-    border-radius: 50%;
-    border: 6px solid rgba(255, 255, 255, 0.8); /* 头像框 */
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    margin-bottom: 8px;
-}
-
 /* App 组外容器：半透明正方形 */
 .p3-app-group-container {
     width: 175px;
     height: 175px;
     background: rgba(255, 255, 255, 0.3); /* 半透明背景 */
-    border-radius: 28px; /* 圆角更有果味 */
+    border-radius: 28px; 
     display: flex;
     align-items: center;
     justify-content: center; }
-
 /* 内部网格微调 */
 .p3-app-grid {
     display: grid;
@@ -702,12 +512,319 @@ html {
     column-gap: 7px; /* 调大这个，左右就分开了 */
     padding: 10px;
 }
-/* 专门针对第三页那 4 个 App 的昵称间距 */
 .p3-app-grid .app-item {
-    /* 把间距从 6px 缩小到 2px，数值越小贴得越死哦 (♯｀∧´) */
-    gap: 2px !important; 
+    gap: 2px !important; }
+/* ============================================================
+   page-2 组件
+   ============================================================ */
+
+/* 1. 主卡片容器 */
+.twp-widget-card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 0 0 8px 0;
+    height: 340px;
+    width: 350px;
+    margin: 0 auto;
+    position: relative;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.02);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0; 
 }
 
+/* 2. 背景图 */
+.twp-header-bg {
+    width: 100%;
+    height: 140px;
+    background-size: cover;
+    background-position: center;
+    mask-image: linear-gradient(to bottom, black 20%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 20%, transparent 100%);
+    opacity: 0.9;
+}
+
+/* 3. 个人信息区 */
+.twp-profile-section {
+    margin-top: -95px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+    gap: 0px;
+}
+
+/* ★ 修改1：昵称字号改很小 */
+.twp-name {
+    font-size: 10px; /* 变小 */
+    font-weight: 800;
+    color: #000;
+    margin-bottom: 2px;
+    letter-spacing: 0.5px;
+}
+
+.twp-avatar-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.twp-quote-box {
+    width: 18px;
+    height: 18px;
+    background: #e9e0e0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 10px;
+}
+.twp-quote-box span {
+    font-family: serif;
+    font-size: 16px;
+    color: #8a7c7c;
+    line-height: 1;
+    margin-top: 4px;
+}
+
+.twp-main-avatar {
+    width: 68px;
+    height: 68px;
+    border-radius: 14px;
+    background-color: #f0f0f0;
+    background-size: cover;
+    background-position: center;
+    border: 3px solid #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.twp-id {
+    font-size: 12px; /* 变小 */
+    color: #888;
+    font-weight: 700;
+    margin-top: 4px;
+    letter-spacing: 0.5px;
+}
+
+/* 搜索栏 */
+.twp-search-bar {
+    width: 85%;
+    margin: 4px auto 8px; 
+    height: 28px; 
+    background: #ffffff;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #bbb;
+    font-size: 8px; 
+    font-weight: 600;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.03); 
+}
+.twp-search-icon { width: 14px; height: 14px; fill: #bbb; }
+
+/* 聊天消息区 */
+.twp-chat-area {
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 12px; }
+
+.twp-msg-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px; }
+.twp-msg-row.right { justify-content: flex-end; }
+.twp-msg-row.left { 
+    justify-content: flex-start; 
+    align-items: flex-start; 
+    margin-top: 2px; }
+
+.twp-msg-row.right .twp-time {
+    font-size: 8px; 
+    color: #333; font-weight: 500; margin-bottom: 4px; }
+
+/* 气泡 */
+.twp-bubble {
+    padding: 4px 10px; 
+    font-size: 10px;   
+    font-weight: 600;
+    position: relative;
+    border: 0.8px solid rgba(0,0,0,0.1); 
+    border-radius: 15px; 
+    line-height: 1.3;
+    white-space: nowrap; 
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;  }
+
+.twp-bubble.pink {
+    background: #fff5f5;
+    color: #333; }
+.twp-bubble.white {
+    background: #fff;
+    color: #333; }
+
+/* 左侧消息结构 */
+.twp-chat-avatar {
+    width: 26px; height: 26px; 
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    border: 0.5px solid rgba(0,0,0,0.1);
+    margin-top: 2px;
+    flex-shrink: 0; }
+
+.twp-msg-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex: 1; 
+    min-width: 0; }
+
+.twp-sender-name {
+    font-size: 8px; 
+    color: #666;
+    margin-bottom: 1px;
+    margin-left: 4px;
+    font-weight: 500; }
+
+.twp-bubble-group-left {
+    display: flex;
+    align-items: flex-end;
+    gap: 5px;
+    max-width: 100%; }
+
+.twp-read-status {
+    font-size: 8px; color: #999; margin-bottom: 2px; white-space: nowrap; }
+.twp-gallery-grid {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 20px; }
+
+.twp-gallery-item {
+    width: 31%;
+    aspect-ratio: 4/3;
+    background-color: #eee;
+    border-radius: 10px;
+    background-size: cover;
+    background-position: center;
+    border: 1.5px solid #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    position: relative; }
+.twp-gallery-item::after {
+    content: ''; position: absolute;
+    top: 2px; left: 2px; right: 2px; bottom: 2px;
+    border: 0.5px solid rgba(0,0,0,0.1);
+    border-radius: 8px; pointer-events: none; }
+/* 外部标签 (平面) */
+.twp-footer-label {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 400;
+    color: #555;
+    margin-top: 5px;
+    letter-spacing: 0.5px;
+    text-shadow: none; }
+/* 双栏布局容器 */
+.twp-split-layout {
+    display: flex;
+    justify-content: space-between; /* 两端对齐，中间留空 */
+    align-items: flex-start;
+    width: 350px; 
+    margin: 30px auto 0;
+    padding: 0 2px; }
+/* 左侧：组合组件 */
+.twp-combo-widget {
+    width: 158px; 
+    display: flex;
+    flex-direction: column;
+    gap: 15px; }
+/* -- 上半部分：头像行 -- */
+.tcw-profile-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-left: 2px;
+}
+.tcw-avatar-box {
+    position: relative; width: 46px; height: 46px;
+}
+.tcw-avatar {
+    width: 100%; height: 100%; border-radius: 50%;
+    background-size: cover; background-position: center;
+    border: 2px solid #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.tcw-status-icon {
+    position: absolute; top: -5px; right: -5px;
+    background: #fff; padding: 2px; border-radius: 50%;
+    font-size: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.tcw-add-icon {
+    position: absolute; bottom: 0; right: 0;
+    width: 14px; height: 14px; background: #333; color: #fff;
+    border-radius: 50%; font-size: 10px; display: flex;
+    align-items: center; justify-content: center; border: 1px solid #fff;
+}
+.tcw-info {
+    display: flex; flex-direction: column; justify-content: center;
+}
+.tcw-name {
+    font-size: 13px; font-weight: 700; color: #333; white-space: nowrap;
+}
+.tcw-date {
+    font-size: 9px; color: #999; margin-top: 2px;
+}
+
+/* -- 下半部分：音乐卡片 -- */
+.tcw-music-card {
+    background: linear-gradient(to bottom right, #e8e8e8 0%, #ffffff 100%);
+    
+    border-radius: 16px;
+    padding: 12px;
+    display: flex; flex-direction: column;
+    gap: 10px;
+    /* 配合变亮的背景，把阴影稍微调淡一点点，更通透 */
+    box-shadow: 0 5px 15px rgba(0,0,0,0.06);
+    border: none; 
+    width: 100%;
+}
+
+.tmc-top { display: flex; gap: 8px; align-items: flex-start; }
+.tmc-cover {
+    width: 40px; height: 40px; border-radius: 8px; flex-shrink: 0;
+    background-size: cover; background-position: center;
+}
+.tmc-content { flex: 1; overflow: hidden; }
+.tmc-title {
+    font-size: 11px; font-weight: 700; color: #333; margin-bottom: 4px;
+}
+.tmc-lyric {
+    font-size: 9px; color: #555; line-height: 1.3;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tmc-mid { display: flex; flex-direction: column; gap: 4px; }
+.tmc-progress-info {
+    display: flex; justify-content: space-between; font-size: 9px; color: #555;
+}
+.tmc-bar-bg {
+    width: 100%; height: 3px; background: rgba(255,255,255,0.4);
+    border-radius: 2px; overflow: hidden;
+}
+.tmc-bar-fill {
+    width: 59%; height: 100%; background: #555;
+}
+.tmc-bottom { display: flex; justify-content: space-between; align-items: center; }
+.tmc-birthday { font-size: 8px; color: #666; font-family: monospace; }
+.tmc-controls { display: flex; gap: 8px; align-items: center; }
+.tmc-controls svg { width: 12px; height: 12px; cursor: pointer; }
 /* 缩小版小组件卡片 */
 .social-card-mini {
     width: 350px; /* 进一步缩小宽度 */
@@ -1744,87 +1861,70 @@ html {
    ------------------------------------------------------------ */
 /* CHAT DETAIL (聊天页详情) */
 /* iOS WeChat */
-/* ====================
-   [新版] 仿 iOS 键盘扩展菜单 (瘦长胶囊风格)
-   ==================== */
+/* 真·iOS 原生感毛玻璃菜单 */
 .chat-plus-menu {
-    display: none; /* 默认隐藏 */
+    display: none; 
     position: absolute;
-    bottom: 85px;       /* 距离底部的高度 (在输入框上面) */
-    left: 12px;         /* 靠左显示 */
-    width: 280px;       /* 【瘦身版】固定宽度 */
-    background: rgba(255, 255, 255, 0.95); /* 纯白毛玻璃背景 */
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-radius: 20px; /* 整体大圆角 */
-    padding: 10px;
+    bottom: 85px;
+    left: 12px;
+    width: 180px; 
+    background: rgba(255, 255, 255, 0.2); 
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.5); 
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15); 
+    background: #FFFFFE;
+    padding: 8px; 
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 8px; 
     
-    /* 漂亮的悬浮阴影 */
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12), 0 2px 10px rgba(0,0,0,0.05);
-    border: 1px solid rgba(0,0,0,0.05);
-    z-index: 9999;
-    
-    /* 布局：双列网格 */
-    grid-template-columns: 1fr 1fr; 
-    gap: 8px; /* 按钮之间的间距 */
-    
-    /* 动画起点 */
-    transform-origin: bottom left; 
-    transform: scale(0.9) translateY(10px);
+    /* 动画设置 */
+    transform-origin: bottom left;
+    transform: scale(0.85) translateY(10px);
     opacity: 0;
-    transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    z-index: 20000; }
 
 /* 激活状态 */
 .chat-plus-menu.active {
     display: grid;
     transform: scale(1) translateY(0);
-    opacity: 1;
-}
+    opacity: 1; }
 
-/* 菜单项 (胶囊形状) */
+/* 菜单项 */
 .plus-item {
     display: flex;
-    flex-direction: row; /* ★关键：横向排列 (图标左 文字右) */
+    flex-direction: row;
     align-items: center;
-    justify-content: flex-start; /* 内容靠左 */
+    justify-content: flex-start;
+    background: #F8F8F9;
     
-    background: #f5f5f7; /* 苹果风格浅灰底色 */
-    border-radius: 10px; /* 小圆角 */
-    padding: 0 12px;     /* 内边距 */
-    height: 42px;        /* ★关键：瘦长的高度 */
+    border-radius: 10px; /* 格子的小圆角 */
+    padding: 0 10px;
+    height: 35px;        /*稍微增高一点，更大气 */
     
     cursor: pointer;
-    transition: background 0.1s;
-}
-
-/* 点击时的反馈 */
+    transition: background 0.15s ease; /* 按下反馈更快一点 */
+    border: 1px solid rgba(0, 0, 0, 0.1);  }
 .plus-item:active {
-    background: #e5e5ea; /* 点击变深一点 */
-}
-
+    background: rgba(0, 0, 0, 0.05); }
 /* 图标图片 */
 .plus-icon-img {
-    width: 22px;  /* 图标改小一点，精致 */
-    height: 22px;
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
     object-fit: contain;
-    margin-right: 10px; /* 图标和文字的间距 */
+    margin-right: 12px; /* 间距拉开 */
     flex-shrink: 0;
-}
+    /* opacity: 0.85; */ }
 
 /* 文字标签 */
 .plus-label {
-    font-size: 13px;
-    color: #333;
+    font-size: 10px; 
+    color: #1a1a1a; 
     font-weight: 500;
-    white-space: nowrap; /* 防止文字换行 */
-}
-
-/* 占位符 (如果需要空出一格) */
-.plus-item.empty {
-    background: transparent;
-    pointer-events: none;
-}
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; }
 .mpm-row { display: flex; align-items: center; width: 100%; justify-content: space-between; padding: 2px; }
 .mpm-item { padding: 10px 14px; color: #fff; font-size: 13px; font-weight: 500; cursor: pointer; text-align: center; border-right: 0.5px solid rgba(255,255,255,0.2); flex: 1; white-space: nowrap; }
 .mpm-item:last-child { border-right: none; }
@@ -2013,28 +2113,26 @@ html {
 
 /* 聊天主体区域 */
 .chat-body-ios {
-    /* 1. 间距保持你的设置 */
+    /* 间距保持你的设置 */
     padding-top: 150px; 
     padding-bottom: 90px;
     padding-left: 10px; 
     padding-right: 10px;
 
-    /* 2. 布局模式 */
+    /* 布局模式 */
     display: flex; 
     flex-direction: column; 
     gap: 0; 
 
-    /* ★★★ 3. 核心修复 (重点在这里！) ★★★ */
-    
-    /* 把 min-height: 100% 删掉！改成下面这三句： */
+    /* ★★★ 核心 ★★★ */
     flex: 1;                  /* 自动占满剩余空间 */
     height: 100% !important;  /* 锁死高度，不许乱长 */
     min-height: 0 !important; /* 允许压缩，这是Flex滚动的关键 */
     
-    /* 4. 开启滚动 */
+    /* 开启滚动 */
     overflow-y: auto !important; 
     
-    /* 5. 让苹果手机滚动更丝滑 */
+    /* 让苹果手机滚动更丝滑 */
     -webkit-overflow-scrolling: touch !important;
     overscroll-behavior-y: contain; 
 }
@@ -2799,132 +2897,124 @@ body.offline-active #chat-msg-area {
     color: #fff;
     border-color: #E5E5EA; 
 }
-
-/* 日记列表卡片 */
-.ins-memory-feed {
-    padding: 0 20px 40px;
+/* === iCity 风格日记卡片 === */
+.icity-card {
+    background: #fff;
+    width: 90%;          /* ★ 固定宽度，防止撑爆 */
+    max-width: 360px;    /* 限制最大宽 */
+    margin: 15px auto;   /* 居中 + 上下间距 */
+    border-radius: 12px; /* 圆角 */
+    padding: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03); /* 超轻阴影 */
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    gap: 15px;
-}
-
-.ins-diary-card {
-    background: #fff;
-    border-radius: 20px;
-    padding: 20px 20px 20px 20px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.02);
-    border: 1px solid rgba(0,0,0,0.03);
     position: relative;
-    overflow: hidden;
-    animation: slideUpFade 0.4s ease backwards;
 }
 
-/* 大大的日期背景数字*/
-.diary-date {
-    position: absolute;
-    top: -5px;
-    right: 15px;
-    font-size: 56px;
-    font-weight: 800;
-    color: #f2f2f7;
-    font-family: -apple-system, BlinkMacSystemFont, "Didot", serif;
-    z-index: 0;
-    opacity: 0.8;
-    pointer-events: none; }
-.diary-real-date {
+/* 头部：头像 + 名字 */
+.icity-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.icity-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%; /* 圆形头像 */
+    background-size: cover;
+    background-position: center;
+    background-color: #eee;
+    margin-right: 10px;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+.icity-info {
+    display: flex;
+    flex-direction: column;
+}
+.icity-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #333;
+    line-height: 1.2;
+}
+.icity-handle {
     font-size: 11px;
     color: #999;
-    font-weight: 600;
-    margin-bottom: 10px;
+    margin-top: 2px;
+}
+
+/* 内容区域 */
+.icity-body {
+    font-size: 14px;
+    color: #333;
+    line-height: 1.6;
+    white-space: pre-wrap; /* 保留换行 */
+    word-break: break-word; /* ★ 防止长单词撑爆卡片 */
+    margin-bottom: 8px;
+    min-height: 20px;
+    outline: none;
+}
+
+/* 时间 */
+.icity-time {
+    font-size: 11px;
+    color: #ccc;
+    margin-bottom: 12px;
+    font-family: sans-serif;
+}
+
+/* 经典的虚线分割 */
+.icity-divider {
+    width: 100%;
+    height: 1px;
+    border-top: 2px dashed #f0f0f0;
+    margin-bottom: 12px;
+}
+
+/* 底部操作栏 */
+.icity-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #999;
+    font-size: 12px;
+}
+.icity-btn {
     display: flex;
     align-items: center;
     gap: 4px;
-    position: relative;
-    z-index: 1; }
-.diary-real-date span { color: #FFD700; font-size: 10px; } /* 小星星 */
-/* 日记内容 */
-.diary-content {
-    font-size: 15px;
-    line-height: 1.6;
-    color: #333;
-    position: relative;
-    z-index: 1;
-    outline: none; }
-/* 空状态 */
-.empty-memory { text-align: center; padding: 60px 0; color: #ccc; font-size: 14px; }
-
-/* 容器：横向滚动条 */
-#summary-list-container { display: flex; flex-direction: row; overflow-x: auto; overflow-y: hidden; gap: 20px; padding: 20px 20px 40px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
-#summary-list-container::-webkit-scrollbar { display: none; }
-/* ======================================================
-   ★ 最终版：INS风票根 + 拍立得 (覆盖旧代码)
-   ====================================================== */
-
-/* 1. 票根底卡 */
-.ins-diary-card {
-    background: #ffffff !important;
-    border-radius: 2px !important; 
-    /* 锯齿边缘魔法 */
-    background-image: 
-        radial-gradient(circle at top left, transparent 6px, #ffffff 7px),
-        radial-gradient(circle at top right, transparent 6px, #ffffff 7px),
-        radial-gradient(circle at bottom left, transparent 6px, #ffffff 7px),
-        radial-gradient(circle at bottom right, transparent 6px, #ffffff 7px) !important;
-    background-size: 51% 51% !important;
-    background-repeat: no-repeat !important;
-    
-    border: none !important;
-    /* 虚线装饰 */
-    border-bottom: 2px dashed #e5e5ea !important;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05) !important;
-    
-    padding: 25px 20px 30px !important;
-    margin-bottom: 30px !important;
-    position: relative !important;
-    overflow: visible !important; 
 }
-/* 票根上面的孔 */
-.ins-diary-card::before {
-    content: "";
-    position: absolute;
-    top: 15px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 12px; height: 12px;
-    background: #f2f2f7; 
-    border-radius: 50%;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+/* === iCity 底部操作栏修复 === */
+.icity-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* 均匀分布 */
+    color: #999;
+    font-size: 12px;
+    padding-top: 4px; /* 稍微留点空隙 */
 }
 
-/* 2. 拍立得相框 */
-.polaroid-frame {
-    background: #fff;
-    padding: 6px 6px 35px 6px; /* 底部留白 */
-    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
-    transform: rotate(-3deg); /* 倾斜 */
-    width: 90%;
-    margin: 0 auto 20px; 
-    border: 1px solid rgba(0,0,0,0.05);
+.icity-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;       /* 图标和文字的间距 */
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: color 0.2s;
 }
-.polaroid-frame:hover {
-    transform: rotate(0deg) scale(1.02);
-    z-index: 10;
+
+/* 所有的 SVG 图标统一大小 */
+.icity-btn svg {
+    width: 18px;    /* 固定宽度 */
+    height: 18px;   /* 固定高度 */
+    fill: #999;     /* 默认灰色 */
+    transition: fill 0.2s;
 }
-.polaroid-img {
-    width: 100%;
-    aspect-ratio: 1/1;
-    object-fit: cover;
-    background-color: #f0f0f0;
-    display: block;
-}
-.polaroid-caption {
-    font-family: "Bradley Hand", "Chalkboard SE", sans-serif;
-    text-align: center;
-    color: #555;
-    margin-top: 10px;
-    font-size: 14px;
+
+/* 只有点赞按钮的图标可以变红 */
+.icity-btn.like-btn:active svg,
+.icity-btn.like-btn.active svg {
+    fill: #ff4757;
 }
 /* ------------------------------------------------------------
    6.7. 通用按钮组件 (General Buttons)
@@ -3200,7 +3290,132 @@ body, button, input, textarea, select, .edit-text {
 .wall-item:active { transform: scale(0.96); }
 .wall-item.add-btn { background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 2px dashed #ddd; color: #999; }
 .wall-plus { font-size: 32px; font-weight: 300; margin-bottom: 5px; }
+/* 世界书主容器 */
+.wb-folder-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    padding: 20px;
+}
 
+/* 文件夹样式：复刻老婆给的图 */
+.wb-folder-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+}
+
+.wb-folder-icon {
+    width: 80px;
+    height: 80px;
+    background: #9ccdfa; /* 淡淡的ins蓝 */
+    border-radius: 18px;
+    position: relative;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
+}
+
+.wb-folder-icon::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: 0;
+    width: 35px;
+    height: 10px;
+    background: #9ccdfa;
+    border-radius: 4px 4px 0 0;
+}
+
+.wb-folder-item:active .wb-folder-icon {
+    transform: scale(0.9);
+}
+
+.wb-folder-name {
+    margin-top: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #333;
+    text-align: center;
+}
+
+.wb-folder-count {
+    font-size: 10px;
+    color: #999;
+}
+
+/* 编辑页定制 */
+.wb-editor-bg {
+    background: #fdfdfd !important;
+}
+
+.wb-editor-container {
+    padding: 0 25px 50px;
+    overflow-y: auto;
+}
+
+.wb-main-title {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-size: 28px;
+    font-weight: 700;
+    margin: 20px 0;
+    outline: none;
+    color: #1c1c1e;
+}
+
+/* 栏目样式：那种带卡片感的 ins 风 */
+.wb-section-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid #f2f2f7;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+}
+
+.wb-sec-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #007aff;
+    margin-bottom: 8px;
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.wb-sec-title {
+    width: 100%;
+    border: none;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    outline: none;
+}
+
+.wb-sec-content {
+    width: 100%;
+    border: none;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #666;
+    resize: none;
+    outline: none;
+    min-height: 60px;
+}
+
+.wb-add-section-btn {
+    text-align: center;
+    padding: 15px;
+    color: #007aff;
+    font-size: 14px;
+    font-weight: 500;
+    background: #f2f2f7;
+    border-radius: 15px;
+    margin-top: 10px;
+    cursor: pointer;
+}
 
 /* ==========================================================================
    8. ALERTS & OVERLAYS (弹窗系统）
@@ -3557,6 +3772,102 @@ body, button, input, textarea, select, .edit-text {
 .mw-controls { display: flex; align-items: center; gap: 18px; margin-top: 5px; }
 .mw-btn { width: 24px; height: 24px; cursor: pointer; opacity: 0.9; }
 .mw-play-btn { width: 30px; height: 30px; }
+/* =========================================
+   ✨ Doris 社交风音乐组件 (魔改版)
+   ========================================= */
+.doris-music-card {
+    width: 100%; height: 100%;
+    /* 背景：高级灰白渐变 + 强力毛玻璃 */
+    background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.6));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 22px;
+    padding: 12px;
+    display: flex; flex-direction: column;
+    box-sizing: border-box;
+    font-family: -apple-system, sans-serif;
+    color: #333;
+}
+
+/* --- 顶部个人信息 --- */
+.dm-profile-area {
+    display: flex; align-items: center;
+    margin-bottom: 8px; padding: 0 4px;
+}
+.dm-avatar-box { position: relative; margin-right: 10px; }
+.dm-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    object-fit: cover; border: 2px solid #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.dm-note-bubble {
+    position: absolute; bottom: -2px; right: -4px;
+    background: #fff; width: 14px; height: 14px;
+    border-radius: 50%; font-size: 9px;
+    display: flex; justify-content: center; align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.dm-user-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.dm-name { font-size: 14px; font-weight: 800; color: #333; line-height: 1.1; }
+.dm-handle { font-size: 10px; color: #888; margin-top: 2px; font-weight: 500; }
+.dm-edit-btn {
+    padding: 4px 10px; background: rgba(0,0,0,0.06);
+    border-radius: 12px; border: none;
+    font-size: 11px; font-weight: 700; color: #555;
+}
+
+/* --- 底部播放器卡片 --- */
+.dm-player-box {
+    flex: 1;
+    background: rgba(255,255,255,0.5); /* 卡片里的卡片，层次感 */
+    border-radius: 16px;
+    padding: 8px;
+    display: flex; align-items: center;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4);
+}
+.dm-cover-wrapper { flex-shrink: 0; margin-right: 10px; }
+.dm-album-art {
+    width: 50px; height: 50px; border-radius: 10px;
+    object-fit: cover;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+.dm-track-content {
+    flex: 1; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: center;
+}
+
+/* 歌名信息 */
+.dm-text-info { margin-bottom: 6px; }
+.dm-song-title {
+    font-size: 13px; font-weight: 700; color: #222;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 2px;
+}
+.dm-meta-row { display: flex; align-items: center; }
+.dm-artist { font-size: 10px; color: #666; font-weight: 500; }
+
+/* 迷你进度条 */
+.dm-progress-mini {
+    width: 100%; height: 3px; background: rgba(0,0,0,0.05);
+    border-radius: 2px; margin-bottom: 6px; overflow: hidden;
+}
+.dm-prog-fill { height: 100%; background: #333; border-radius: 2px; }
+
+/* 按钮组 */
+.dm-controls {
+    display: flex; align-items: center; gap: 12px;
+}
+.dm-ctrl-btn {
+    width: 20px; height: 20px; cursor: pointer;
+    /* ★ 魔法去色滤镜：把彩色图标变成高级黑白灰！ */
+    filter: grayscale(100%) opacity(0.7); 
+    transition: transform 0.1s;
+}
+.dm-play-big {
+    width: 24px; height: 24px;
+    filter: grayscale(100%) opacity(0.9); /* 播放键深一点 */
+}
+.dm-ctrl-btn:active { transform: scale(0.85); }
 
 
 /* ==================== 2. 酷狗 APP 主界面 (全屏) ==================== */
@@ -4812,396 +5123,4 @@ body, button, input, textarea, select, .edit-text {
     padding: 6px 16px;
     border-radius: 20px;
     font-weight: 500;
-}
-
-/* ============================================================
-   ★ Top Widgets+ 聊天搜索组件 (TWP) - 迷你精致版
-   ============================================================ */
-
-/* 1. 主卡片容器 */
-.twp-widget-card {
-    background: #ffffff;
-    border-radius: 20px;
-    padding: 0 0 8px 0;
-    height: 340px;
-    width: 350px;
-    margin: 0 auto;
-    position: relative;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.02);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0; 
-}
-
-/* 2. 背景图 */
-.twp-header-bg {
-    width: 100%;
-    height: 140px;
-    background-size: cover;
-    background-position: center;
-    mask-image: linear-gradient(to bottom, black 20%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 20%, transparent 100%);
-    opacity: 0.9;
-}
-
-/* 3. 个人信息区 */
-.twp-profile-section {
-    margin-top: -95px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: relative;
-    z-index: 2;
-    gap: 0px;
-}
-
-/* ★ 修改1：昵称字号改很小 */
-.twp-name {
-    font-size: 10px; /* 变小 */
-    font-weight: 800;
-    color: #000;
-    margin-bottom: 2px;
-    letter-spacing: 0.5px;
-}
-
-.twp-avatar-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    width: 100%;
-}
-
-.twp-quote-box {
-    width: 18px;
-    height: 18px;
-    background: #e9e0e0;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 10px;
-}
-.twp-quote-box span {
-    font-family: serif;
-    font-size: 16px;
-    color: #8a7c7c;
-    line-height: 1;
-    margin-top: 4px;
-}
-
-.twp-main-avatar {
-    width: 68px;
-    height: 68px;
-    border-radius: 14px;
-    background-color: #f0f0f0;
-    background-size: cover;
-    background-position: center;
-    border: 3px solid #fff;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-
-.twp-id {
-    font-size: 12px; /* 变小 */
-    color: #888;
-    font-weight: 700;
-    margin-top: 4px;
-    letter-spacing: 0.5px;
-}
-
-/* 4. 搜索栏 */
-.twp-search-bar {
-    width: 85%;
-    margin: 4px auto 8px; /* 间距压小 */
-    height: 28px;         /* 高度压扁 */
-    background: #ffffff;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    color: #bbb;
-    
-    /* ★ 修改2：搜索字号改很小 */
-    font-size: 8px; 
-    font-weight: 600;
-    box-shadow: 0 1px 5px rgba(0,0,0,0.03); 
-}
-.twp-search-icon { width: 14px; height: 14px; fill: #bbb; }
-
-/* 5. 聊天消息区 */
-.twp-chat-area {
-    padding: 0 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-bottom: 12px;
-}
-
-.twp-msg-row {
-    display: flex;
-    align-items: flex-end;
-    gap: 6px;
-}
-.twp-msg-row.right { justify-content: flex-end; }
-.twp-msg-row.left { 
-    justify-content: flex-start; 
-    align-items: flex-start; 
-    margin-top: 2px;
-}
-
-.twp-msg-row.right .twp-time {
-    font-size: 8px; /* 时间也变小 */
-    color: #333; font-weight: 500; margin-bottom: 4px;
-}
-
-/* ★ 修改3：气泡变小、变扁 */
-.twp-bubble {
-    /* 核心：内边距减小 */
-    padding: 4px 10px; 
-    /* 核心：字号减小 */
-    font-size: 10px;   
-    font-weight: 600;
-    position: relative;
-    border: 0.8px solid rgba(0,0,0,0.1); 
-    border-radius: 15px; /* 还是圆的，但半径适应高度 */
-    line-height: 1.3;
-    white-space: nowrap; 
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 200px; 
-}
-
-.twp-bubble.pink {
-    background: #fff5f5;
-    color: #333;
-}
-.twp-bubble.white {
-    background: #fff;
-    color: #333;
-}
-
-/* 左侧消息结构 */
-.twp-chat-avatar {
-    width: 26px; height: 26px; /* 头像也微缩 */
-    border-radius: 50%;
-    background-size: cover;
-    background-position: center;
-    border: 0.5px solid rgba(0,0,0,0.1);
-    margin-top: 2px;
-    flex-shrink: 0;
-}
-
-.twp-msg-col {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    flex: 1; 
-    min-width: 0;
-}
-
-.twp-sender-name {
-    font-size: 8px; /* 名字变小 */
-    color: #666;
-    margin-bottom: 1px;
-    margin-left: 4px;
-    font-weight: 500;
-}
-
-.twp-bubble-group-left {
-    display: flex;
-    align-items: flex-end;
-    gap: 5px;
-    max-width: 100%;
-}
-
-.twp-read-status {
-    font-size: 8px; color: #999; margin-bottom: 2px; white-space: nowrap;
-}
-
-/* 6. 底部三张图 */
-.twp-gallery-grid {
-    display: flex;
-    justify-content: space-between;
-    padding: 0 20px;
-}
-
-.twp-gallery-item {
-    width: 31%;
-    aspect-ratio: 4/3;
-    background-color: #eee;
-    border-radius: 10px;
-    background-size: cover;
-    background-position: center;
-    border: 1.5px solid #fff;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-    position: relative;
-}
-.twp-gallery-item::after {
-    content: ''; position: absolute;
-    top: 2px; left: 2px; right: 2px; bottom: 2px;
-    border: 0.5px solid rgba(0,0,0,0.1);
-    border-radius: 8px; pointer-events: none;
-}
-
-/* 7. 外部标签 (平面) */
-.twp-footer-label {
-    text-align: center;
-    font-size: 12px;
-    font-weight: 400;
-    color: #555;
-    margin-top: 5px;
-    letter-spacing: 0.5px;
-    text-shadow: none; 
-}
-/* ============================================================
-   ★ (更新版) Page 2 底部组合布局：拉大间距 + 去掉白边
-   ============================================================ */
-
-/* 1. 双栏布局容器 */
-.twp-split-layout {
-    display: flex;
-    justify-content: space-between; /* 两端对齐，中间留空 */
-    align-items: flex-start;
-    
-    /* ★ 修改：宽度加宽到 340px (只要不超过屏幕宽就行)，让中间缝隙变大 */
-    width: 350px; 
-    margin: 30px auto 0;
-    padding: 0 2px; /* 左右稍微留点余地 */
-}
-
-/* 2. 左侧：组合组件 */
-.twp-combo-widget {
-    /* ★ 修改：稍微改窄一点点，给中间腾位置 */
-    width: 158px; 
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-/* -- 上半部分：头像行 -- */
-.tcw-profile-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding-left: 2px;
-}
-.tcw-avatar-box {
-    position: relative; width: 46px; height: 46px;
-}
-.tcw-avatar {
-    width: 100%; height: 100%; border-radius: 50%;
-    background-size: cover; background-position: center;
-    border: 2px solid #fff;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-.tcw-status-icon {
-    position: absolute; top: -5px; right: -5px;
-    background: #fff; padding: 2px; border-radius: 50%;
-    font-size: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-.tcw-add-icon {
-    position: absolute; bottom: 0; right: 0;
-    width: 14px; height: 14px; background: #333; color: #fff;
-    border-radius: 50%; font-size: 10px; display: flex;
-    align-items: center; justify-content: center; border: 1px solid #fff;
-}
-.tcw-info {
-    display: flex; flex-direction: column; justify-content: center;
-}
-.tcw-name {
-    font-size: 13px; font-weight: 700; color: #333; white-space: nowrap;
-}
-.tcw-date {
-    font-size: 9px; color: #999; margin-top: 2px;
-}
-
-/* -- 下半部分：音乐卡片 -- */
-.tcw-music-card {
-    /* ★ 核心修改：背景改为从左上(淡灰)到右下(纯白)的渐变 */
-    background: linear-gradient(to bottom right, #e8e8e8 0%, #ffffff 100%);
-    
-    border-radius: 16px;
-    padding: 12px;
-    display: flex; flex-direction: column;
-    gap: 10px;
-    /* 配合变亮的背景，把阴影稍微调淡一点点，更通透 */
-    box-shadow: 0 5px 15px rgba(0,0,0,0.06);
-    border: none; 
-    width: 100%;
-}
-
-.tmc-top { display: flex; gap: 8px; align-items: flex-start; }
-.tmc-cover {
-    width: 40px; height: 40px; border-radius: 8px; flex-shrink: 0;
-    background-size: cover; background-position: center;
-}
-.tmc-content { flex: 1; overflow: hidden; }
-.tmc-title {
-    font-size: 11px; font-weight: 700; color: #333; margin-bottom: 4px;
-}
-.tmc-lyric {
-    font-size: 9px; color: #555; line-height: 1.3;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.tmc-mid { display: flex; flex-direction: column; gap: 4px; }
-.tmc-progress-info {
-    display: flex; justify-content: space-between; font-size: 9px; color: #555;
-}
-.tmc-bar-bg {
-    width: 100%; height: 3px; background: rgba(255,255,255,0.4);
-    border-radius: 2px; overflow: hidden;
-}
-.tmc-bar-fill {
-    width: 59%; height: 100%; background: #555;
-}
-.tmc-bottom { display: flex; justify-content: space-between; align-items: center; }
-.tmc-birthday { font-size: 8px; color: #666; font-family: monospace; }
-.tmc-controls { display: flex; gap: 8px; align-items: center; }
-.tmc-controls svg { width: 12px; height: 12px; cursor: pointer; }
-/* ============================================================
-   ★ Page 2 右侧 APP 组盒子 (仿 Page 3 风格)
-   ============================================================ */
-
-/* 右侧容器：半透明大圆角方块 */
-.twp-app-group-container {
-    width: 175px; 
-    height: 175px; 
-    background: rgba(255, 255, 255, 0.45); 
-    border-radius: 24px; 
-    box-shadow: 0 5px 20px rgba(0,0,0,0.02);
-    display: flex;
-    align-items: center;
-    justify-content: center; }
-/* 内部 Grid 布局 */
-.twp-group-inner-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    row-gap: 0.5px;    /* 调大这个，上下就宽裕了 */
-    column-gap: 15px; /* 调大这个，左右就分开了 */
-    padding: 10px; }
-/* 当键盘弹出时，允许内容区域稍微灵活一点 */
-@media (max-height: 600px) {
-    .phone-screen {
-        height: auto !important;
-        min-height: 100vh !important;
-        overflow: auto !important; /* 允许必要时滚动 */
-    }
-}
-/* 1. 找到这个，把 gap 改小 */
-.twp-group-inner-grid .app-item {
-    /* 原来可能没写或者继承了全局的 6px */
-    gap: 2px !important; /* 这个数字越小，文字离图标越近 */
-}
-
-/* 2. 找到这个，把 margin-bottom 删掉或改小 */
-.twp-group-inner-grid .app-icon {
-    /* ...其他样式保持不变... */
-    
-    /* 原来是 margin-bottom: 4px; */
-    margin-bottom: 1 !important; /* 改成 0 就彻底贴上去了 */
-    
-    /* ...其他样式保持不变... */
 }

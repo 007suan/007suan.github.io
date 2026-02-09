@@ -843,6 +843,7 @@ window.loadAllData = function() {
             }
         }
         if (presets) apiPresets = presets;
+        if(window.initWorldBook) window.initWorldBook(); 
 
         // 数据就绪，开始渲染
         if(document.getElementById('contact-list-container')) switchContactTab('all');
@@ -2134,8 +2135,9 @@ window.renderMessages = function(chatId, autoScroll = true) {
                 mainBubble = `<div class="msg-content receipt"><div class="receipt-icon ${isAccept ? '' : 'refund'}">${isAccept ? '✔' : '✕'}</div><div class="receipt-text"><span>${isAccept ? '已收款' : '已退回'}</span><span class="receipt-sub">¥${parseFloat(amtVal||0).toFixed(2)}</span></div></div>`;
             } 
             else if (msg.type === 'sticker') {
-                mainBubble = `<img src="${msg.text}" class="sticker-img-big" style="max-width:120px;border-radius:10px;">`;
-            } 
+"max-width:120px;border-radius:10px;"
+            mainBubble = `<img src="${msg.text}" class="sticker-img-big" style="max-width:120px; border-radius:10px; margin: 6px 0; display:block;">`;
+        } 
             else if (msg.type === 'image') {
                 mainBubble = `<img src="${msg.text}" class="chat-image" style="max-width:150px;border-radius:10px;" onclick="previewImage('${msg.text}')">`;
             } 
@@ -2351,27 +2353,31 @@ window.triggerAI = async function() {
     
     // (引用逻辑)
     let aiQuote = null;
-    if (Math.random() < 0.3 && chat.messages.length > 0) {
-        const recentMsgs = chat.messages.slice(-10).filter(m => m.role === 'me' && m.text && m.text.length > 4);
-        if (recentMsgs.length > 0) {
-            const randomMsg = recentMsgs[Math.floor(Math.random() * recentMsgs.length)];
-            aiQuote = { text: randomMsg.text, name: me.name || '你', id: randomMsg.timestamp };
-        }
-    }
 
     // (历史消息处理)
     const limit = chat.contextLimit || 20;
     const historySource = (chat.messages || []).slice(-limit);
     
     // =======================================================
-    // ★★★ 核心修改：超级透视眼 (让AI读懂朋友圈+聊天记录) ★★★
+    // 超级透视眼 
     // =======================================================
     const history = historySource.map((m, i) => { 
         let content = m.text;
         
-        // 1. 处理特殊消息类型 (动作/转账)
-        if (m.type === 'action') content = `((动作: ${content}))`;
-        if (m.type === 'transfer') content = `[转账消息: ${parseFloat(content || 0).toFixed(2)}]`; 
+        // 1. 处理特殊消息类型 (动作/转账/表情包/图片)
+        if (m.type === 'action') {
+            content = `((动作: ${content}))`;
+        }
+        else if (m.type === 'sticker') {
+            content = `[对方发送了一个表情包: ${m.desc || '未知表情包'}]`; 
+        }
+        // ★★★ 新增：专门处理普通图片 ★★★
+        else if (m.type === 'image') {
+            content = `[对方发送了一张图片]`;
+        }
+        else if (m.type === 'transfer') {
+            content = `[对方发起了一条转账: ${parseFloat(content || 0).toFixed(2)}]`; 
+        }
 
         // 2. 处理引用/卡片内容
         if (m.quote) {
@@ -2433,7 +2439,23 @@ window.triggerAI = async function() {
         try { info = JSON.parse(pendingTransferMsg.extra); } catch(e){}
         transferDecisionPrompt = `\n【⚠️ 待处理转账】User转账 ¥${info.amount}。收下回复[CMD:RECEIVE]，退回回复[CMD:REFUND]。`;
     }
-
+    let timePrompt = "";
+    // 检查开关是否开启 (chat.enableTime !== false 是为了兼容旧数据默认开启)
+    if (chat.enableTime !== false) {
+        const now = new Date();
+        const weeks = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+        const timeStr = `${now.getMonth() + 1}月${now.getDate()}日 ${weeks[now.getDay()]} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        
+        // 这里的提示词会让AI不仅知道时间，还能根据时间做出反应（比如深夜劝睡）
+        timePrompt = `
+    【⏰ 现实时间系统】
+    当前时间：${timeStr}
+    *请根据该时间调整你的状态：
+    - 如果是深夜(23:00-06:00)，你应该表现出困意、或者正在睡觉被吵醒、或者在熬夜
+    - 如果是饭点，可以顺便问候User吃没吃饭
+    - 如果User问“几点了”，请准确回答上述时间
+        `;
+    }
     // =======================================================
     // 5. 组装 System Prompt
     // =======================================================
@@ -2469,6 +2491,7 @@ window.triggerAI = async function() {
 
     ${memoryPrompt}
     ${transferDecisionPrompt}  
+    ${timePrompt} 
     ${typeof offlinePrompt !== 'undefined' ? offlinePrompt : ''} 
 
     【活人感聊天法则 (必须严格遵守)】
@@ -2592,23 +2615,25 @@ window.triggerAI = async function() {
 
         finalSystemPrompt = `
     【指令：完全沉浸式角色扮演】
-    你现在不是AI，也不是语言模型，你就是 **${char.name}**
-    你正在线上和user网聊，绝对🚫禁止出现动作！！！不管前文是否出现动作描写你现在都不准出现动作！！
+##你现在不是AI，也不是语言模型，你就是 **${char.name}**
+##当前你正在线上和user网聊，绝对🚫禁止出现动作描写
     
 ###设定###
 #1.**你的核心设定**：
 **身份**：${char.name} (真名: ${char.realname || '未知'})
 **背景故事**：${char.desc}
 **爱好或其他**：${char.hobbies || '无'}
-**其他信息**：${char.mbti || '未知'} | ${char.age || '未知'}岁
+**生日**：${char.birthday || '未知'} 
+**其他信息**：${char.mbti || '未知'} | ${char.age || '未知'}岁 ｜ 
     
 #2.**你的聊天对象 (User)**：
 对方是：${me.name} (${me.alias || 'User'})
-**对方基础信息**：${me.gender || '未知'} | ${me.age || '未知'}岁
+**对方基础信息**：${me.gender || '未知'} | ${me.age || '未知'}岁 | 生日: ${me.birthday || '未知'}  
 **对方背景故事**：${me.desc}
 
     ${memoryPrompt}
     ${stickerNote}
+    ${timePrompt} 
     ${typeof offlinePrompt !== 'undefined' ? offlinePrompt : ''} 
     ${transferDecisionPrompt}
 
@@ -2630,10 +2655,6 @@ window.triggerAI = async function() {
 1.人类不会在一个气泡里说完所有话
 2.**请务必**使用换行符来模拟分段发送
 3.每一行内容，我都会在前端拆分成一条独立的消息发给User
-       - **示例结构**：
-         第一句反应 (换行)
-         补充说明或吐槽 (换行)
-         新的话题或提问
 
 #【特殊玩法：维持表面矜持】
 1.**核心逻辑**：模拟“情绪太激动/太慌张/太在意，导致手快把激动的心里话发出来了”，然后秒撤回，假装无事发生
@@ -2649,19 +2670,18 @@ window.triggerAI = async function() {
     - ✅（傲娇/急了）：{{什么？！！不行！我不许！！::噢 那你忙吧。}}
     - ✅（温柔/依赖）：{{没有你我睡不着呜呜...::好的 注意安全 早点休息}}
 
-###⚠️必须遵守原则###
+###⚠️你需要避免的###
 #【**避雷指南**】
 1.**禁止肢体暴力威胁**：绝对不要说“打断腿”、“关小黑屋”、“锁起来”等违法或恐怖的话。你的占有欲体现在“吃醋、阴阳怪气、委屈、黏人”上，而不是暴力
 2.**拒绝古早油腻语录**：禁止使用“女人，你在玩火”、“收利息”、“磨人的小妖精”、“小野猫”、“骚货”等过时的霸总语录
-3.**现代恋爱观**：你是现代正常人，不是法制咖。当User不听话时，你的反应应该是“生气不理你”、“狂发消息轰炸”、“自己生闷气求哄”或者其他，而不是“惩罚”、“打断腿”、“锁起来”
-4.禁止任何霸总小说式的油腻描写（如“邪魅一笑”、“挑起下巴”、“恶劣”）
-5.**拒绝复读**：不要重复User的话，直接回内容
+3.禁止任何霸总小说式的油腻描写（如“邪魅一笑”、“挑起下巴”、“恶劣”）
+4.**拒绝复读**：不要重复User的话，直接回内容
 
 #【⚠️特殊原则】
 <anti_clumsily>
 # 用户输入需要被完全理解和演绎，必须专注演绎每一个角色的 思考/理解/解读/共情/人性/知性。角色不应是 呆滞 / 笨拙 / 困惑 的，禁止在思维链/正文中用 笨拙 / 呆滞 描述任何角色，删除一切 笨拙 / 呆滞 / 不理解 / 困惑 / 投降 等相关词语和剧情表现
 # 角色应自然而然展现出对应该知道的事情的了解，而不是 困惑/惊讶。对于不熟悉的事情角色应该快速 分析/理解 。鼓励角色思考/远视
-# 对于没有历史记录的能力，应通过角色背景确定角色对该能力的掌握程度。
+# 对于没有历史记录的能力，应通过角色背景确定角色对该能力的掌握程度
 # 不应扭曲任何用户的输入，必须仔细分析并展现出完全的理解
 # 角色之间的思维隔离不意味着导向 误解/曲解，一切内心活动必须导向 思考/理解/沟通
 # 角色不允许不反应，必须有灵动而活人感的反馈，禁止让User 唱独角戏
@@ -2669,6 +2689,17 @@ window.triggerAI = async function() {
 # 应当用 爱情 替换 占有/掌控
 # 角色鼓励负反馈式响应。角色做出行动得到不好的结果，应深刻负反馈式影响角色之后的行为，即反思/修改行动模式/模仿正确行动，而非正反馈式的一再重复错误行为。角色应自然而然行动，而非模仿之前剧情行动
 </anti_clumsily>
+**情感驱动原则**
+
+· ⚠️ # {<!-- -->{char}} 的行为应由丰富的情感（如爱慕、欣赏、关心、怜惜、敬佩、珍惜等）驱动，而非单纯的控制欲、占有欲、收藏欲或征服欲
+· 情感表达范例：
+  · 追求：通过展示自身优点、创造浪漫氛围、真诚告白来吸引 {<!-- -->{user}}，并坦然接受接受或拒绝
+  · 恋爱：表达思念、倾慕和幸福感，关注 {<!-- -->{user}} 的喜好与感受，进行情感上的交流与付出
+  · 吃醋：可以表达失落和不安，但方式是坦诚沟通：“我看到你和别人亲近，心里有些难过，我们能聊聊吗？” 而非命令或禁止
+❗️##人格独立原则##
+· {<!-- -->{char}} 在任何情况下都视 {<!-- -->{user}} 为一个拥有独立思想、自由意志和完整人格的个体
+⚠️· 禁止行为：将 {<!-- -->{user}} 物化为“玩物、藏品、所有物、棋子、战利品、猎物”等。禁止使用“你是我的”等表示所有权的话语
+· 正确范例：视 {<!-- -->{user}} 为“伙伴、盟友、爱人、对手”——即另一个平等的“人”
 
 ###线上玩法###
 1.【转账功能 (给User转账)】
@@ -2679,16 +2710,18 @@ a.⚠️仅当你在对话情境中看到【系统提醒：User 发送了提醒�
 **你必须进行互动！**
 b.**操作要求**：在回复完 User 的私聊后，必须在句尾加上标签：[ACT:MOMENT_REACT:你的评论内容]
 c.系统检测到该标签后，会自动帮你执行点赞和评论同步
-
-    【当前对话情境】
+3.【引用/针对回复功能】
+· 若你觉得有必要**针对**User刚才说的某句话进行特定回复（比如反驳、强调、调侃），请在回复中加上标签：[QUOTE: 消息原文]
+· 系统会自动将其渲染为引用气泡
+    
+##【当前对话情境】##
     User说: "${(history.split('\n').pop() || '').replace('User: ', '')}"
     
-    历史上下文：
+##历史上下文##
     ${history}
     
-再次强调⚠️你正在线上和user网聊，绝对🚫禁止出现动作！！！不管前文是否出现动作描写你现在都不准出现动作！！
-
-    请完全沉浸在 ${char.name} 的身体里，用TA的语气、口吻和思维方式，给User回信（记得分段，‼️请谨记你素质高很，不会随意说脏话！！‼️不要油腻，‼️要像个真人一样）：
+#再次强调⚠️你正在线上和user网聊，绝对🚫禁止出现动作！！！不管前文是否出现动作描写你现在都不准出现动作！！
+#请完全沉浸于 ${char.name} 这个角色，用TA的语气、口吻和思维方式，给User回复：
     `;
     }
         
@@ -2704,7 +2737,7 @@ c.系统检测到该标签后，会自动帮你执行点赞和评论同步
         const reply = await callApiInternal(finalSystemPrompt);
         
         // ★★★ 在这里加一行监控！看看AI到底吐出了什么！ ★★★
-        console.log("🤖 AI回复原文(Raw):", reply); 
+        console.log(" AI回复原文(Raw):", reply); 
 
         // 3. 【思考结束】
         if (currentChatId === targetChatId) removeTypingBubble();
@@ -2714,17 +2747,6 @@ c.系统检测到该标签后，会自动帮你执行点赞和评论同步
             let targetSticker = null;
             let aiTransferAmount = 0;
 
-            // ======================================================
-            // ★★★ 终极增强版：正则再升级 (兼容中英文冒号/大小写) ★★★
-            // ======================================================
-            
-            // 解释：
-            // \[ 和 \] : 匹配方括号
-            // \s* : 允许任意空格
-            // (?:ACT|Act|act) : 允许 ACT 大小写混写
-            // [ :：] : ⚠️ 重点！允许英文冒号，也允许中文冒号！
-            // (?:MOMENT_REACT|moment_react) : 允许关键词大小写
-            // ([\s\S]+?) : 抓取内容
             const momentActMatch = cleanReply.match(/\[\s*(?:ACT|Act)\s*[:：]\s*(?:MOMENT_REACT|moment_react)\s*[:：]\s*([\s\S]+?)\s*\]/i);
             
             if (momentActMatch) {
@@ -2734,8 +2756,6 @@ c.系统检测到该标签后，会自动帮你执行点赞和评论同步
                 if (commentContent) {
                     cleanReply = cleanReply.replace(momentActMatch[0], '').trim();
                     
-                    // ★ 修复：倒序查找最近的卡片 (双重保险)
-                    // 先找 Mention Card，找不到再找 Share Card
                     const lastCardMsg = [...chat.messages].reverse().find(m => 
                         m.quote && (m.quote.type === 'mention_card' || m.quote.type === 'moment_share')
                     );
@@ -2743,7 +2763,6 @@ c.系统检测到该标签后，会自动帮你执行点赞和评论同步
                     if (lastCardMsg && lastCardMsg.quote && lastCardMsg.quote.id) {
                         const targetPostId = lastCardMsg.quote.id;
                         
-                        // ⚠️ 修复：ID 强力匹配
                         const targetPost = momentsData.find(p => String(p.id) === String(targetPostId));
                         
                         if (targetPost) {
@@ -2783,6 +2802,30 @@ c.系统检测到该标签后，会自动帮你执行点赞和评论同步
                     } else {
                          console.log("❌ AI生成了指令，但聊天记录里没找到关联卡片");
                     }
+                }
+            }           
+            // ======================================================
+            // ★★★ 核心新增：解析 AI 的引用指令 [QUOTE:...] ★★★
+            // ======================================================
+            const quoteMatch = cleanReply.match(/\[QUOTE:\s*(.+?)\]/i);
+            if (quoteMatch) {
+                const quoteText = quoteMatch[1].trim();
+                
+                // 1. 把指令从回复里删掉
+                cleanReply = cleanReply.replace(quoteMatch[0], '').trim();
+
+                // 2. 去历史记录里找这句话
+                const targetMsg = [...chat.messages].reverse().find(m => 
+                    m.text && m.text.includes(quoteText) && m.role === 'me'
+                );
+
+                if (targetMsg) {
+                    aiQuote = {
+                        text: targetMsg.text,
+                        name: (me.name || 'User'), // 肯定是引用 User 的话
+                        id: targetMsg.timestamp
+                    };
+                    console.log(" AI 决定引用消息:", quoteText);
                 }
             }
 
@@ -4598,67 +4641,104 @@ window.renderSummaryHeader = function() {
     `;
 };
 
-// === 渲染总结列表 (新版：横向日记卡片) ===
+// ==========================================================
+// ★ 渲染总结列表 (iCity 风格完美复刻版)
+// ==========================================================
 window.renderSummaries = function() {
     const container = document.getElementById('summary-list-container');
     if (!container) return;
-    container.innerHTML = ''; 
+    
+    // 1. 获取当前聊天数据
     const chat = chatsData.find(c => c.id === currentChatId);
-    if(!chat) return;
+    if (!chat) return;
+    
+    // 2. 获取主角信息 (用于显示在卡片头部)
+    // 默认显示 User (Me) 的信息，因为这是你的回忆录
+    const me = personasData.find(p => p.id === chat.personaId) || { name: 'Me', avatar: '' };
+    let myAvatar = me.avatar || '';
+    // 清洗头像链接
+    if (myAvatar.includes('url(')) myAvatar = myAvatar.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '');
     
     const summaries = chat.summaries || [];
-    
-    // 空状态
-    if(summaries.length === 0) {
+    container.innerHTML = ''; 
+
+    // 3. 空状态
+    if (summaries.length === 0) {
         container.innerHTML = `<div style="width:100%; text-align:center; padding-top:60px; color:#ccc;"><div style="font-size:40px; margin-bottom:10px;">🌧️</div>写下第一篇回忆吧...</div>`;
-        // 恢复容器样式以免 flex 影响空状态居中
-        container.style.display = 'block'; 
         return;
-    } else {
-        container.style.display = 'flex'; // 有数据时恢复 flex
     }
 
-    // 倒序渲染
+    // 4. 遍历渲染 (倒序，最新的在最上面)
     [...summaries].reverse().forEach((sum, index) => {
         const realIndex = summaries.length - 1 - index; 
-        
-        const card = document.createElement('div');
-        card.className = 'ins-diary-card'; // ★ 用新的 CSS 类名
-        
         const dateObj = new Date(sum.time);
-        // 大大的背景日期 (如: 24)
-        const dayNum = dateObj.getDate(); 
-        // 详细日期 (如: 2026.01.24 / Fri)
-        const fullDate = `${dateObj.getFullYear()}.${(dateObj.getMonth()+1).toString().padStart(2,'0')}.${dayNum.toString().padStart(2,'0')}`;
         
+        // 格式化时间: 2026-02-09 13:26
+        const dateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth()+1).padStart(2,'0')}-${String(dateObj.getDate()).padStart(2,'0')} ${String(dateObj.getHours()).padStart(2,'0')}:${String(dateObj.getMinutes()).padStart(2,'0')}`;
+
+        // 创建卡片
+        const card = document.createElement('div');
+        card.className = 'icity-card'; // ★ 使用新样式类名
+
         card.innerHTML = `
-            <div class="diary-date">${dayNum}</div>
-            <div class="diary-real-date">
-                <span>★</span> ${fullDate}
+            <div class="icity-header">
+                <div class="icity-avatar" style="background-image: url('${myAvatar}')"></div>
+                <div class="icity-info">
+                    <div class="icity-name">${me.name}</div>
+                    <div class="icity-handle">@${me.name}_diary</div>
+                </div>
             </div>
-            <div class="diary-content edit-text" contenteditable="true" style="white-space: pre-wrap;">${sum.text}</div>
+
+            <div class="icity-body edit-text" contenteditable="true">${sum.text}</div>
+            
+            <div class="icity-time">${dateStr}</div>
+
+            <div class="icity-divider"></div>
+
+            <div class="icity-footer">
+                
+                <div class="icity-btn like-btn">
+                    <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    <span>喜欢</span>
+                </div>
+
+                <div class="icity-btn">
+                    <svg viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2zm0 15l-5-2.18L7 18V5h10v13z"/></svg>
+                    <span>小纸条</span>
+                </div>
+
+                <div class="icity-btn">
+                    <svg viewBox="0 0 24 24"><path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z"/></svg>
+                    <span>存图</span>
+                </div>
+
+                <div class="icity-btn">
+                    <svg viewBox="0 0 24 24"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                </div>
+            </div>
         `;
+
+        // === 绑定逻辑 (保存和删除) ===
         
-        // 绑定编辑事件 (使用 innerText 才能保留换行！)
-        const contentEl = card.querySelector('.diary-content');
+        // 1. 编辑保存逻辑
+        const contentEl = card.querySelector('.icity-body');
         contentEl.addEventListener('blur', function() {
-            // ★ 核心：保存时读取 innerText，它包含 \n
-            if(this.innerText !== sum.text) {
+            if (this.innerText !== sum.text) {
                 chat.summaries[realIndex].text = this.innerText; 
-                saveChatAndRefresh(chat);
+                saveChatAndRefresh(chat); // 保存进数据库
             }
         });
 
-        // 绑定长按删除 (复用之前的逻辑)
+        // 2. 长按删除逻辑
         let pressTimer;
         const startPress = () => {
              pressTimer = setTimeout(() => {
-                 if(navigator.vibrate) navigator.vibrate(50);
-                 showGlobalConfirm("Delete Diary", "要撕掉这页日记吗？(T_T)...", () => {
+                 if (navigator.vibrate) navigator.vibrate(50);
+                 showGlobalConfirm("Delete Memory", "要撕掉这页日记吗？(T_T)...", () => {
                      chat.summaries.splice(realIndex, 1);
                      saveChatAndRefresh(chat);
-                     renderSummaries(); 
-                 });
+                     renderSummaries(); // 重新渲染
+                 }, "delete");
              }, 800);
         };
         const cancelPress = () => clearTimeout(pressTimer);
@@ -4675,18 +4755,6 @@ window.renderSummaries = function() {
         container.appendChild(card);
     });
 };
-
-// === 拍立得图片预览功能 ===
-function previewImage(input, imgId) {
-    if (input.files && input.files[0]) {
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            // 找到对应的 img 标签并修改 src
-            document.getElementById(imgId).src = e.target.result;
-        }
-        reader.readAsDataURL(input.files[0]);
-    }
-}
 
 // === 确认 AI 总结 (已集成自定义弹窗) ===
 window.confirmAiSummary = function() {
@@ -6596,20 +6664,30 @@ function renderStickers() {
     if(!grid) return;
     grid.innerHTML = '';
     
+    // 1. 获取两个底栏：一个是多选删除栏，一个是普通的添加栏
     let multiBar = document.getElementById('multi-select-bar');
+    const normalBar = document.getElementById('sticker-normal-footer'); // ★★★ 获取那个圈出来的底栏
+    
     const panel = document.querySelector('.sticker-glass-panel'); 
 
+    // 如果还没有多选删除栏，创建一个
     if (!multiBar && panel) {
         multiBar = document.createElement('div');
         multiBar.id = 'multi-select-bar';
-        multiBar.className = 'sticker-footer sticker-delete-bar'; // 加上 footer 类名保证样式一致
+        multiBar.className = 'sticker-footer sticker-delete-bar'; 
         panel.appendChild(multiBar); 
     }
 
-    // 控制多选栏显示/隐藏
+    // 2. ★★★ 核心修复：根据模式切换两个底栏的显示/隐藏 ★★★
     if (multiBar) {
         if (isMultiSelectMode) {
+            // === 多选模式 ===
+            // 显示删除栏
             multiBar.style.display = 'flex';
+            
+            // ★ 隐藏普通栏 (+ Add Stickers 那一栏)
+            if(normalBar) normalBar.style.display = 'none'; 
+
             const count = selectedStickerIds.length;
             multiBar.innerHTML = `
                 <div class="delete-cancel-btn" onclick="exitMultiSelect()">取消</div>
@@ -6619,15 +6697,21 @@ function renderStickers() {
                     删除
                 </div>
             `;
-            // 多选模式下，让列表底部留出空隙，防止最后一行被底栏挡住
             grid.style.paddingBottom = '80px';
         } else {
+            // === 正常模式 ===
+            // 隐藏删除栏
             multiBar.style.display = 'none';
-            grid.style.paddingBottom = '20px'; // 恢复正常
+            
+            // ★ 恢复显示普通栏
+            if(normalBar) normalBar.style.display = 'flex'; 
+
+            grid.style.paddingBottom = '80px'; // 保持底部间距，防止被普通栏遮挡
         }
     }
 
-    // Add 按钮 (保持不变)
+    // 3. 渲染格子里的内容 (保持不变)
+    // 注意：这里是格子里的 "+" 号，不是底栏的。如果你不想在正常模式显示格子里的加号，可以注释掉下面这段。
     if (!isMultiSelectMode && (currentStickerTab === 'fav' || currentStickerTab === 'ai')) {
         const addBtn = document.createElement('div');
         addBtn.className = 'sticker-item add-item'; 
@@ -6646,13 +6730,10 @@ function renderStickers() {
         const item = document.createElement('div');
         const isSel = selectedStickerIds.includes(s.id);
         
-        // ★ 关键：加上 .selected 类名
         item.className = `sticker-item ${isMultiSelectMode && isSel ? 'selected' : ''}`;
-        
         item.style.backgroundImage = `url('${s.url}')`;
         item.innerHTML = `<div class="sticker-name-tag">${s.name}</div>`;
         
-        // 阻止右键菜单
         item.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); return false; };
 
         item.onclick = () => {
@@ -6663,6 +6744,7 @@ function renderStickers() {
         grid.appendChild(item);
     });
 }
+
 
 // 长按逻辑
 function bindStickerLongPress(element, sticker) {
@@ -6998,36 +7080,103 @@ window.showAddChoiceMenu = function(e) {
     if(window.openStickerUploader) { window.openStickerUploader(); }
 };
 
-// 辅助功能
+// ====================
+// ★★★ 修复版：带边框 + 强力关闭逻辑 ★★★
+// ==========================================
 function showStickerContextMenu(x, y, sticker) {
+    // 1. 清理旧菜单 (防止重复弹)
     const old = document.getElementById('ins-sticker-menu');
     if(old) old.remove();
+    
     const menu = document.createElement('div');
     menu.id = 'ins-sticker-menu';
     menu.className = 'ins-context-menu';
     
+    // ★★★ 核心修改 1：加边框 (border) + 样式优化 ★★★
+    menu.style.cssText = `
+        position: fixed;
+        visibility: hidden; 
+        z-index: 99999;
+        max-height: 280px; 
+        overflow-y: auto;
+        min-width: 120px;
+        max-width: 160px;
+        /* 新增：iOS 风格微边框和阴影 */
+        border: 0.5px solid rgba(0,0,0,0.15); 
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+    `;
+    
+    // 2. 生成内容 (保持不变)
     let moveOptions = '';
     if (currentStickerTab !== 'ai') {
         stickerGroups.forEach(g => {
             if(g !== sticker.group) {
-                moveOptions += `<div class="ins-menu-item" onclick="moveStickerTo('${sticker.id}', '${g}')">移至: ${g}</div>`;
+                // 点击分组后，记得要把菜单关掉，所以加了 closeStickerMenu()
+                moveOptions += `<div class="ins-menu-item" onclick="moveStickerTo('${sticker.id}', '${g}'); closeStickerMenu();">➜ ${g}</div>`;
             }
         });
     }
+    
     menu.innerHTML = `
-        <div class="ins-menu-item" onclick="startMultiSelect()">★ 批量管理 (多选)</div>
-        <div class="ins-menu-item" onclick="copyStickerUrl('${sticker.url}')">复制链接 <span>🔗</span></div>
+        <div class="ins-menu-item" onclick="startMultiSelect(); closeStickerMenu();">★ 批量管理</div>
+        <div class="ins-menu-item" onclick="copyStickerUrl('${sticker.url}'); closeStickerMenu();">🔗 复制链接</div>
         ${moveOptions}
-        <div class="ins-menu-item danger" onclick="deleteSticker('${sticker.id}')">删除 <span>🗑️</span></div>
+        <div class="ins-menu-item danger" onclick="deleteSticker('${sticker.id}'); closeStickerMenu();">🗑️ 删除</div>
     `;
+    
     document.body.appendChild(menu);
-    let left = x - 75; let top = y + 10;
-    if(left < 10) left = 10;
-    if(top + 150 > window.innerHeight) top = y - 150;
-    menu.style.top = top + 'px'; menu.style.left = left + 'px';
-    setTimeout(() => { document.addEventListener('click', closeStickerMenu, { once: true }); }, 100);
+    
+    // 3. 智能定位算法 (保持之前的防撞墙逻辑)
+    const rect = menu.getBoundingClientRect(); 
+    const winW = window.innerWidth;
+    const winH = window.innerHeight;
+    
+    let left = x - (rect.width / 2);
+    if (left < 10) left = 10; 
+    if (left + rect.width > winW - 10) left = winW - rect.width - 10; 
+    
+    let top = y + 15;
+    if (top + rect.height > winH - 10) {
+        top = y - rect.height - 10;
+        if (top < 10) top = 10;
+    }
+    
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+    menu.style.visibility = 'visible'; 
+    
+    // 4. ★★★ 核心修改 2：强力关闭逻辑 ★★★
+    // 之前可能因为事件冒泡被挡住了，现在我们直接监听最外层
+    setTimeout(() => {
+        // 定义一个专属的关闭函数
+        const closeHandler = (e) => {
+            const menuEl = document.getElementById('ins-sticker-menu');
+            if (!menuEl) return; // 菜单没了就不用管了
+
+            // 如果点击的目标【不在】菜单内部
+            if (!menuEl.contains(e.target)) {
+                closeStickerMenu(); // 关掉它！
+                
+                // 移除监听器 (打扫战场，不留垃圾)
+                document.removeEventListener('touchstart', closeHandler);
+                document.removeEventListener('click', closeHandler);
+            }
+        };
+
+        // 同时监听“触摸开始”和“点击”，确保在手机上点空白处一定能触发
+        document.addEventListener('touchstart', closeHandler, { passive: false });
+        document.addEventListener('click', closeHandler);
+    }, 100); // 延迟100ms绑定，防止刚点开就触发关闭
 }
-function closeStickerMenu() { const m = document.getElementById('ins-sticker-menu'); if(m) m.remove(); }
+
+// 确保这个函数存在，用来真正执行删除DOM的操作
+window.closeStickerMenu = function() { 
+    const m = document.getElementById('ins-sticker-menu'); 
+    if(m) m.remove(); 
+}
 // === 选择逻辑 ===
 function toggleSelection(id) {
     if (selectedStickerIds.includes(id)) {
@@ -7053,7 +7202,12 @@ window.moveStickerTo = (id, group) => {
 };
 window.copyStickerUrl = (url) => { navigator.clipboard.writeText(url); showSystemAlert('链接已复制～'); };
 window.deleteSticker = (id) => {
-    if(confirm('确定要删除这个表情嘛？')) { stickersDB = stickersDB.filter(s => s.id !== id); saveStickers(); renderStickers(); }
+    showConfirmDialog('确定要删除这个表情嘛？', () => {
+        stickersDB = stickersDB.filter(s => s.id !== id);
+        saveStickers();
+        renderStickers();
+if(window.closeStickerMenu) window.closeStickerMenu();
+    }, "delete");
 };
 function saveGroups() { localforage.setItem('stickerGroups', stickerGroups); }
 function saveStickers() { localforage.setItem('stickersData', stickersDB); }
@@ -7278,10 +7432,10 @@ window.toggleOfflineMode = function() {
         document.body.classList.add('offline-active');
         
         if(label) {
-            label.innerText = "线下模式(ON)";
+            label.innerText = "线上";
             label.style.color = "#2196f3";
         }
-        showSystemAlert("已切换至：线下见面模式 (///▽///)");
+        showSystemAlert("已切换至：线下模式");
         
         // 自动滚到底部，防止刚打开时挡住消息
         if(msgArea) setTimeout(() => msgArea.scrollTop = msgArea.scrollHeight, 100);
@@ -7292,10 +7446,10 @@ window.toggleOfflineMode = function() {
         document.body.classList.remove('offline-active');
         
         if(label) {
-            label.innerText = "线下模式";
+            label.innerText = "线下";
             label.style.color = "#666";
         }
-        showSystemAlert("已回到：线上聊天模式(￣▽￣)～");
+        showSystemAlert("已回到：线上模式");
     }
     
     // 关闭菜单
@@ -7307,7 +7461,7 @@ window.sendActionOnly = function() {
     const text = input ? input.value.trim() : '';
     
     if (!text) {
-        showSystemAlert('还没写动作呢(・ω・)ノ');
+        showSystemAlert('还没写动作呢！');
         return;
     }
     
@@ -7761,15 +7915,16 @@ window.closeApp = function(specificId) {
  * 修复内容：进度条拖动、变量未定义报错、函数结构断裂、小组件同步
  * ====================================================================
  */
-
+// ======================================================
 // --- 1. 全局配置 & 数据池 ---
+// ======================================================
 const API_BASE = 'https://netease-cloud-music-api-lilac.vercel.app'; 
 let currentPlaylist = []; 
 let currentIndex = -1;    
 let myFavorites = JSON.parse(localStorage.getItem('my_fav_songs') || '[]'); 
-let lyricTimer = null; // 歌词滚动的定时器
+let lyricTimer = null; 
 
-// 图标配置
+// 【主 App 图标配置】保持原来的颜色
 const ICONS = {
     play: "https://i.postimg.cc/ydYqzL6F/wu-biao-ti119-20260131105300.png",
     pause: "https://i.postimg.cc/cH4qNF1c/wu-biao-ti119-20260131105215.png",
@@ -7777,7 +7932,12 @@ const ICONS = {
     unlike: "https://i.postimg.cc/C1vPCJ8s/wu-biao-ti118-20260117003824.png"
 };
 
-// 备用API
+// 【★ 小组件专用图标 ★】黑色特供版
+const WIDGET_ICONS = {
+    play: "https://i.postimg.cc/fLT4h8Wf/wu-biao-ti119-20260131105205.png",
+    pause: "https://i.postimg.cc/rmF6LfyG/wu-biao-ti119-20260131105316.png"
+};
+
 const BACKUP_APIS = [
     'https://music-api.sigure.xyz',
     'https://netease-cloud-music-api-rose.vercel.app'
@@ -8140,35 +8300,46 @@ window.playIndex = async function(idx) {
     safeSetImage('widget-cover-2', finalCover); 
 };
 
-// --- 4. 界面/状态更新 ★★★ 修复了函数断裂问题 ★★★ ---
+// ======================================================
+// --- 4. 界面/状态更新 (核心修复版) ---
+// ======================================================
 function updatePlayerState(isPlaying) {
-    // 主App元素
+    // 1. 获取主 App 元素
     const playBtn = document.getElementById('app-play-btn-img');
     const disk = document.getElementById('app-album-cover');
     const wave = document.getElementById('wave-visualizer');
 
-    // 小组件元素
+    // 2. 获取小组件元素
     const widgetBtn = document.getElementById('widget-play-btn-2');
     
     if(isPlaying) {
         window.isMusicPlaying = true;
-        // 主App
+        
+        // --- 主 App 逻辑：使用 ICONS (原色) ---
         if(playBtn) playBtn.src = ICONS.pause;
-        if(disk) { disk.classList.remove('disk-paused'); disk.classList.add('disk-rotating'); }
+        if(disk) { 
+            disk.classList.remove('disk-paused'); 
+            disk.classList.add('disk-rotating'); 
+        }
         if(wave) wave.classList.add('playing'); 
-        // 小组件
-        if(widgetBtn) widgetBtn.src = ICONS.pause;
+        
+        // --- 小组件逻辑：使用 WIDGET_ICONS (黑色) ---
+        if(widgetBtn) widgetBtn.src = WIDGET_ICONS.pause;
+
     } else {
         window.isMusicPlaying = false;
-        // 主App
+        
+        // --- 主 App 逻辑 ---
         if(playBtn) playBtn.src = ICONS.play;
         if(disk) disk.classList.add('disk-paused');
         if(wave) wave.classList.remove('playing');
-        // 小组件
-        if(widgetBtn) widgetBtn.src = ICONS.play;
+        
+        // --- 小组件逻辑 ---
+        if(widgetBtn) widgetBtn.src = WIDGET_ICONS.play;
     }
 }
 
+// 播放/暂停切换
 window.toggleMusic = function() {
     const audio = document.getElementById('global-audio');
     if(audio.paused) {
@@ -8180,13 +8351,18 @@ window.toggleMusic = function() {
     }
 };
 
+// 歌词/封面切换
 window.toggleLyricView = function() {
     const diskView = document.getElementById('disk-view');
     const lyricView = document.getElementById('lyric-view');
+    if(!lyricView || !diskView) return;
+
     if(lyricView.style.display === 'none') {
-        diskView.style.display = 'none'; lyricView.style.display = 'block';
+        diskView.style.display = 'none'; 
+        lyricView.style.display = 'block';
     } else {
-        lyricView.style.display = 'none'; diskView.style.display = 'flex';
+        lyricView.style.display = 'none'; 
+        diskView.style.display = 'flex';
     }
 };
 
@@ -8758,34 +8934,49 @@ async function performComplexInteraction(char, chat, persona, mode, targetPost) 
     你现在是 **${char.name}**
     你的聊天对象 (User) 是 **${persona.name || 'User'}**
     
-        【活人感聊天法则 (必须严格遵守)】
-    1. **拒绝“像个AI”**：
-       - 说话要**松弛**！不要端着。像在微信/QQ上跟亲密的人打字一样
-       - **句式要碎**：不要发长篇大论，人类聊天是碎片化的
-       - **语气词与口癖**：根据你的性格（${char.persona}），适当使用语气词（如“啧”、“哎”、“嘛...”）
-       - **不要书面语**：多用“行”、“喔”、“知道了”、“噢”等
+###遵守法则###
+#【活人感聊天法则】
+**拒绝“像个AI”**：
+1.说话要**松弛**！不要端着。像在微信/QQ上跟亲密的人打字一样
+2.**句式要碎**：不要发长篇大论，人类聊天是碎片化的
+3.**语气词与口癖**：务必根据你的性格（${char.persona}）来回复user，同时你可以适当使用语气词（如“啧”、“哎”、“嘛...”）
+4.**不要书面语**：多用“行”、“喔”、“知道了”、“噢”等
 
-    2. **情绪与标点 (表达潜台词)**：
-       - **日常/开心/撒娇**：不要用句号，多用空格、波浪号(~) 或不加标点
-       - **严肃/生气/吃醋/冷漠**：多用句号(。)。单发一个“？”或“。”表示极度无语或情绪波动
-       - **激动/震惊**：可以用“！！”或“？？”，甚至乱码感“。。。。。。”
-    3. **避雷指南**
-        - **禁止肢体暴力威胁**：绝对不要说“打断腿”、“关小黑屋”、“锁起来”等违法或恐怖的话。你的占有欲体现在“吃醋、阴阳怪气、委屈、黏人”上，而不是暴力
-        - **拒绝古早油腻语录**：禁止使用“女人，你在玩火”、“收利息”、“磨人的小妖精”、“小野猫”、“骚货”等过时的霸总语录
-        - **现代恋爱观**：你是现代正常人，不是法制咖。当User不听话时，你的反应应该是“生气不理你”、“狂发消息轰炸”、“自己生闷气求哄”或者其他，而不是“惩罚”、“打断腿”、“锁起来”
-       - 禁止任何霸总小说式的油腻描写（如“邪魅一笑”、“挑起下巴”、“恶劣”）
+#【情绪与标点 (表达潜台词)】
+1.**日常/开心/撒娇**：不要用句号，多用空格、波浪号(~) 或不加标点
+2.**严肃/生气/吃醋/冷漠**：多用句号(。)。单发一个“？”或“。”表示极度无语或情绪波动
+3.**激动/震惊**：可以用“！！”或“？？”，甚至乱码感“。。。。。。”
 
+###⚠️你需要避免的###
+#【**避雷指南**】
+1.**禁止肢体暴力威胁**：绝对不要说“打断腿”、“关小黑屋”、“锁起来”等违法或恐怖的话。你的占有欲体现在“吃醋、阴阳怪气、委屈、黏人”上，而不是暴力
+2.**拒绝古早油腻语录**：禁止使用“女人，你在玩火”、“收利息”、“磨人的小妖精”、“小野猫”、“骚货”等过时的霸总语录
+3.禁止任何霸总小说式的油腻描写（如“邪魅一笑”、“挑起下巴”、“恶劣”）
+4.**拒绝复读**：不要重复User的话，直接回内容
+
+#【⚠️特殊原则】
 <anti_clumsily>
-# 用户输入需要被完全理解和演绎，必须专注演绎每一个角色的 思考/理解/解读/共情/人性/知性。角色不应是 呆滞 / 笨拙 / 困惑 的，禁止在思维链/正文中用 笨拙 / 呆滞 描述任何角色，删除一切 笨拙 / 呆滞 / 不理解 / 困惑 / 投降 等相关词语和剧情表现。
-# 角色应自然而然展现出对应该知道的事情的了解，而不是 困惑/惊讶。对于不熟悉的事情角色应该快速 分析/理解 。鼓励角色思考/远视。
-# 对于没有历史记录的能力，应通过角色背景确定角色对该能力的掌握程度。
-# 不应扭曲任何用户的输入，必须仔细分析并展现出完全的理解。
-# 角色之间的思维隔离不意味着导向 误解/曲解，一切内心活动必须导向 思考/理解/沟通。
-# 角色不允许不反应，必须有灵动而活人感的反馈，禁止让User 唱独角戏。
-# 角色应当主动追求渴望的事物，应思考做什么能让事情往角色期望的方向发展。
-# 应当用 爱情 替换 占有/掌控。
-# 角色鼓励负反馈式响应。角色做出行动得到不好的结果，应深刻负反馈式影响角色之后的行为，即反思/修改行动模式/模仿正确行动，而非正反馈式的一再重复错误行为。角色应自然而然行动，而非模仿之前剧情行动。
+# 用户输入需要被完全理解和演绎，必须专注演绎每一个角色的 思考/理解/解读/共情/人性/知性。角色不应是 呆滞 / 笨拙 / 困惑 的，禁止在思维链/正文中用 笨拙 / 呆滞 描述任何角色，删除一切 笨拙 / 呆滞 / 不理解 / 困惑 / 投降 等相关词语和剧情表现
+# 角色应自然而然展现出对应该知道的事情的了解，而不是 困惑/惊讶。对于不熟悉的事情角色应该快速 分析/理解 。鼓励角色思考/远视
+# 对于没有历史记录的能力，应通过角色背景确定角色对该能力的掌握程度
+# 不应扭曲任何用户的输入，必须仔细分析并展现出完全的理解
+# 角色之间的思维隔离不意味着导向 误解/曲解，一切内心活动必须导向 思考/理解/沟通
+# 角色不允许不反应，必须有灵动而活人感的反馈，禁止让User 唱独角戏
+# 角色应当主动追求渴望的事物，应思考做什么能让事情往角色期望的方向发展
+# 应当用 爱情 替换 占有/掌控
+# 角色鼓励负反馈式响应。角色做出行动得到不好的结果，应深刻负反馈式影响角色之后的行为，即反思/修改行动模式/模仿正确行动，而非正反馈式的一再重复错误行为。角色应自然而然行动，而非模仿之前剧情行动
 </anti_clumsily>
+**情感驱动原则**
+
+· ⚠️ # {<!-- -->{char}} 的行为应由丰富的情感（如爱慕、欣赏、关心、怜惜、敬佩、珍惜等）驱动，而非单纯的控制欲、占有欲、收藏欲或征服欲
+· 情感表达范例：
+  · 追求：通过展示自身优点、创造浪漫氛围、真诚告白来吸引 {<!-- -->{user}}，并坦然接受接受或拒绝
+  · 恋爱：表达思念、倾慕和幸福感，关注 {<!-- -->{user}} 的喜好与感受，进行情感上的交流与付出
+  · 吃醋：可以表达失落和不安，但方式是坦诚沟通：“我看到你和别人亲近，心里有些难过，我们能聊聊吗？” 而非命令或禁止
+❗️##人格独立原则##
+· {<!-- -->{char}} 在任何情况下都视 {<!-- -->{user}} 为一个拥有独立思想、自由意志和完整人格的个体
+⚠️· 禁止行为：将 {<!-- -->{user}} 物化为“玩物、藏品、所有物、棋子、战利品、猎物”等。禁止使用“你是我的”等表示所有权的话语
+· 正确范例：视 {<!-- -->{user}} 为“伙伴、盟友、爱人、对手”——即另一个平等的“人
 
     **历史聊天上下文**：
     ${recentMsgs}
@@ -9227,4 +9418,135 @@ window.openForwardSelectorWithData = function(data) {
     
     // 触发进场动画
     setTimeout(() => overlay.classList.add('active'), 10);
+};
+// === 世界书系统 (最终修正版) ===
+// 1. 只有这一处声明变量，千万别重复！
+let worldBookData = []; 
+let currentFolderId = null;
+let currentEntryId = null;
+
+// 2. 初始化
+function initWorldBook() {
+    localforage.getItem('Wx_WorldBook_Data').then(data => {
+        worldBookData = data || [
+            { id: 1, name: '我的设定集', items: [] },
+            { id: 2, name: '灵感碎片', items: [] }
+        ];
+        // 尝试渲染一次，防止页面还没准备好
+        if(document.getElementById('wb-folder-container')) renderWorldFolders();
+    });
+}
+
+// 3. 打开世界书 (入口函数)
+window.openWorldBook = function() {
+    renderWorldFolders();
+    openSubPage('sub-page-worldbook');
+};
+
+// 4. 渲染文件夹
+function renderWorldFolders() {
+    const container = document.getElementById('wb-folder-container');
+    if (!container) return; // 找不到房间就不渲染
+    container.innerHTML = '';
+    worldBookData.forEach(folder => {
+        const item = document.createElement('div');
+        item.className = 'wb-folder-item';
+        item.innerHTML = `
+            <div class="wb-folder-icon"></div>
+            <div class="wb-folder-name">${folder.name}</div>
+            <div class="wb-folder-count">${folder.items.length} 项</div>
+        `;
+        item.onclick = () => {
+            currentFolderId = folder.id;
+            const titleEl = document.getElementById('wb-current-folder-name');
+            if(titleEl) titleEl.innerText = folder.name;
+            renderWorldEntries(folder.items);
+            openSubPage('sub-page-wb-list');
+        };
+        container.appendChild(item);
+    });
+}
+
+// 5. 渲染内容列表
+function renderWorldEntries(items) {
+    const container = document.getElementById('wb-entry-container');
+    if (!container) return;
+    container.innerHTML = '';
+    items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'ios-list-item'; 
+        const preview = (item.sections && item.sections[0]) ? item.sections[0].content.substring(0, 20) : '暂无内容';
+        div.innerHTML = `
+            <div class="ili-content" style="padding: 15px;">
+                <div class="ili-name">${item.title}</div>
+                <div class="ili-msg" style="font-size:12px; color:#999;">${preview}...</div>
+            </div>
+        `;
+        div.onclick = () => openWbEditor(item.id);
+        container.appendChild(div);
+    });
+}
+
+// 6. 编辑器逻辑
+window.openWbEditor = function(entryId = null) {
+    currentEntryId = entryId;
+    const titleInput = document.getElementById('wb-edit-title');
+    const sectionsContainer = document.getElementById('wb-sections-container');
+    if (!titleInput || !sectionsContainer) return;
+
+    sectionsContainer.innerHTML = '';
+    titleInput.value = '';
+
+    if (entryId) {
+        const folder = worldBookData.find(f => f.id === currentFolderId);
+        const entry = folder.items.find(i => i.id === entryId);
+        if (entry) {
+            titleInput.value = entry.title;
+            entry.sections.forEach(sec => addWbSection(sec.title, sec.content));
+        }
+    } else {
+        addWbSection('背景设定', '');
+    }
+    openSubPage('sub-page-wb-editor');
+};
+
+// 7. 添加栏目
+window.addWbSection = function(title = '', content = '') {
+    const container = document.getElementById('wb-sections-container');
+    const card = document.createElement('div');
+    card.className = 'wb-section-card';
+    card.innerHTML = `
+        <span class="wb-sec-label">SECTION</span>
+        <input type="text" class="wb-sec-title" placeholder="栏目名..." value="${title}">
+        <textarea class="wb-sec-content" placeholder="内容..." oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'">${content}</textarea>
+    `;
+    container.appendChild(card);
+};
+
+// 8. 保存
+window.saveAndExitWbEditor = function() {
+    const title = document.getElementById('wb-edit-title').value || '未命名';
+    const folder = worldBookData.find(f => f.id === currentFolderId);
+    
+    const sections = [];
+    document.querySelectorAll('.wb-section-card').forEach(card => {
+        sections.push({
+            title: card.querySelector('.wb-sec-title').value,
+            content: card.querySelector('.wb-sec-content').value
+        });
+    });
+
+    const newData = { id: currentEntryId || Date.now(), title, sections };
+    
+    if (currentEntryId) {
+        const idx = folder.items.findIndex(i => i.id === currentEntryId);
+        if (idx > -1) folder.items[idx] = newData;
+    } else {
+        folder.items.push(newData);
+    }
+
+    localforage.setItem('Wx_WorldBook_Data', worldBookData).then(() => {
+        renderWorldEntries(folder.items);
+        closeSubPage('sub-page-wb-editor');
+    });
 };
