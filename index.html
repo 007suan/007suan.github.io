@@ -344,8 +344,6 @@
 
     </div>
 </div>
-        </div>
-    </div> </div>
 <div class="desktop-footer-controls">
     <div class="search-pill edit-text" id="desktop_search_text">
 <span style="font-size: 12px; display: flex; align-items: center; gap: 4px;">
@@ -927,7 +925,7 @@
                 <div class="s-left"><img src="https://i.postimg.cc/W38qvySV/wu-biao-ti115-20260101190744.png" class="ios-icon-img"><span style="margin-left: 12px;">API Settings</span></div>
                 <div class="s-right"><span class="s-status" id="api_status_text" style="font-size:14px;">未配置</span><span class="s-arrow">›</span></div>
             </div>
-<div class="s-item" onclick="openSubPage('sub-page-worldbook')">
+<div class="s-item" onclick="openWorldBookApp()">
     <div class="s-left">
         <img src="https://i.postimg.cc/769JkR9F/wu-biao-ti115-20260101190850.png" class="ios-icon-img">
         <span style="margin-left: 12px;">世界书</span>
@@ -937,10 +935,11 @@
             <div class="s-item" onclick="openSubPage('sub-backup')">
                 <div class="s-left"><img src="https://i.postimg.cc/DZ64TN57/wu-biao-ti115-20260101190925.png" class="ios-icon-img"><span style="margin-left: 12px;">备份与恢复</span></div>
                 <span class="s-arrow">›</span>
-            </div>                        </div>
+            </div>
                         </div>
                     </div>
- </div>
+                </div>
+
 <div id="sub-api-config" class="sub-page">
     <div class="sub-header">
         <div class="back-btn" onclick="closeSubPage('sub-api-config')">‹</div>
@@ -1007,7 +1006,17 @@
                 <div class="ins-btn-full" onclick="showSavePresetAlert()" style="background:#f0f0f0; color:#333;">Save New（添加）</div>
                 <div class="ins-btn-full" onclick="showDeletePresetAlert()" style="background:#f0f0f0; color:#ff3b30;">Delete（删除）</div>
             </div>
-        </div>   
+        </div>
+
+        <div style="height:50px;"></div>
+    </div>
+</div>
+            </div> <div id="sub-backup" class="sub-page">
+    <div class="sub-header">
+        <div class="back-btn" onclick="closeSubPage('sub-backup')">‹</div>
+        <span>数据备份</span>
+    </div>
+    
     <div class="sub-content" style="background: #FAFAFA; padding: 25px 20px;">                    
         <div style="margin-bottom: 25px; text-align: center;">
             <div style="font-size: 22px; font-weight: 700; color: #333; margin-bottom: 5px;">Data Manager</div>
@@ -1935,9 +1944,60 @@
             </div>
     </div>
 </div>
-
+ </div>
     </div> 
-    
+    <div id="worldbook-app">
+    <div id="wb-home-view" style="display:flex; flex-direction:column; height:100%;">
+        <div class="wb-header">
+            <span>Library</span>
+            <span>World Book</span>
+            <span style="font-size:14px; color:#007aff;" onclick="closeWorldBook()">Done</span>
+        </div>
+        <div class="wb-body">
+            <div id="wb-books-list" class="wb-grid">
+                </div>
+        </div>
+        <div class="wb-fab" onclick="createNewBook()">+</div>
+    </div>
+
+    <div id="wb-detail-view" style="display:none; flex-direction:column; height:100%; background:#FAFAFA;">
+        <div class="wb-header">
+            <span onclick="backToBookHome()" style="font-size:20px;">‹</span>
+            <span id="wb-current-book-title">Book Title</span>
+            <span style="font-size:22px;" onclick="showBookSettings()">⋮</span>
+        </div>
+        <div class="wb-body" id="wb-entries-list">
+            </div>
+        <div class="wb-fab" onclick="createNewEntry()">✎</div>
+    </div>
+
+    <div id="wb-editor-view" style="display:none; flex-direction:column; height:100%; background:#fff; z-index:210;">
+        <div class="wb-header">
+            <span onclick="closeEntryEditor()" style="color:#007aff;">Cancel</span>
+            <span>Editor</span>
+            <span onclick="saveEntry()" style="color:#007aff; font-weight:bold;">Save</span>
+        </div>
+        
+        <div class="wb-editor-container">
+            <input type="text" id="wb-entry-title" class="wb-input-title" placeholder="Title...">
+            
+            <div class="wb-toggle-group">
+                <div class="wb-toggle-btn active" onclick="switchEditorMode('code')" id="btn-mode-code">Source (HTML)</div>
+                <div class="wb-toggle-btn" onclick="switchEditorMode('preview')" id="btn-mode-preview">Preview</div>
+            </div>
+
+            <textarea id="wb-entry-content" class="wb-textarea" placeholder="Start typing... Supports HTML/JS/CSS"></textarea>
+            
+            <div id="wb-entry-preview" class="wb-preview-area" style="display:none;"></div>
+        </div>
+    </div>
+</div>
+<div id="sub-api-config" class="sub-page">
+    <div class="sub-header">
+        <div class="back-btn" onclick="closeSubPage('sub-api-config')">‹</div>
+        <span>API Settings</span>
+        <div onclick="saveApiConfig(true)">Done</div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
     <script src="security.js"></script>
     <script src="script.js"></script>

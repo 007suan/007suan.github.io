@@ -2744,210 +2744,84 @@ c.系统检测到该标签后，会自动帮你执行点赞和评论同步
 
         if (reply) {
             let cleanReply = reply;
-            let targetSticker = null;
-            let aiTransferAmount = 0;
 
+            // --- [Step 1] 处理全局侧边效应 (不影响消息流的指令) ---
+            // 朋友圈互动指令 (保持全局处理即可)
             const momentActMatch = cleanReply.match(/\[\s*(?:ACT|Act)\s*[:：]\s*(?:MOMENT_REACT|moment_react)\s*[:：]\s*([\s\S]+?)\s*\]/i);
-            
             if (momentActMatch) {
-                let commentContent = momentActMatch[1].trim(); 
-                commentContent = commentContent.replace(/\n/g, '<br>');
-
-                if (commentContent) {
-                    cleanReply = cleanReply.replace(momentActMatch[0], '').trim();
-                    
-                    const lastCardMsg = [...chat.messages].reverse().find(m => 
-                        m.quote && (m.quote.type === 'mention_card' || m.quote.type === 'moment_share')
-                    );
-                    
-                    if (lastCardMsg && lastCardMsg.quote && lastCardMsg.quote.id) {
-                        const targetPostId = lastCardMsg.quote.id;
-                        
-                        const targetPost = momentsData.find(p => String(p.id) === String(targetPostId));
-                        
-                        if (targetPost) {
-                            // --- A. 执行点赞 ---
-                            if (!targetPost.likesList) targetPost.likesList = [];
-                            if (!targetPost.likesList.some(u => u.name === char.name)) {
-                                targetPost.likesList.push({ name: char.name });
-                                targetPost.likes = (targetPost.likes || 0) + 1;
-                            }
-
-                            // --- B. 执行评论 ---
-                            if (!targetPost.comments) targetPost.comments = [];
-                            // 防止重复
-                            if (!targetPost.comments.some(c => c.author === char.name && c.content === commentContent)) {
-                                targetPost.comments.push({
-                                    author: char.name,
-                                    content: commentContent,
-                                    time: Date.now()
-                                });
-                            }
-
-                            // --- C. 保存并刷新 ---
-                            localforage.setItem('Wx_Moments_Data', momentsData).then(() => {
-                                console.log(`[${char.name}] 朋友圈互动成功！内容：${commentContent}`);
-                                // 强制刷新朋友圈页面
-                                if (document.getElementById('wx-page-moments')?.style.display === 'block') {
-                                    if(window.renderMomentsFeed) window.renderMomentsFeed();
-                                }
-                                showSystemAlert(`${char.name} 刚刚评论了你的朋友圈！`, 'success');
-                                
-                                // ★ 顺便更新红点
-                                if(window.triggerMomentsRedDot) window.triggerMomentsRedDot(char.avatar);
-                            });
-                        } else {
-                            console.log("❌ 找到了卡片消息，但在朋友圈数据里找不到对应ID:", targetPostId);
-                        }
-                    } else {
-                         console.log("❌ AI生成了指令，但聊天记录里没找到关联卡片");
-                    }
-                }
-            }           
-            // ======================================================
-            // ★★★ 核心新增：解析 AI 的引用指令 [QUOTE:...] ★★★
-            // ======================================================
-            const quoteMatch = cleanReply.match(/\[QUOTE:\s*(.+?)\]/i);
-            if (quoteMatch) {
-                const quoteText = quoteMatch[1].trim();
-                
-                // 1. 把指令从回复里删掉
-                cleanReply = cleanReply.replace(quoteMatch[0], '').trim();
-
-                // 2. 去历史记录里找这句话
-                const targetMsg = [...chat.messages].reverse().find(m => 
-                    m.text && m.text.includes(quoteText) && m.role === 'me'
-                );
-
-                if (targetMsg) {
-                    aiQuote = {
-                        text: targetMsg.text,
-                        name: (me.name || 'User'), // 肯定是引用 User 的话
-                        id: targetMsg.timestamp
-                    };
-                    console.log(" AI 决定引用消息:", quoteText);
-                }
+                let commentContent = momentActMatch[1].trim().replace(/\n/g, '<br>');
+                cleanReply = cleanReply.replace(momentActMatch[0], '').trim();
+                handleAiMomentReact(commentContent, char, chat); // 这里我封装了一个小函数在下面
             }
 
-            // --- (A) 处理转账指令 (收钱/退钱) ---
+            // 转账指令 (收钱/退钱)
             if (cleanReply.includes('[CMD:RECEIVE]')) {
                 cleanReply = cleanReply.replace('[CMD:RECEIVE]', '').trim();
-                if (pendingTransferMsg) {
-                    let extra = JSON.parse(pendingTransferMsg.extra);
-                    extra.status = 'accepted'; 
-                    pendingTransferMsg.extra = JSON.stringify(extra);
-                    pushMsgToData(chat, `accept|${extra.amount}`, 'char', null, 'transfer_receipt');
-                }
+                handleAiTransferCommand(chat, 'accepted', pendingTransferMsg);
             } else if (cleanReply.includes('[CMD:REFUND]')) {
                 cleanReply = cleanReply.replace('[CMD:REFUND]', '').trim();
-                if (pendingTransferMsg) {
-                    let extra = JSON.parse(pendingTransferMsg.extra);
-                    extra.status = 'rejected';
-                    pendingTransferMsg.extra = JSON.stringify(extra);
-                    walletData.balance += parseFloat(extra.amount);
-                    walletData.bills.push({ time: Date.now(), title: `Transfer Refunded`, amount: parseFloat(extra.amount), type: 'in' });
-                    localforage.setItem('Wx_Wallet_Data', walletData);
-                    pushMsgToData(chat, `refund|${extra.amount}`, 'char', null, 'transfer_receipt');
-                }
+                handleAiTransferCommand(chat, 'rejected', pendingTransferMsg);
             }
 
-            // 保存状态更新
-            saveChatAndRefresh(chat);
+            // --- [Step 2] 核心：流式分段解析 (气泡雨顺序控制) ---
+            // 这个正则负责把 撤回{{...}}、动作((...)) 和 换行符 区分开来
+            const segmentRegex = /(\{\{.+?::.+?\}\}|\(\(.+?\)\)|\（\（.+?\）\）|\n)/g;
+            const segments = cleanReply.split(segmentRegex);
 
-            // --- (B) 提取特殊标签 ---
-            const stickerMatch = cleanReply.match(/\[sticker:(.*?)\]/);
-            if (stickerMatch) {
-                targetSticker = stickersDB.find(s => s.type === 'ai' && s.name === stickerMatch[1].trim());
-                cleanReply = cleanReply.replace(stickerMatch[0], '').trim();
-            }
-            const transferMatch = cleanReply.match(/\[(transfer|转账):(\d+(\.\d+)?)\]/i);
-            if (transferMatch) {
-                aiTransferAmount = parseFloat(transferMatch[2]);
-                cleanReply = cleanReply.replace(transferMatch[0], '').trim();
-            }
-
-            // ======================================================
-            // ★★★ 核心修复：手滑撤回 + 动作分段 ★★★
-            // ======================================================
-            
-            // 1. 先检查有没有“手滑”指令 {{真心话::假话}}
-            const oopsMatch = cleanReply.match(/\{\{(.+?)::(.+?)\}\}/);
-            
-            if (oopsMatch) {
-                // === 触发手滑剧情 ===
-                const realText = oopsMatch[1]; // 真心话 (会被撤回)
-                const fakeText = oopsMatch[2]; // 假话 (最终保留)
-                
-                // 去掉指令，剩下的内容按正常流程发
-                cleanReply = cleanReply.replace(oopsMatch[0], '').trim();
-                
-                // 执行撤回表演 (这是一个异步动画过程)
-                if (currentChatId === targetChatId) {
-                    await simulateAiRecall(realText, fakeText, aiQuote); 
-                    aiQuote = null; // 引用被用掉了
-                } else {
-                    // 如果不在当前窗口，直接发假话得了，不然也没人看表演
-                    pushMsgToData(chat, fakeText, 'char', aiQuote, 'text');
-                }
-            }
-
-            // 2. 处理剩下的文本 (按动作切割)
-            // 修复了正则，支持全角半角括号
-            const rawParts = cleanReply.split(/(\(\(.+?\)\)|\（\（.+?\）\）|\(.+?\)|（.+?）)/g);
-
-            for (let part of rawParts) {
-                if (!part || !part.trim()) continue;
+            for (let part of segments) {
+                if (!part || part === '\n') continue; // 忽略空行
                 part = part.trim();
 
-                const isAction = part.match(/^(\(\(|\（\（|\(|\（)/);
-
-                if (isAction) {
-                    // === 动作 ===
-                    const finalContent = part.replace(/^[\(\（\s]+|[\)\）\s]+$/g, ''); // 去掉括号
-                    if (currentChatId === targetChatId) await new Promise(r => setTimeout(r, 1000)); 
-                    pushMsgToData(chat, finalContent, 'char', null, 'action');
+                // A. 动作段落：((动作内容))
+                if (part.match(/^(\(\(|\（\（)/)) {
+                    const actionText = part.replace(/^[\(\（\s]+|[\)\）\s]+$/g, '');
+                    if (currentChatId === targetChatId) await new Promise(r => setTimeout(r, 1000));
+                    pushMsgToData(chat, actionText, 'char', null, 'action');
                 } 
-                else {
-                    // === 对话 (按换行符切分) ===
-                    const lines = part.split('\n');
-                    for (let line of lines) {
-                        if (!line.trim()) continue;
-                        
-// 模拟打字速度
-let typingTime = 800 + (line.length * 150); 
-if (typingTime > 2500) typingTime = 2500;
+                
+                // B. 撤回段落：{{真心话::假话}}
+                else if (part.match(/^\{\{.+?::.+?\}\}$/)) {
+                    const oopsMatch = part.match(/^\{\{(.+?)::(.+?)\}\}$/);
+                    const realText = oopsMatch[1]; // 真心话 (会被撤回)
+                    const fakeText = oopsMatch[2]; // 假话 (最终保留)
 
-// ★ 修改后：不管你在不在看，我都老老实实打字！
-// 这样你的后台红点就会一个一个蹦出来了 (1..2..3..)
-await new Promise(r => setTimeout(r, typingTime));
-                        
-                        // 发送！(如果刚才引用没用掉，这里用)
-                        pushMsgToData(chat, line.trim(), 'char', aiQuote, 'text');
-                        aiQuote = null; // 引用只用一次
+                    // 检查撤回的假话里是否藏了 [QUOTE] 或 [sticker]
+                    let { text: finalFake, quote, sticker, transfer } = parseInlineTags(fakeText, chat, me);
+
+                    if (currentChatId === targetChatId) {
+                        await simulateAiRecall(realText, finalFake, quote);
+                        // 如果撤回后紧跟着表情/转账，顺便发了
+                        if (sticker) pushMsgToData(chat, sticker.url, 'char', null, 'sticker');
+                        if (transfer) sendAiTransfer(chat, transfer);
+                    } else {
+                        pushMsgToData(chat, finalFake, 'char', quote, 'text');
                     }
                 }
-            }
 
-            // --- 发送表情包 ---
-            if (targetSticker) {
-                if (currentChatId === targetChatId) await new Promise(r => setTimeout(r, 800));
-                // 注意：表情包存的是 url，存在 text 字段里
-                pushMsgToData(chat, targetSticker.url, 'char', null, 'sticker');
-            }
+                // C. 普通文本段落
+                else {
+                    // 解析当前行内是否包含 [QUOTE], [sticker], [transfer]
+                    let { text: finalText, quote, sticker, transfer } = parseInlineTags(part, chat, me);
 
-            // --- 发送 AI 转账 (修复版) ---
-            if (aiTransferAmount > 0) {
-                if (currentChatId === targetChatId) await new Promise(r => setTimeout(r, 1500));
-                
-                // ★★★ 关键修复：构建 extra 数据 ★★★
-                const extraData = JSON.stringify({ 
-                    amount: aiTransferAmount, 
-                    status: 'pending', 
-                    id: Date.now() 
-                });
-                
-                // ★★★ 关键修复：把 extraData 传进去！(第6个参数) ★★★
-                pushMsgToData(chat, '[转账]', 'char', null, 'transfer', extraData); 
+                    if (finalText || quote) {
+                        // 模拟打字速度
+                        let typingTime = 800 + (finalText.length * 150);
+                        if (typingTime > 2500) typingTime = 2500;
+                        await new Promise(r => setTimeout(r, typingTime));
+
+                        pushMsgToData(chat, finalText, 'char', quote, 'text');
+                    }
+
+                    // 发送伴随的特殊内容
+                    if (sticker) {
+                        await new Promise(r => setTimeout(r, 500));
+                        pushMsgToData(chat, sticker.url, 'char', null, 'sticker');
+                    }
+                    if (transfer) {
+                        await new Promise(r => setTimeout(r, 1000));
+                        sendAiTransfer(chat, transfer);
+                    }
+                }
             }
         }
 
@@ -3834,7 +3708,7 @@ window.openEditOverlay = function(text) {
         overlay.style.display = 'flex';
         input.focus();
     } else {
-        alert("宝宝，你是不是没在 index.html 里加那个 <div id='edit-msg-overlay'>...</div> 的代码呀？快去加！");
+        alert("好像有点错误...");
     }
 };
 
@@ -6305,7 +6179,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.showGlobalConfirm = function(title, desc, onConfirm) {
     const modal = document.getElementById('global-confirm-modal');
     if(!modal) {
-        alert("宝宝，你是不是忘了在 index.html 里加那个 <div id='global-confirm-modal'> 的代码呀？");
+        alert("发生了点错误...");
         return;
     }
     
@@ -7918,7 +7792,7 @@ window.closeApp = function(specificId) {
 // ======================================================
 // --- 1. 全局配置 & 数据池 ---
 // ======================================================
-const API_BASE = 'https://netease-cloud-music-api-lilac.vercel.app'; 
+const API_BASE = 'https://api.i-meto.com/meting/api'; 
 let currentPlaylist = []; 
 let currentIndex = -1;    
 let myFavorites = JSON.parse(localStorage.getItem('my_fav_songs') || '[]'); 
@@ -9419,3 +9293,266 @@ window.openForwardSelectorWithData = function(data) {
     // 触发进场动画
     setTimeout(() => overlay.classList.add('active'), 10);
 };
+/* ================= World Book Logic ================= */
+
+// 假数据结构：你可以存在 localForage 里
+let worldBooks = [
+    {
+        id: 'wb_1',
+        title: '鹿城设定集',
+        icon: '🌃',
+        desc: '关于那个赛博大城市的构想',
+        entries: [
+            { id: 'e_1', title: '城市地图概览', content: '<img src="https://via.placeholder.com/300" style="width:100%; border-radius:10px;"><p>这是中心城区...</p>' },
+            { id: 'e_2', title: '小游戏测试', content: '<button onclick="alert(\'老公我爱你！\')" style="padding:10px 20px; background:pink; border:none; border-radius:20px;">点我</button>' }
+        ]
+    },
+    {
+        id: 'wb_2',
+        title: '我的日记',
+        icon: '📒',
+        desc: '不能给别人看的碎碎念',
+        entries: []
+    }
+];
+
+let currentBookId = null;
+let currentEntryId = null;
+
+// 打开世界书APP
+function openWorldBookApp() {
+    document.getElementById('worldbook-app').style.display = 'flex';
+    renderBookShelf();
+}
+
+// 关闭世界书APP
+function closeWorldBook() {
+    document.getElementById('worldbook-app').style.display = 'none';
+}
+
+// 渲染书架 (首页)
+function renderBookShelf() {
+    const list = document.getElementById('wb-books-list');
+    list.innerHTML = '';
+    
+    worldBooks.forEach(book => {
+        const div = document.createElement('div');
+        div.className = 'wb-folder-card';
+        div.onclick = () => openBookDetail(book.id);
+        div.innerHTML = `
+            <div class="wb-folder-icon">${book.icon}</div>
+            <div class="wb-folder-title">${book.title}</div>
+            <div class="wb-folder-count">${book.entries.length} items</div>
+        `;
+        list.appendChild(div);
+    });
+}
+
+// 打开某一本书 (进入分类列表)
+function openBookDetail(bookId) {
+    currentBookId = bookId;
+    const book = worldBooks.find(b => b.id === bookId);
+    
+    document.getElementById('wb-home-view').style.display = 'none';
+    document.getElementById('wb-detail-view').style.display = 'flex';
+    document.getElementById('wb-current-book-title').innerText = book.title;
+    
+    renderEntryList();
+}
+
+// 渲染条目列表
+function renderEntryList() {
+    const book = worldBooks.find(b => b.id === currentBookId);
+    const list = document.getElementById('wb-entries-list');
+    list.innerHTML = '';
+    
+    book.entries.forEach(entry => {
+        const div = document.createElement('div');
+        div.className = 'wb-list-item';
+        div.onclick = () => editEntry(entry.id);
+        div.innerHTML = `
+            <div class="wb-list-icon">📄</div>
+            <div style="flex:1;">
+                <div style="font-weight:600; font-size:15px;">${entry.title}</div>
+                <div style="font-size:12px; color:#999;">HTML / Text</div>
+            </div>
+            <div style="color:#ccc;">›</div>
+        `;
+        list.appendChild(div);
+    });
+}
+
+// 返回书架
+function backToBookHome() {
+    document.getElementById('wb-detail-view').style.display = 'none';
+    document.getElementById('wb-home-view').style.display = 'flex';
+    currentBookId = null;
+}
+
+// === 编辑器逻辑 ===
+
+// 新建/编辑条目
+function editEntry(entryId) {
+    currentEntryId = entryId;
+    const book = worldBooks.find(b => b.id === currentBookId);
+    
+    // 如果是新建
+    if (!entryId) {
+        document.getElementById('wb-entry-title').value = '';
+        document.getElementById('wb-entry-content').value = '';
+    } else {
+        const entry = book.entries.find(e => e.id === entryId);
+        document.getElementById('wb-entry-title').value = entry.title;
+        document.getElementById('wb-entry-content').value = entry.content;
+    }
+    
+    // 默认切回代码模式
+    switchEditorMode('code');
+    document.getElementById('wb-editor-view').style.display = 'flex';
+}
+
+function createNewEntry() {
+    editEntry(null);
+}
+
+function closeEntryEditor() {
+    document.getElementById('wb-editor-view').style.display = 'none';
+}
+
+// 切换 代码/预览 模式
+function switchEditorMode(mode) {
+    const codeArea = document.getElementById('wb-entry-content');
+    const previewArea = document.getElementById('wb-entry-preview');
+    const btnCode = document.getElementById('btn-mode-code');
+    const btnPreview = document.getElementById('btn-mode-preview');
+    
+    if (mode === 'code') {
+        codeArea.style.display = 'block';
+        previewArea.style.display = 'none';
+        btnCode.classList.add('active');
+        btnPreview.classList.remove('active');
+    } else {
+        // 渲染 HTML！
+        previewArea.innerHTML = codeArea.value;
+        // 执行其中的 script (如果需要动态效果)
+        // 注意：简单的 innerHTML 不会自动执行 script 标签，如果需要玩复杂游戏，
+        // 可能需要用 eval 或者重新创建 script 元素插入。
+        // 简单起见，目前仅支持静态 HTML + 内联 onclick。
+        
+        codeArea.style.display = 'none';
+        previewArea.style.display = 'block';
+        btnCode.classList.remove('active');
+        btnPreview.classList.add('active');
+    }
+}
+
+// 保存
+function saveEntry() {
+    const title = document.getElementById('wb-entry-title').value;
+    const content = document.getElementById('wb-entry-content').value;
+    
+    if (!title) {
+        showSystemAlert("标题不能为空哦"); // 假设你之前写过这个函数
+        return;
+    }
+    
+    const book = worldBooks.find(b => b.id === currentBookId);
+    
+    if (currentEntryId) {
+        // 更新
+        const entry = book.entries.find(e => e.id === currentEntryId);
+        entry.title = title;
+        entry.content = content;
+    } else {
+        // 新增
+        book.entries.push({
+            id: 'e_' + Date.now(),
+            title: title,
+            content: content
+        });
+    }
+    
+    // 这里记得加一步保存到 localForage 的操作，不然刷新就没了
+    // saveBooksToStorage(); 
+    
+    closeEntryEditor();
+    renderEntryList();
+}
+
+function createNewBook() {
+    const name = prompt("新世界书叫什么名字？"); // 以后可以换成好看的弹窗
+    if(name) {
+        worldBooks.push({
+            id: 'wb_' + Date.now(),
+            title: name,
+            icon: '📘',
+            entries: []
+        });
+        renderBookShelf();
+    }
+}
+// 专门负责在一段文字里“抠”出引用、表情包和转账
+function parseInlineTags(rawText, chat, me) {
+    let text = rawText;
+    let quote = null;
+    let sticker = null;
+    let transfer = null;
+
+    // 1. 抠出 [QUOTE:...]
+    const qMatch = text.match(/\[QUOTE:\s*(.+?)\]/i);
+    if (qMatch) {
+        const quoteText = qMatch[1].trim();
+        text = text.replace(qMatch[0], '').trim();
+        // 去历史里找 User 说过的这句话
+        const targetMsg = [...chat.messages].reverse().find(m => 
+            m.text && m.text.includes(quoteText) && m.role === 'me'
+        );
+        if (targetMsg) {
+            quote = { text: targetMsg.text, name: (me.name || 'User'), id: targetMsg.timestamp };
+        }
+    }
+
+    // 2. 抠出 [sticker:...]
+    const sMatch = text.match(/\[sticker:(.*?)\]/);
+    if (sMatch) {
+        sticker = stickersDB.find(s => s.type === 'ai' && s.name === sMatch[1].trim());
+        text = text.replace(sMatch[0], '').trim();
+    }
+
+    // 3. 抠出 [transfer:...]
+    const tMatch = text.match(/\[(transfer|转账):(\d+(\.\d+)?)\]/i);
+    if (tMatch) {
+        transfer = parseFloat(tMatch[2]);
+        text = text.replace(tMatch[0], '').trim();
+    }
+
+    return { text, quote, sticker, transfer };
+}
+
+// 发送 AI 转账的封装
+function sendAiTransfer(chat, amount) {
+    const extraData = JSON.stringify({ amount, status: 'pending', id: Date.now() });
+    pushMsgToData(chat, '[转账]', 'char', null, 'transfer', extraData);
+}
+
+// 处理 AI 朋友圈评论逻辑 (把原本冗长的代码抽离)
+function handleAiMomentReact(content, char, chat) {
+    const lastCardMsg = [...chat.messages].reverse().find(m => 
+        m.quote && (m.quote.type === 'mention_card' || m.quote.type === 'moment_share')
+    );
+    if (lastCardMsg && lastCardMsg.quote?.id) {
+        const targetPost = momentsData.find(p => String(p.id) === String(lastCardMsg.quote.id));
+        if (targetPost) {
+            if (!targetPost.likesList?.some(u => u.name === char.name)) {
+                targetPost.likesList = targetPost.likesList || [];
+                targetPost.likesList.push({ name: char.name });
+                targetPost.likes = (targetPost.likes || 0) + 1;
+            }
+            targetPost.comments = targetPost.comments || [];
+            targetPost.comments.push({ author: char.name, content, time: Date.now() });
+            localforage.setItem('Wx_Moments_Data', momentsData).then(() => {
+                if(window.triggerMomentsRedDot) window.triggerMomentsRedDot(char.avatar);
+            });
+        }
+    }
+}
