@@ -1096,10 +1096,8 @@
             </div>
             
             <div class="chl-avatar-wrapper">
-                <div class="chl-bubble edit-text">Mood..☁️</div>
                 <div class="chl-avatar" id="chat_layer_avatar"></div>
                 <div class="chl-frame" id="chat_layer_frame" onclick="openFrameLib(this)"></div>
-                <div class="chl-online-dot"></div>
             </div>
 
             <div class="chl-text-info">
@@ -1946,57 +1944,86 @@
 </div>
  </div>
     </div> 
-    <div id="worldbook-app">
-    <div id="wb-home-view" style="display:flex; flex-direction:column; height:100%;">
-        <div class="wb-header">
-            <span>Library</span>
-            <span>World Book</span>
-            <span style="font-size:14px; color:#007aff;" onclick="closeWorldBook()">Done</span>
-        </div>
-        <div class="wb-body">
-            <div id="wb-books-list" class="wb-grid">
-                </div>
-        </div>
-        <div class="wb-fab" onclick="createNewBook()">+</div>
-    </div>
-
-    <div id="wb-detail-view" style="display:none; flex-direction:column; height:100%; background:#FAFAFA;">
-        <div class="wb-header">
-            <span onclick="backToBookHome()" style="font-size:20px;">‹</span>
-            <span id="wb-current-book-title">Book Title</span>
-            <span style="font-size:22px;" onclick="showBookSettings()">⋮</span>
-        </div>
-        <div class="wb-body" id="wb-entries-list">
-            </div>
-        <div class="wb-fab" onclick="createNewEntry()">✎</div>
-    </div>
-
-    <div id="wb-editor-view" style="display:none; flex-direction:column; height:100%; background:#fff; z-index:210;">
-        <div class="wb-header">
-            <span onclick="closeEntryEditor()" style="color:#007aff;">Cancel</span>
-            <span>Editor</span>
-            <span onclick="saveEntry()" style="color:#007aff; font-weight:bold;">Save</span>
+<div id="worldbook-app">
+    
+    <div id="wb-home-view">
+        <div class="wb-navbar-large">
+<div class="wb-nav-top">
+    <div style="flex:1;"></div> 
+    
+    <div style="display:flex; align-items:center;">
+        <div class="wb-nav-icon-btn" onclick="handleNewBook()" style="margin-right: 15px;">
+            <img src="https://i.postimg.cc/L6swrn3N/wu-biao-ti125-20260210155727.png" class="wb-nav-img">
         </div>
         
-        <div class="wb-editor-container">
-            <input type="text" id="wb-entry-title" class="wb-input-title" placeholder="Title...">
+        <span class="wb-nav-action" onclick="closeWorldBook()">Done</span>
+    </div>
+</div>
+            <span class="wb-large-title">Browse</span>
             
-            <div class="wb-toggle-group">
-                <div class="wb-toggle-btn active" onclick="switchEditorMode('code')" id="btn-mode-code">Source (HTML)</div>
-                <div class="wb-toggle-btn" onclick="switchEditorMode('preview')" id="btn-mode-preview">Preview</div>
+            <div class="wb-search-bar">
+                <span style="margin-right:6px">★</span> Search
+            </div>
+            
+            <div class="wb-segment-control">
+                <div class="wb-segment-btn active" id="tab-lore" onclick="switchWBCategory('lore')">Lore</div>
+                <div class="wb-segment-btn" id="tab-game" onclick="switchWBCategory('game')">Playground</div>
+            </div>
+        </div>
+
+        <div class="wb-scroll-content">
+            <div class="wb-section-header">Locations</div>
+            <div id="wb-books-grid" class="wb-grid-container"></div>
+        </div>
+</div>
+    <div id="wb-detail-view">
+        <div class="wb-navbar-inline">
+            <div class="wb-nav-action" onclick="backToWBHome()">
+                <span style="font-size:25px; position:relative; top:2px;">‹</span>
+            </div>
+            <div style="font-weight:600; font-size:17px;" id="wb-detail-title">Folder</div>
+<div class="wb-nav-icon-btn" onclick="handleNewEntry()">
+    <img src="https://i.postimg.cc/L6swrn3N/wu-biao-ti125-20260210155727.png" class="wb-nav-img">
+</div>
+        </div>
+<div id="wb-entries-list" style="flex:1; overflow-y:auto;"></div>
+    </div>
+
+    <div id="wb-sheet-overlay" onclick="closeWBEditor()">
+        <div class="wb-sheet-card" onclick="event.stopPropagation()">
+            <div class="wb-sheet-handle"></div>
+            
+            <div class="wb-sheet-header">
+                <span class="wb-nav-action" onclick="closeWBEditor()">Cancel</span>
+                <span style="font-weight:600">Editor</span>
+                <span class="wb-nav-action" style="font-weight:600" onclick="saveWBEntry()">Done</span>
             </div>
 
-            <textarea id="wb-entry-content" class="wb-textarea" placeholder="Start typing... Supports HTML/JS/CSS"></textarea>
-            
-            <div id="wb-entry-preview" class="wb-preview-area" style="display:none;"></div>
+            <div class="wb-sheet-body">
+                <input type="text" id="wb-input-title" placeholder="Entry Name" class="wb-input-line">
+                
+                <div class="wb-segment-control" id="editor-mode-toggle" style="margin-bottom:15px; display:none;">
+                    <div class="wb-segment-btn active" id="edit-mode-code" onclick="switchEditorMode('code')">Code</div>
+                    <div class="wb-segment-btn" id="edit-mode-preview" onclick="switchEditorMode('preview')">Preview</div>
+                </div>
+
+                <div class="wb-editor-wrapper">
+                    <textarea id="wb-input-content" placeholder="Type here..."></textarea>
+                    <div id="wb-preview-container" style="display:none; width:100%; height:100%; overflow:auto;"></div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
-<div id="sub-api-config" class="sub-page">
-    <div class="sub-header">
-        <div class="back-btn" onclick="closeSubPage('sub-api-config')">‹</div>
-        <span>API Settings</span>
-        <div onclick="saveApiConfig(true)">Done</div>
+    <div id="wb-context-menu" class="wb-context-overlay" onclick="closeWBContextMenu()">
+        <div class="wb-action-sheet" onclick="event.stopPropagation()">
+            <div class="wb-ctx-header" id="wb-ctx-title">Folder Name</div>
+            
+            <div class="wb-ctx-scroll-area" id="wb-ctx-options">
+                </div>
+
+            <div class="wb-ctx-cancel" onclick="closeWBContextMenu()">Cancel</div>
+        </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
     <script src="security.js"></script>

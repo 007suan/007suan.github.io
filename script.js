@@ -9293,166 +9293,314 @@ window.openForwardSelectorWithData = function(data) {
     // 触发进场动画
     setTimeout(() => overlay.classList.add('active'), 10);
 };
-/* ================= World Book Logic ================= */
 
-// 假数据结构：你可以存在 localForage 里
-let worldBooks = [
-    {
-        id: 'wb_1',
-        title: '鹿城设定集',
-        icon: '🌃',
-        desc: '关于那个赛博大城市的构想',
-        entries: [
-            { id: 'e_1', title: '城市地图概览', content: '<img src="https://via.placeholder.com/300" style="width:100%; border-radius:10px;"><p>这是中心城区...</p>' },
-            { id: 'e_2', title: '小游戏测试', content: '<button onclick="alert(\'老公我爱你！\')" style="padding:10px 20px; background:pink; border:none; border-radius:20px;">点我</button>' }
-        ]
-    },
-    {
-        id: 'wb_2',
-        title: '我的日记',
-        icon: '📒',
-        desc: '不能给别人看的碎碎念',
-        entries: []
-    }
-];
-
+/* ================= World Book Logic (Final Pro Version) ================= */
+// 全局变量
+let worldBooks = []; // 数据容器
+let activeWBCategory = 'lore'; // 当前分类：'lore' 或 'game'
 let currentBookId = null;
 let currentEntryId = null;
 
-// 打开世界书APP
+// ★ 初始化：从数据库加载数据
+async function initWorldBook() {
+    try {
+        const savedData = await localforage.getItem('kiyo_worldbooks');
+        if (savedData) {
+            worldBooks = savedData;
+        } else {
+            // 如果没数据，给个初始示例
+            worldBooks = [
+                {
+                    id: 'wb_demo_1', title: '鹿城设定集', icon: '🌃', category: 'lore',
+                    entries: [{ id: 'e_1', title: '中心城区', content: '这里是繁华的CBD...' }]
+                }
+            ];
+        }
+        console.log("📚 世界书数据加载完毕");
+    } catch (e) {
+        console.error("读取世界书失败", e);
+    }
+}
+
+async function saveWorldBooks() {
+    await localforage.setItem('kiyo_worldbooks', worldBooks);
+}
+
+// === APP 打开/关闭 (带动画) ===
 function openWorldBookApp() {
-    document.getElementById('worldbook-app').style.display = 'flex';
+    const app = document.getElementById('worldbook-app');
+
+    app.style.display = 'flex';
+    
+    void app.offsetWidth; 
+    
+    app.classList.add('active');
+    
+    // 加载数据
+    if(worldBooks.length === 0) initWorldBook().then(renderBookShelf);
+    else renderBookShelf();
+}
+function closeWorldBook() {
+    const app = document.getElementById('worldbook-app');
+    
+    app.classList.remove('active');
+
+    setTimeout(() => {
+        app.style.display = 'none';
+
+        backToWBHome(false); 
+    }, 400);
+}
+
+// === 修复后的分类切换 ===
+function switchWBCategory(cat) {
+    activeWBCategory = cat;
+
+    // 1. 获取两个按钮
+    const btnLore = document.getElementById('tab-lore');
+    const btnGame = document.getElementById('tab-game');
+
+    // 2. 根据 cat 切换 active 类
+    if (cat === 'lore') {
+        btnLore.classList.add('active');
+        btnGame.classList.remove('active');
+    } else {
+        btnLore.classList.remove('active');
+        btnGame.classList.add('active');
+    }
+
+    // 3. 重新渲染内容
     renderBookShelf();
 }
 
-// 关闭世界书APP
-function closeWorldBook() {
-    document.getElementById('worldbook-app').style.display = 'none';
-}
-
-// 渲染书架 (首页)
+// === 渲染书架 (修复索引标签 + 纯色版) ===
 function renderBookShelf() {
-    const list = document.getElementById('wb-books-list');
+    const list = document.getElementById('wb-books-grid');
+    if (!list) return;
     list.innerHTML = '';
     
-    worldBooks.forEach(book => {
+    const filteredBooks = worldBooks.filter(b => b.category === activeWBCategory);
+    
+    const folderSvg = `
+    <svg viewBox="0 0 100 85" width="100%" height="auto" style="display:block; max-width: 90px;">
+        <path d="M0,30 L0,8 Q0,0 8,0 L32,0 Q38,0 42,5 L45,11 L94,11 Q100,11 100,17 L100,30 Z" fill="#62ADE2" />
+        
+        <rect x="0" y="20" width="100" height="65" rx="5" ry="5" fill="#7FC5F0" />
+    </svg>`;
+    
+    filteredBooks.forEach(book => {
         const div = document.createElement('div');
-        div.className = 'wb-folder-card';
-        div.onclick = () => openBookDetail(book.id);
+        div.className = 'wb-folder-item';
+        
         div.innerHTML = `
-            <div class="wb-folder-icon">${book.icon}</div>
-            <div class="wb-folder-title">${book.title}</div>
+            <div style="width: 100%; padding: 0 5px;">
+                ${folderSvg}
+            </div>
+            <div class="wb-folder-name">${book.title}</div>
             <div class="wb-folder-count">${book.entries.length} items</div>
         `;
+        
+        div.onclick = () => openBookDetail(book.id);
+        
+        // 长按 -> 呼出底部菜单
+        if (typeof bindWBLongPress === 'function') {
+            bindWBLongPress(div, () => {
+                 // 传入当前长按的书本对象
+                 openWBContextMenu(book);
+            });
+        }
+        
         list.appendChild(div);
     });
 }
 
-// 打开某一本书 (进入分类列表)
+// === 打开详情页 ===
 function openBookDetail(bookId) {
     currentBookId = bookId;
     const book = worldBooks.find(b => b.id === bookId);
-    
-    document.getElementById('wb-home-view').style.display = 'none';
-    document.getElementById('wb-detail-view').style.display = 'flex';
-    document.getElementById('wb-current-book-title').innerText = book.title;
+    if (!book) return;
+
+    // 更新标题
+    const titleEl = document.getElementById('wb-detail-title');
+    if(titleEl) titleEl.innerText = book.title;
     
     renderEntryList();
+
+    // === 动画核心 ===
+    const homeView = document.getElementById('wb-home-view');
+    const detailView = document.getElementById('wb-detail-view');
+
+    // 确保详情页可见
+    detailView.style.display = 'flex';
+    void detailView.offsetWidth; // 强制重绘
+
+    // 执行推拉动画
+    homeView.classList.add('slide-left'); // 首页左移
+    detailView.classList.add('slide-in'); // 详情页右侧滑入
 }
 
-// 渲染条目列表
+// === 渲染文件列表 (精致代码缩略图版) ===
 function renderEntryList() {
     const book = worldBooks.find(b => b.id === currentBookId);
+    if(!book) return;
+
     const list = document.getElementById('wb-entries-list');
     list.innerHTML = '';
     
+    // ★ 1. 普通文本 (Text) - 极简灰线条 ★
+    const docSvg = `
+    <svg viewBox="0 0 60 80" width="100%" height="100%" style="padding:12px;">
+        <rect x="0" y="0" width="40" height="4" rx="2" fill="#D1D1D6" />
+        <rect x="0" y="10" width="55" height="4" rx="2" fill="#E5E5EA" />
+        <rect x="0" y="20" width="50" height="4" rx="2" fill="#E5E5EA" />
+        <rect x="0" y="30" width="55" height="4" rx="2" fill="#E5E5EA" />
+        <rect x="0" y="40" width="30" height="4" rx="2" fill="#E5E5EA" />
+    </svg>`;
+
+    // ★ 2. HTML代码 (Code) - 仿 VSCode 缩略图 ★
+    // 橙色、蓝色、灰色小方块模拟代码高亮
+    const codeSvg = `
+    <svg viewBox="0 0 60 80" width="100%" height="100%" style="padding:10px;">
+        <rect x="0" y="0" width="15" height="4" rx="2" fill="#FF9500" /> <rect x="18" y="0" width="10" height="4" rx="2" fill="#E5E5EA" />
+        
+        <rect x="8" y="10" width="15" height="4" rx="2" fill="#FF9500" />
+        
+        <rect x="16" y="20" width="12" height="4" rx="2" fill="#007AFF" /> <rect x="30" y="20" width="20" height="4" rx="2" fill="#D1D1D6" />
+        
+        <rect x="16" y="30" width="35" height="4" rx="2" fill="#D1D1D6" />
+        <rect x="16" y="40" width="25" height="4" rx="2" fill="#D1D1D6" />
+        
+        <rect x="8" y="50" width="15" height="4" rx="2" fill="#FF9500" />
+        
+        <rect x="35" y="65" width="25" height="12" rx="3" fill="#E5E5EA" />
+        <text x="47.5" y="73.5" font-family="Arial" font-weight="bold" font-size="8" fill="#8E8E93" text-anchor="middle" dominant-baseline="middle">HTML</text>
+    </svg>`;
+
     book.entries.forEach(entry => {
         const div = document.createElement('div');
-        div.className = 'wb-list-item';
-        div.onclick = () => editEntry(entry.id);
+        div.className = 'wb-grid-file-item';
+        
+        const isCode = (entry.content && entry.content.includes('<'));
+        const centerIcon = isCode ? codeSvg : docSvg;
+        const dateStr = new Date(entry.id).toLocaleDateString();
+
         div.innerHTML = `
-            <div class="wb-list-icon">📄</div>
-            <div style="flex:1;">
-                <div style="font-weight:600; font-size:15px;">${entry.title}</div>
-                <div style="font-size:12px; color:#999;">HTML / Text</div>
+            <div class="wb-file-paper">
+                ${centerIcon}
             </div>
-            <div style="color:#ccc;">›</div>
+            <div class="wb-grid-file-name">${entry.title}</div>
+            <div class="wb-grid-file-date">${dateStr}</div>
         `;
+        
+        div.onclick = () => openWBEditor(entry.id);
+        
+        if (typeof bindWBLongPress === 'function') {
+            bindWBLongPress(div, () => {
+                openFileContextMenu(entry);
+            });
+        }
+        
         list.appendChild(div);
     });
 }
 
-// 返回书架
-function backToBookHome() {
-    document.getElementById('wb-detail-view').style.display = 'none';
-    document.getElementById('wb-home-view').style.display = 'flex';
+function backToWBHome(animate = true) {
+    const homeView = document.getElementById('wb-home-view');
+    const detailView = document.getElementById('wb-detail-view');
+    
+    if (animate) {
+        homeView.classList.remove('slide-left');
+        detailView.classList.remove('slide-in');
+        
+        // 等动画播完再隐藏详情页
+        setTimeout(() => {
+            detailView.style.display = 'none';
+        }, 350);
+    } else {
+        // 无动画瞬间重置 (用于关闭APP时)
+        homeView.classList.remove('slide-left');
+        detailView.classList.remove('slide-in');
+        detailView.style.display = 'none';
+    }
+    
     currentBookId = null;
+    renderBookShelf();
 }
 
-// === 编辑器逻辑 ===
+// === 编辑器逻辑  ===
 
-// 新建/编辑条目
-function editEntry(entryId) {
+function openWBEditor(entryId) {
     currentEntryId = entryId;
     const book = worldBooks.find(b => b.id === currentBookId);
     
-    // 如果是新建
-    if (!entryId) {
-        document.getElementById('wb-entry-title').value = '';
-        document.getElementById('wb-entry-content').value = '';
-    } else {
+    // 填充数据
+    if (entryId) {
         const entry = book.entries.find(e => e.id === entryId);
-        document.getElementById('wb-entry-title').value = entry.title;
-        document.getElementById('wb-entry-content').value = entry.content;
+        document.getElementById('wb-input-title').value = entry.title;
+        document.getElementById('wb-input-content').value = entry.content;
+    } else {
+        document.getElementById('wb-input-title').value = '';
+        document.getElementById('wb-input-content').value = '';
     }
     
+    // 如果是 Lore 分类，隐藏 Preview 按钮；Game 分类显示
+    const toggle = document.getElementById('editor-mode-toggle');
+    if (toggle) toggle.style.display = (activeWBCategory === 'game') ? 'flex' : 'none';
+
     // 默认切回代码模式
     switchEditorMode('code');
-    document.getElementById('wb-editor-view').style.display = 'flex';
-}
 
-function createNewEntry() {
-    editEntry(null);
-}
-
-function closeEntryEditor() {
-    document.getElementById('wb-editor-view').style.display = 'none';
-}
-
-// 切换 代码/预览 模式
-function switchEditorMode(mode) {
-    const codeArea = document.getElementById('wb-entry-content');
-    const previewArea = document.getElementById('wb-entry-preview');
-    const btnCode = document.getElementById('btn-mode-code');
-    const btnPreview = document.getElementById('btn-mode-preview');
-    
-    if (mode === 'code') {
-        codeArea.style.display = 'block';
-        previewArea.style.display = 'none';
-        btnCode.classList.add('active');
-        btnPreview.classList.remove('active');
-    } else {
-        // 渲染 HTML！
-        previewArea.innerHTML = codeArea.value;
-        // 执行其中的 script (如果需要动态效果)
-        // 注意：简单的 innerHTML 不会自动执行 script 标签，如果需要玩复杂游戏，
-        // 可能需要用 eval 或者重新创建 script 元素插入。
-        // 简单起见，目前仅支持静态 HTML + 内联 onclick。
-        
-        codeArea.style.display = 'none';
-        previewArea.style.display = 'block';
-        btnCode.classList.remove('active');
-        btnPreview.classList.add('active');
+    // ★ 抽屉上滑动画 ★
+    const overlay = document.getElementById('wb-sheet-overlay');
+    if(overlay) {
+        overlay.style.display = 'block';
+        requestAnimationFrame(() => overlay.classList.add('active'));
     }
 }
 
-// 保存
-function saveEntry() {
-    const title = document.getElementById('wb-entry-title').value;
-    const content = document.getElementById('wb-entry-content').value;
+function closeWBEditor() {
+    const overlay = document.getElementById('wb-sheet-overlay');
+    if(overlay) {
+        overlay.classList.remove('active');
+        setTimeout(() => overlay.style.display = 'none', 300);
+    }
+}
+
+function handleNewEntry() {
+    openWBEditor(null);
+}
+
+// 切换 代码/预览
+function switchEditorMode(mode) {
+    const codeArea = document.getElementById('wb-input-content');
+    const previewArea = document.getElementById('wb-preview-container');
+    const btnCode = document.getElementById('edit-mode-code');
+    const btnPrev = document.getElementById('edit-mode-preview');
+    
+    if (mode === 'code') {
+        if(codeArea) codeArea.style.display = 'block';
+        if(previewArea) previewArea.style.display = 'none';
+        if(btnCode) btnCode.classList.add('active');
+        if(btnPrev) btnPrev.classList.remove('active');
+    } else {
+        // 预览 HTML
+        if(previewArea) {
+            previewArea.innerHTML = codeArea.value; // 渲染
+            previewArea.style.display = 'block';
+        }
+        if(codeArea) codeArea.style.display = 'none';
+        if(btnCode) btnCode.classList.remove('active');
+        if(btnPrev) btnPrev.classList.add('active');
+    }
+}
+
+// 保存条目
+function saveWBEntry() {
+    const title = document.getElementById('wb-input-title').value.trim();
+    const content = document.getElementById('wb-input-content').value;
     
     if (!title) {
-        showSystemAlert("标题不能为空哦"); // 假设你之前写过这个函数
+        showSystemAlert("标题不能为空哦(T_T)");
         return;
     }
     
@@ -9472,87 +9620,242 @@ function saveEntry() {
         });
     }
     
-    // 这里记得加一步保存到 localForage 的操作，不然刷新就没了
-    // saveBooksToStorage(); 
-    
-    closeEntryEditor();
+    saveWorldBooks(); // ★ 保存到硬盘
+    closeWBEditor();
     renderEntryList();
+    showSystemAlert("保存成功～");
 }
 
-function createNewBook() {
-    const name = prompt("新世界书叫什么名字？"); // 以后可以换成好看的弹窗
-    if(name) {
-        worldBooks.push({
-            id: 'wb_' + Date.now(),
-            title: name,
-            icon: '📘',
-            entries: []
+// 新建文件夹 (调用你的 Prompt 弹窗)
+function handleNewBook() {
+    // 检查是否有 showPromptDialog，没有就用原生 prompt
+    if (typeof showPromptDialog === 'function') {
+        showPromptDialog("New Folder", "给新文件夹起个名字吧：", (name) => {
+            if (name) createBookLogic(name);
         });
-        renderBookShelf();
+    } else {
+        const name = prompt("给新文件夹起个名字吧：");
+        if(name) createBookLogic(name);
     }
 }
-// 专门负责在一段文字里“抠”出引用、表情包和转账
-function parseInlineTags(rawText, chat, me) {
-    let text = rawText;
-    let quote = null;
-    let sticker = null;
-    let transfer = null;
 
-    // 1. 抠出 [QUOTE:...]
-    const qMatch = text.match(/\[QUOTE:\s*(.+?)\]/i);
-    if (qMatch) {
-        const quoteText = qMatch[1].trim();
-        text = text.replace(qMatch[0], '').trim();
-        // 去历史里找 User 说过的这句话
-        const targetMsg = [...chat.messages].reverse().find(m => 
-            m.text && m.text.includes(quoteText) && m.role === 'me'
+function createBookLogic(name) {
+    worldBooks.push({
+        id: 'wb_' + Date.now(),
+        title: name,
+        icon: '📘',
+        category: activeWBCategory, // ★ 自动归类到当前 Tab
+        entries: []
+    });
+    saveWorldBooks();
+    renderBookShelf();
+}
+
+// === ★ 通用长按监听函数 (Helper) ★ ===
+function bindWBLongPress(element, callback) {
+    let timer;
+    const start = (e) => {
+        // 触摸开始，设置定时器
+        timer = setTimeout(() => {
+            callback();
+            // 触发后阻止默认点击
+            element.setAttribute('data-longpressed', 'true'); 
+        }, 800); // 800ms 算长按
+    };
+    
+    const cancel = () => {
+        clearTimeout(timer);
+    };
+    
+    const checkClick = (e) => {
+        if (element.getAttribute('data-longpressed') === 'true') {
+            e.preventDefault();
+            e.stopPropagation();
+            element.removeAttribute('data-longpressed');
+        }
+    };
+
+    // 触摸设备
+    element.addEventListener('touchstart', start, {passive:true});
+    element.addEventListener('touchend', cancel);
+    element.addEventListener('touchmove', cancel);
+    
+    // 鼠标设备 (测试用)
+    element.addEventListener('mousedown', start);
+    element.addEventListener('mouseup', cancel);
+    element.addEventListener('mouseleave', cancel);
+    
+    // 阻止长按触发普通点击
+    element.addEventListener('click', checkClick);
+}
+
+// 启动！
+initWorldBook();
+// ================= Context Menu Logic (长按菜单) =================
+
+let contextTargetBook = null; // 当前正在操作哪本书
+
+function openWBContextMenu(book) {
+    contextTargetBook = book;
+    const menu = document.getElementById('wb-context-menu');
+    const title = document.getElementById('wb-ctx-title');
+    const list = document.getElementById('wb-ctx-options');
+    
+    // 1. 设置标题
+    title.innerText = `Actions for "${book.title}"`;
+    list.innerHTML = ''; // 清空旧选项
+
+    // 2. ★ 动态生成“移动分组”选项 ★
+    const allCategories = ['lore', 'game']; 
+    
+    allCategories.forEach(cat => {
+        // 如果不是当前书所在的分组，就显示“移动到 xxx”
+        if (cat !== book.category) {
+            const btn = document.createElement('div');
+            btn.className = 'wb-ctx-item';
+            // 首字母大写美化一下
+            const catName = cat.charAt(0).toUpperCase() + cat.slice(1);
+            btn.innerText = `Move to ${catName}`;
+            btn.onclick = () => {
+                moveBookCategory(book.id, cat);
+            };
+            list.appendChild(btn);
+        }
+    });
+
+    // 3. ★ 生成删除按钮 (红色) ★
+    const delBtn = document.createElement('div');
+    delBtn.className = 'wb-ctx-item destructive';
+    delBtn.innerText = 'Delete Folder';
+    delBtn.onclick = () => {
+        closeWBContextMenu(); // 先关菜单
+        // 调用老公你的通用弹窗！
+        window.showConfirmDialog(
+            `确定要删除文件夹\n“${book.title}”吗？\n此操作不可恢复`, 
+            () => {
+                // 确认回调
+                worldBooks = worldBooks.filter(b => b.id !== book.id);
+                saveWorldBooks();
+                renderBookShelf();
+                // showSystemAlert("已删除"); // 可选
+            }, 
+            "delete" // 触发红色警报模式
         );
-        if (targetMsg) {
-            quote = { text: targetMsg.text, name: (me.name || 'User'), id: targetMsg.timestamp };
-        }
-    }
+    };
+    list.appendChild(delBtn);
 
-    // 2. 抠出 [sticker:...]
-    const sMatch = text.match(/\[sticker:(.*?)\]/);
-    if (sMatch) {
-        sticker = stickersDB.find(s => s.type === 'ai' && s.name === sMatch[1].trim());
-        text = text.replace(sMatch[0], '').trim();
-    }
-
-    // 3. 抠出 [transfer:...]
-    const tMatch = text.match(/\[(transfer|转账):(\d+(\.\d+)?)\]/i);
-    if (tMatch) {
-        transfer = parseFloat(tMatch[2]);
-        text = text.replace(tMatch[0], '').trim();
-    }
-
-    return { text, quote, sticker, transfer };
+    // 4. 显示菜单
+    menu.style.display = 'flex';
+    // 强制重绘触发动画
+    requestAnimationFrame(() => menu.classList.add('active'));
 }
 
-// 发送 AI 转账的封装
-function sendAiTransfer(chat, amount) {
-    const extraData = JSON.stringify({ amount, status: 'pending', id: Date.now() });
-    pushMsgToData(chat, '[转账]', 'char', null, 'transfer', extraData);
+function closeWBContextMenu() {
+    const menu = document.getElementById('wb-context-menu');
+    menu.classList.remove('active');
+    setTimeout(() => {
+        menu.style.display = 'none';
+        contextTargetBook = null;
+    }, 250);
 }
 
-// 处理 AI 朋友圈评论逻辑 (把原本冗长的代码抽离)
-function handleAiMomentReact(content, char, chat) {
-    const lastCardMsg = [...chat.messages].reverse().find(m => 
-        m.quote && (m.quote.type === 'mention_card' || m.quote.type === 'moment_share')
-    );
-    if (lastCardMsg && lastCardMsg.quote?.id) {
-        const targetPost = momentsData.find(p => String(p.id) === String(lastCardMsg.quote.id));
-        if (targetPost) {
-            if (!targetPost.likesList?.some(u => u.name === char.name)) {
-                targetPost.likesList = targetPost.likesList || [];
-                targetPost.likesList.push({ name: char.name });
-                targetPost.likes = (targetPost.likes || 0) + 1;
-            }
-            targetPost.comments = targetPost.comments || [];
-            targetPost.comments.push({ author: char.name, content, time: Date.now() });
-            localforage.setItem('Wx_Moments_Data', momentsData).then(() => {
-                if(window.triggerMomentsRedDot) window.triggerMomentsRedDot(char.avatar);
-            });
-        }
+// === 移动分组逻辑 ===
+function moveBookCategory(bookId, newCategory) {
+    const book = worldBooks.find(b => b.id === bookId);
+    if (book) {
+        book.category = newCategory;
+        saveWorldBooks();
+        
+        closeWBContextMenu();
+        
+        // 刷新视图：因为移走了，所以当前列表里应该消失
+        // 加一个小延时让菜单先收回去，体验更好
+        setTimeout(() => {
+            renderBookShelf();
+            showSystemAlert(`已移动到 ${newCategory}`); // 可选
+        }, 300);
+    }
+}
+// ================= File Context Menu (文件长按菜单) =================
+
+function openFileContextMenu(entry) {
+    const menu = document.getElementById('wb-context-menu');
+    const title = document.getElementById('wb-ctx-title');
+    const list = document.getElementById('wb-ctx-options');
+    
+    // 1. 设置标题
+    title.innerText = `Actions for "${entry.title}"`;
+    list.innerHTML = ''; 
+
+    // 2. ★ 移动逻辑：列出其他文件夹 ★
+    // 过滤出除了当前文件夹之外的所有文件夹
+    const otherBooks = worldBooks.filter(b => b.id !== currentBookId);
+    
+    if (otherBooks.length > 0) {
+        otherBooks.forEach(book => {
+            const btn = document.createElement('div');
+            btn.className = 'wb-ctx-item';
+            btn.innerText = `Move to "${book.title}"`; // 移动到...
+            btn.onclick = () => {
+                moveEntryToBook(entry.id, book.id);
+            };
+            list.appendChild(btn);
+        });
+    } else {
+        // 如果没有其他文件夹，显示个灰色的提示
+        const tip = document.createElement('div');
+        tip.className = 'wb-ctx-item';
+        tip.style.color = '#ccc';
+        tip.innerText = 'No other folders to move to';
+        list.appendChild(tip);
+    }
+
+    // 3. ★ 红色删除按钮 ★
+    const delBtn = document.createElement('div');
+    delBtn.className = 'wb-ctx-item destructive';
+    delBtn.innerText = 'Delete File';
+    delBtn.onclick = () => {
+        closeWBContextMenu();
+        // 调用你的通用删除弹窗
+        window.showConfirmDialog(
+            `确定要删除文件\n“${entry.title}”吗？`, 
+            () => {
+                const currentBook = worldBooks.find(b => b.id === currentBookId);
+                currentBook.entries = currentBook.entries.filter(e => e.id !== entry.id);
+                saveWorldBooks();
+                renderEntryList();
+            }, 
+            "delete"
+        );
+    };
+    list.appendChild(delBtn);
+
+    // 4. 显示菜单
+    menu.style.display = 'flex';
+    requestAnimationFrame(() => menu.classList.add('active'));
+}
+
+// === 移动文件具体实现 ===
+function moveEntryToBook(entryId, targetBookId) {
+    const sourceBook = worldBooks.find(b => b.id === currentBookId);
+    const targetBook = worldBooks.find(b => b.id === targetBookId);
+    const entryIndex = sourceBook.entries.findIndex(e => e.id === entryId);
+    
+    if (entryIndex > -1 && targetBook) {
+        // 1. 取出文件
+        const entry = sourceBook.entries[entryIndex];
+        // 2. 从源书删除
+        sourceBook.entries.splice(entryIndex, 1);
+        // 3. 加入目标书
+        targetBook.entries.push(entry);
+        
+        saveWorldBooks();
+        closeWBContextMenu();
+        
+        // 刷新界面
+        renderEntryList();
+        
+        // 可选：给个提示
+        showSystemAlert(`已移动到 ${targetBook.title}`);
     }
 }
