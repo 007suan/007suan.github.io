@@ -5411,3 +5411,20 @@ body, button, input, textarea, select, .edit-text {
     margin-top: 2px;
     transform: scale(0.9); /* 让日期更细腻 */
 }
+/* --- 编辑器副标题 (关键词输入框) --- */
+.wb-input-sub-line {
+    width: 100%;
+    font-size: 15px; /* 比标题小 */
+    color: #8E8E93;  /* iOS 灰色 */
+    border: none;
+    outline: none;
+    margin-bottom: 15px;
+    background: transparent;
+    padding-bottom: 8px;
+    border-bottom: 0.5px solid #E5E5EA; /* 底部加条细线区分正文 */
+}
+
+/* 稍微调整一下标题的下边距，让它离关键词近一点 */
+.wb-input-line {
+    margin-bottom: 5px; /* 之前是 10px */
+}
