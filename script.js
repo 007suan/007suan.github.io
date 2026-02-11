@@ -2412,86 +2412,75 @@ window.triggerAI = async function() {
     const historySource = (chat.messages || []).slice(-limit);
 
     // 构建历史上下文
-    const history = historySource.map((m, i) => { 
-        // ★ 1. 身份锚点 (解决 AI 脸盲的核心)
-        const role = (m.role === 'me') ? 'user' : 'model';
-        const senderName = (m.role === 'me') ? (me.name || 'User') : (chat.name || 'Char');
+        const history = historySource.map((m, i) => { 
+            // 1. 获取名字 (身份锚点)
+            const senderName = (m.role === 'me') ? (me.name || 'User') : (chat.name || 'Char');
+            
+            // 2. 原始内容
+            let content = m.text || "";
+            
+            // A. HTML 小游戏 (新功能)
+            if (m.type === 'html') {
+                content = `[发送了一个HTML交互组件]`;
+            }
+            // B. 动作消息
+            else if (m.type === 'action') {
+                content = `((动作: ${content}))`;
+            }
+            // C. 表情包
+            else if (m.type === 'sticker') {
+                content = `[发送了一个表情包: ${m.desc || '未知表情'}]`; 
+            }
+            // D. 图片
+            else if (m.type === 'image') {
+                content = `[发送了一张图片]`;
+            }
+            // E. 模拟图片
+            else if (m.type === 'simulated_image') {
+                content = `[发送了一张图片，内容是：${m.text || '未描述'}]`;
+            }
+            // F. 语音
+            else if (m.type === 'voice') {
+                content = `[发送了一条语音说："${m.text || '...' }"]`;
+            }
+            // G. 转账
+            else if (m.type === 'transfer') {
+                content = `[发起了一条转账: ¥${parseFloat(content || 0).toFixed(2)}]`; 
+            }
+            // H. 回执
+            else if (m.type === 'transfer_receipt') {
 
-        // ★ 2. 原始内容
-        let content = m.text || "";
-        
-        // --- 3. 超级透视眼逻辑 (处理特殊消息) ---
-        
-        // A. 动作消息
-        if (m.type === 'action') {
-            content = `((动作: ${content}))`;
-        }
-        // B. 表情包
-        else if (m.type === 'sticker') {
-            // 这里加个保底，防止 m.desc 为空
-            content = `[发送了一个表情包: ${m.desc || '未知表情'}]`; 
-        }
-        // C. 普通图片 (上传的)
-        else if (m.type === 'image') {
-            content = `[发送了一张图片]`;
-        }
-        // D. 模拟图片 (带描述的)
-        else if (m.type === 'simulated_image') {
-            // 这里的 m.text 是图片描述，万一为空给个默认值
-            content = `[发送了一张图片，内容是：${m.text || '未描述'}]`;
-        }
-        // E. 语音消息
-        else if (m.type === 'voice') {
-            content = `[发送了一条语音说："${m.text || '...' }"]`;
-        }
-        // F. 转账
-        else if (m.type === 'transfer') {
-            content = `[发起了一条转账: ¥${parseFloat(content || 0).toFixed(2)}]`; 
-        }
+                 return null; 
+            }
 
-        // --- 4. 处理引用/卡片 (Quote Logic) ---
-        if (m.quote) {
-            // A. 朋友圈被艾特
-            if (m.quote.type === 'mention_card') {
-                const targetPost = momentsData.find(p => String(p.id) === String(m.quote.id));
-                if (targetPost) {
-                    const hasImg = targetPost.image ? '(包含图片)' : '';
-                    // 加上换行，让 AI 看得更清楚
-                    content += `\n【🔔 系统通知：User 想邀请你看 ta 的朋友圈！】\n关联动态：“${targetPost.content}” ${hasImg}`;
-                    
-                    // 强指令 (放在最后一条才生效)
-                    if (i === historySource.length - 1) {
-                        content += `\n【🔴 强指令】请回复此动态并在句尾加 [ACT:MOMENT_REACT:你的评论]`;
+            // --- 4. 处理引用/卡片 ---
+            if (m.quote) {
+                if (m.quote.type === 'mention_card') {
+                    const targetPost = momentsData.find(p => String(p.id) === String(m.quote.id));
+                    if (targetPost) {
+                        const hasImg = targetPost.image ? '(包含图片)' : '';
+                        content += `\n【🔔 系统通知：User想邀请你看ta的朋友圈！】\n内容：“${targetPost.content}” ${hasImg}`;
+                        
+                        // 强指令
+                        if (i === historySource.length - 1) {
+                            content += `\n(请回复此动态并在句尾加 [ACT:MOMENT_REACT:评论内容])`;
+                        }
+                    } else {
+                        content += ` [引用卡片: (动态已被删除)]`;
                     }
-                } else {
-                    content += ` [提醒卡片: (动态已被删除)]`;
+                } 
+                else if (m.quote.type === 'merged_record') {
+                     content += `\n【⚠️ User转发了聊天记录】\n标题：${m.quote.title}\n摘要：${m.quote.summary}`;
                 }
-            } 
-            
-            // B. 朋友圈转发
-            else if (m.quote.type === 'moment_share') {
-                 content += ` [分享了一条朋友圈: "${m.quote.text}"]`;
+                else if (m.quote.text) {
+                    content += ` (引用了: "${m.quote.text}")`;
+                }
             }
-            
-            // C. 聊天记录转发 (通风报信)
-            else if (m.quote.type === 'merged_record') {
-                 content += `\n【📂 系统通知：User 转发了一份聊天记录】\n📄 标题：${m.quote.title}\n内容摘要：\n${m.quote.summary}`;
-            }
-            
-            // D. 普通引用
-            else if (m.quote.text) {
-                content += ` (引用了: "${m.quote.text}")`;
-            }
-        }
 
-        // ★ 5. 最终组装
-        const finalContent = `${senderName}: ${content}`;
-
-        return {
-            role: role,
-            parts: [{ text: finalContent }]
-        };
-    }); 
+            return `${senderName}: ${content}`;
+            
+        }).filter(line => line !== null) // 过滤掉无效行
+          .join('\n');
 
     // (回忆逻辑)
     const summaryList = chat.summaries || [];
