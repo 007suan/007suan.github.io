@@ -2890,12 +2890,6 @@ c.系统检测到该标签后，会自动帮你执行点赞和评论同步
                 handleAiTransferCommand(chat, 'rejected', pendingTransferMsg);
             }
 
-            let text = aiReply; 
-
-            const namePrefixRegex = /^[\s\S]*?(Char|Model|AI|${chat.name})[:：]\s*/i;
-
-            text = text.replace(namePrefixRegex, "");
-
             // --- [Step 2] 核心：流式分段解析 
             const codeBlockRegex = /```[\s\S]+?```/g;
             let protectedReply = cleanReply.replace(codeBlockRegex, (match) => {
