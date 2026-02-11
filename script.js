@@ -10337,3 +10337,60 @@ window.toggleTrans = function(el) {
         transBox.style.display = isHidden ? 'block' : 'none';
     }
 };
+// =======================================================
+// 处理 AI 对转账的操作 (收钱/退钱) - 修复回执版
+// =======================================================
+function handleAiTransferCommand(chat, action, transferMsg) {
+    if (!transferMsg) return;
+
+    // 1. 解析转账信息
+    let extraData = {};
+    try { 
+        extraData = JSON.parse(transferMsg.extra); 
+    } catch(e) {
+        console.error("转账数据解析失败", e);
+        return;
+    }
+    
+    // 防止重复处理
+    if (extraData.status !== 'pending') return; 
+    
+    // 2. 更新原转账消息的状态
+    extraData.status = action; // 'accepted' 或 'rejected'
+    transferMsg.extra = JSON.stringify(extraData);
+
+    // 3. 退款逻辑
+    if (action === 'rejected') {
+        if (typeof walletData !== 'undefined') {
+            const amount = parseFloat(extraData.amount || 0);
+            walletData.balance += amount;
+            
+            // 记账
+            if (walletData.bills) {
+                walletData.bills.unshift({
+                    type: 'income',
+                    amount: amount,
+                    title: '转账退回',
+                    desc: `对方退回了你的转账`,
+                    time: Date.now()
+                });
+            }
+            // 保存钱包
+            if (typeof saveWalletData === 'function') saveWalletData();
+        }
+    }
+
+    const receiptAction = action === 'accepted' ? 'accept' : 'refund';
+    const receiptText = `${receiptAction}|${extraData.amount}`;
+
+    pushMsgToData(chat, receiptText, 'char', null, 'transfer_receipt');
+
+
+    // 4. 保存与刷新
+    if (typeof saveWorldBooks === 'function') saveWorldBooks();
+    else if (typeof saveChats === 'function') saveChats();
+    
+    if (typeof renderMessages === 'function') {
+        renderMessages(chat); 
+    }
+}
