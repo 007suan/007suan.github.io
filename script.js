@@ -2138,6 +2138,59 @@ window.renderMessages = function(chatId, autoScroll = true) {
 "max-width:120px;border-radius:10px;"
             mainBubble = `<img src="${msg.text}" class="sticker-img-big" style="max-width:120px; border-radius:10px; margin: 6px 0; display:block;">`;
         } 
+            // ★★★ 1. 模拟图片 (极简版 + 下方描述) ★★★
+            else if (msg.type === 'simulated_image') {
+                const safeText = (msg.text || '').replace(/'/g, "&#39;"); // 安全转义
+                
+                // 1. 极简灰块 (去掉相机图标，只留文字)
+                // 2. 下面挂一个隐藏的 div 存描述
+                mainBubble = `
+                    <div class="msg-bubble-wrapper" style="display:flex; flex-direction:column; align-items:${isMe ? 'flex-end' : 'flex-start'}">
+                        <div class="msg-sim-image" onclick="toggleTrans(this)">
+                            <div class="msg-sim-text">Image</div>
+                        </div>
+                        <div class="msg-translation-box">
+                            ${safeText}
+                        </div>
+                    </div>
+                `;
+            }
+            // ★★★ 2. 语音消息 (防飞出修复版) ★★★
+            else if (msg.type === 'voice') {
+                const duration = Math.max(2, Math.floor((msg.text || '').length / 3));
+                const safeText = (msg.text || '').replace(/'/g, "&#39;");
+                
+                const bubbleClass = isMe ? 'msg-bubble-right' : 'msg-bubble-left';
+                const textColor = isMe ? '#FFFFFF' : '#000000';
+                
+                const aiVoiceIconUrl = 'https://i.postimg.cc/9Mwgz41s/wu-biao-ti125-20260211100521.png'; 
+                const meVoiceIconUrl = 'https://i.postimg.cc/rpPY8GC8/wu-biao-ti125-20260211100530.png'; 
+                const iconSrc = isMe ? meVoiceIconUrl : aiVoiceIconUrl;
+
+                // ★★★ 核心修复在这里！！ ★★★
+                // 以前是：const width = 60 + duration * 6; (如果是60秒，宽度会飙到420px！)
+                // 现在：加个 Math.min(220, ...) 只要超过220px，就强制按220px算！
+                const width = Math.min(220, 60 + duration * 6);
+
+                const flexDir = isMe ? 'row-reverse' : 'row';
+                const transClass = isMe ? 'trans-right' : 'trans-left';
+
+                mainBubble = `
+                    <div class="msg-bubble-wrapper" style="display:flex; flex-direction:column; align-items:${isMe ? 'flex-end' : 'flex-start'}; max-width: 80%;">
+                        
+                        <div class="${bubbleClass} msg-voice-bubble" onclick="toggleTrans(this)" 
+                             style="width: ${width}px; display: flex; flex-direction: ${flexDir}; justify-content: flex-start; gap: 8px;">
+                            <img src="${iconSrc}" style="height: 16px; width: auto; pointer-events: none; opacity:0.9;">
+                            <div class="duration" style="color:${textColor}; font-size:15px; font-weight:500; line-height:1;">${duration}"</div>
+                        </div>
+                        
+                        <div class="msg-translation-box ${transClass}">
+                            ${safeText}
+                        </div>
+                    </div>
+                `;
+            }
+
             else if (msg.type === 'image') {
                 mainBubble = `<img src="${msg.text}" class="chat-image" style="max-width:150px;border-radius:10px;" onclick="previewImage('${msg.text}')">`;
             } 
@@ -2375,6 +2428,14 @@ window.triggerAI = async function() {
         else if (m.type === 'image') {
             content = `[对方发送了一张图片]`;
         }
+        // ★ 新增：模拟图片 ★
+        else if (m.type === 'simulated_image') {
+            content = `[对方发送了一张图片，内容是：${m.text}]`;
+        }
+        // ★ 新增：语音 ★
+        else if (m.type === 'voice') {
+            content = `[对方发送了一条语音说："${m.text}"]`;
+        }
         else if (m.type === 'transfer') {
             content = `[对方发起了一条转账: ${parseFloat(content || 0).toFixed(2)}]`; 
         }
@@ -2439,57 +2500,57 @@ window.triggerAI = async function() {
         try { info = JSON.parse(pendingTransferMsg.extra); } catch(e){}
         transferDecisionPrompt = `\n【⚠️ 待处理转账】User转账 ¥${info.amount}。收下回复[CMD:RECEIVE]，退回回复[CMD:REFUND]。`;
     }
-
     // =======================================================
-    // ★★★ 新增：世界书 (World Book) 侦测逻辑 ★★★
+    // ★★★ 新增：世界书 (World Book) 侦测逻辑 V2.1 (常驻+精准版) ★★★
     // =======================================================
     let worldInfoPrompt = "";
-    const activeBookIds = chat.worldBookIds || [];
+    // 获取当前聊天绑定的文件 ID 列表 (如果没有，就用空数组)
+    const boundEntryIds = chat.activeEntryIds || [];
 
-    // 只有绑定了书，且全局变量 worldBooks 存在时才执行
-    if (activeBookIds.length > 0 && typeof worldBooks !== 'undefined') {
-        // 1. 准备搜索范围：取最近的 5 条消息 + 最后一句话
-        // (避免很久以前的关键词一直占用 token)
+    if (boundEntryIds.length > 0 && typeof worldBooks !== 'undefined') {
         const recentHistoryText = historySource.slice(-5).map(m => m.text).join('\n');
         
         let triggeredEntries = [];
-        let triggeredTitles = []; // 用于去重和日志
+        let triggeredTitles = []; 
 
-        // 2. 遍历该聊天绑定的每一本书
-        activeBookIds.forEach(bookId => {
-            const book = worldBooks.find(b => b.id === bookId);
-            if (!book) return;
-
-            // 3. 遍历书里的每一个条目
+        // 遍历所有书
+        worldBooks.forEach(book => {
             book.entries.forEach(entry => {
+                // 1. 门禁：只处理被勾选的文件 (没勾选的直接跳过)
+                if (!boundEntryIds.includes(entry.id)) return;
+
                 let isHit = false;
 
-                // A. 检查：标题是否出现？
-                if (recentHistoryText.includes(entry.title)) {
+                // ★★★ 2. 核心修改：常驻判断 ★★★
+                // 如果【关键词为空】或者【没填关键词】，直接算命中 (Always Active)！
+                if (!entry.keys || entry.keys.trim() === "") {
                     isHit = true;
-                }
-                
-                // B. 检查：关键词 (keys) 是否出现？
-                else if (entry.keys) {
-                    // 支持中文逗号和英文逗号
-                    const keys = entry.keys.split(/[,，]/).map(k => k.trim()).filter(k => k);
-                    // 只要有一个关键词匹配上，就算触发
-                    if (keys.some(k => recentHistoryText.includes(k))) {
+                } 
+                // 如果填了关键词，才去进行匹配检查
+                else {
+                    // A. 检查标题是否出现
+                    if (recentHistoryText.includes(entry.title)) {
                         isHit = true;
+                    }
+                    // B. 检查关键词是否出现
+                    else {
+                        const keys = entry.keys.split(/[,，]/).map(k => k.trim()).filter(k => k);
+                        if (keys.some(k => recentHistoryText.includes(k))) {
+                            isHit = true;
+                        }
                     }
                 }
 
-                // 4. 如果命中，加入提示词队列
+                // 3. 命中处理 (加入提示词)
                 if (isHit && !triggeredTitles.includes(entry.title)) {
-                    triggeredEntries.push(`【🌍 世界书设定: ${entry.title}】\n${entry.content}`);
+                    triggeredEntries.push(`【设定: ${entry.title}】\n${entry.content}`);
                     triggeredTitles.push(entry.title);
                 }
             });
         });
 
-        // 5. 组装成最终文本
         if (triggeredEntries.length > 0) {
-            console.log("📚 触发世界书:", triggeredTitles.join(', '));
+            console.log("⚠️ 触发设定:", triggeredTitles.join(', '));
             worldInfoPrompt = `
 ### World Info (必须严格遵守的设定) ###
 ${triggeredEntries.join('\n\n')}
@@ -2497,7 +2558,6 @@ ${triggeredEntries.join('\n\n')}
 `;
         }
     }
-
     let timePrompt = "";
     // 检查开关是否开启 (chat.enableTime !== false 是为了兼容旧数据默认开启)
     if (chat.enableTime !== false) {
@@ -2718,6 +2778,9 @@ ${triggeredEntries.join('\n\n')}
 1.人类不会在一个气泡里说完所有话
 2.**请务必**使用换行符来模拟分段发送
 3.每一行内容，我都会在前端拆分成一条独立的消息发给User
+#【发送图片/语音】
+· 发送图片描述：[IMG: 图片内容的详细描述]
+· 发送语音消息：[VOICE: 语音转换成的文字内容]
 
 #【维持表面矜持】
 **请勿滥用**！⚠️使用前请确保你上次使用在10轮对话以前，不准滥用
@@ -2871,12 +2934,11 @@ c.系统检测到该标签后，会自动帮你执行点赞和评论同步
                     }
                 }
 
-                // ★★★ C. 普通文本 (修复空气泡的核心在这里！) ★★★
+                // C. 普通文本
                 else {
-                    let { text: finalText, quote, sticker, transfer } = parseInlineTags(part, chat, me);
 
-                    // 1. 如果本段发现了引用，先存进暂存区（不管有没有字）
-                    // 这样如果这一行没字，引用就会留给下一行
+                    let { text: finalText, quote, sticker, transfer, simImg, voice } = parseInlineTags(part, chat, me);
+
                     if (quote) pendingQuote = quote;
 
                     // 2. 只有当确实有文字内容时，才发送！
@@ -2902,6 +2964,15 @@ c.系统检测到该标签后，会自动帮你执行点赞和评论同步
                     if (transfer) {
                         await new Promise(r => setTimeout(r, 1000));
                         sendAiTransfer(chat, transfer);
+                    }
+
+                    if (simImg) {
+                        await new Promise(r => setTimeout(r, 800));
+                        pushMsgToData(chat, simImg, 'char', null, 'simulated_image');
+                    }
+                    if (voice) {
+                        await new Promise(r => setTimeout(r, 1000));
+                        pushMsgToData(chat, voice, 'char', null, 'voice');
                     }
                 }
             } 
@@ -2964,6 +3035,8 @@ function parseInlineTags(rawText, chat, me) {
     let quote = null;
     let sticker = null;
     let transfer = null;
+    let simImg = null; 
+    let voice = null;
 
     // --- 1. 智能抠出 [QUOTE:...] ---
     const quoteRegex = /\[QUOTE:\s*([\s\S]+?)\]/i;
@@ -2973,9 +3046,7 @@ function parseInlineTags(rawText, chat, me) {
         const quoteContent = qMatch[1].trim(); // 提取括号里的内容
         const fullTag = qMatch[0]; 
         text = text.replace(fullTag, '').trim(); 
-        
-        // 去历史记录里找这句话 (从新到旧找)
-        // 增加容错：只要包含这段文字就算找到
+
         const targetMsg = [...chat.messages].reverse().find(m => 
             m.text && m.text.includes(quoteContent) && m.role === 'me'
         );
@@ -3012,7 +3083,21 @@ function parseInlineTags(rawText, chat, me) {
         text = text.replace(tMatch[0], '').trim();
     }
 
-    return { text, quote, sticker, transfer };
+    // 4. 抠出 [IMG:...]
+    const imgMatch = text.match(/\[IMG:\s*(.+?)\]/i);
+    if (imgMatch) {
+        simImg = imgMatch[1].trim();
+        text = text.replace(imgMatch[0], '').trim();
+    }
+
+    // 5. 抠出 [VOICE:...]
+    const voiceMatch = text.match(/\[VOICE:\s*(.+?)\]/i);
+    if (voiceMatch) {
+        voice = voiceMatch[1].trim();
+        text = text.replace(voiceMatch[0], '').trim();
+    }
+
+    return { text, quote, sticker, transfer, simImg, voice }; 
 }
 
 // (顺便把这两个小伙伴函数也带上，防止你漏掉)
@@ -4380,22 +4465,16 @@ window.openChatControl = function() {
     }
     const activeInterval = document.getElementById('detail-active-interval');
     if (activeInterval) activeInterval.value = chat.activeInterval || 60;
-    // 6. ★★★ 新增：世界书绑定回显 ★★★
+    // 6. ★★★ 新增：世界书绑定回显 (V2.0 计数版) ★★★
     const wbNamesEl = document.getElementById('cc-wb-names');
     if (wbNamesEl) {
-        // 获取当前聊天绑定的世界书 ID 列表
-        const boundIds = chat.worldBookIds || [];
-        if (boundIds.length === 0) {
+        const count = (chat.activeEntryIds || []).length;
+        if (count === 0) {
             wbNamesEl.innerText = "Link settings to this chat";
             wbNamesEl.style.color = "#999";
         } else {
-            // 找到对应的书名
-            const names = boundIds.map(id => {
-                const book = worldBooks.find(b => b.id === id);
-                return book ? book.title : null;
-            }).filter(n => n); // 过滤掉无效的
-            
-            wbNamesEl.innerText = names.join(', ');
+            // 显示已选数量
+            wbNamesEl.innerText = `${count} entries active`;
             wbNamesEl.style.color = "#5856D6"; // 紫色高亮
         }
     }
@@ -10059,97 +10138,202 @@ function moveEntryToBook(entryId, targetBookId) {
         showSystemAlert(`已移动到 ${targetBook.title}`);
     }
 }
-// ================= World Book Binder (绑定逻辑) =================
+// ================= World Book Binder V2.0 (精准文件选择版) =================
 
 function showWorldBookSelector(chat) {
-    // 1. 创建蒙层
+    // 1. 数据迁移 (兼容旧版本：如果只有书ID，就把书里所有文件都选上)
+    if (!chat.activeEntryIds) chat.activeEntryIds = [];
+    if (chat.worldBookIds && chat.worldBookIds.length > 0) {
+        chat.worldBookIds.forEach(bid => {
+            const book = worldBooks.find(b => b.id === bid);
+            if (book) {
+                book.entries.forEach(e => {
+                    if (!chat.activeEntryIds.includes(e.id)) chat.activeEntryIds.push(e.id);
+                });
+            }
+        });
+        chat.worldBookIds = []; // 迁移完成，清空旧数据
+    }
+
+    // 2. 创建弹窗
     const overlay = document.createElement('div');
-    overlay.className = 'vis-overlay'; // 复用你现有的蒙层样式
+    overlay.className = 'vis-overlay'; 
     overlay.style.display = 'flex';
     setTimeout(() => overlay.classList.add('active'), 10);
     
-    // 2. 创建抽屉盒子
     const drawer = document.createElement('div');
-    drawer.className = 'vis-drawer'; // 复用现有的抽屉样式
+    drawer.className = 'vis-drawer'; 
     drawer.onclick = (e) => e.stopPropagation();
 
-    // 3. 头部
     drawer.innerHTML = `
         <div class="vis-header">
             <span style="flex:1"></span>
-            <span class="vis-title">Select World Books</span>
+            <span class="vis-title">Select Entries</span>
             <span class="vis-done-btn">Done</span>
         </div>
-        <div id="wb-selector-list" style="overflow-y:auto; max-height:60vh; padding:0 16px;"></div>
+        <div id="wb-selector-list" style="overflow-y:auto; max-height:60vh; padding:0 16px 40px;"></div>
     `;
     
-    // 4. 渲染列表
     const list = drawer.querySelector('#wb-selector-list');
     
-    // 确保 chat 对象有 worldBookIds 数组
-    if (!chat.worldBookIds) chat.worldBookIds = [];
-    
     if (worldBooks.length === 0) {
-        list.innerHTML = `<div style="padding:20px; text-align:center; color:#999;">暂无世界书，请先去 Browse 创建</div>`;
+        list.innerHTML = `<div style="padding:30px; text-align:center; color:#999;">空空如也...<br>先去 Browse 创建世界书吧</div>`;
     } else {
+        // --- 渲染二级列表 ---
         worldBooks.forEach(book => {
-            const row = document.createElement('div');
-            // iOS 设置列表样式
-            row.style.cssText = `
-                display:flex; align-items:center; justify-content:space-between;
-                padding: 16px 0; border-bottom: 0.5px solid #E5E5EA; cursor:pointer;
+            // 1. 书名 (分组头)
+            const groupHeader = document.createElement('div');
+            groupHeader.style.cssText = `
+                padding: 16px 0 8px; font-size: 14px; font-weight: 700; color: #8E8E93;
+                display: flex; align-items: center; cursor: pointer; user-select: none;
+            `;
+            // 计算这本书里选了几个
+            const selectedCount = book.entries.filter(e => chat.activeEntryIds.includes(e.id)).length;
+            const isFull = selectedCount === book.entries.length && book.entries.length > 0;
+            
+            groupHeader.innerHTML = `
+                <span style="margin-right:6px; transition:0.2s;" class="arrow-icon">▼</span>
+                <span style="flex:1;">${book.title}</span>
+                <span style="font-size:12px; font-weight:normal; background:${selectedCount>0 ? '#007aff':'#eee'}; color:${selectedCount>0?'#fff':'#999'}; padding:2px 8px; border-radius:10px;">${selectedCount}/${book.entries.length}</span>
             `;
             
-            // 检查是否已勾选
-            const isSelected = chat.worldBookIds.includes(book.id);
+            // 2. 文件容器
+            const entriesContainer = document.createElement('div');
+            entriesContainer.style.cssText = `padding-left: 10px; margin-bottom: 10px; transition: all 0.3s ease; overflow: hidden;`;
             
-            row.innerHTML = `
-                <div style="font-size:16px; font-weight:500;">${book.title}</div>
-                <div class="checkmark" style="color:#007AFF; font-size:18px; display:${isSelected ? 'block' : 'none'}">✓</div>
-            `;
-            
-            row.onclick = () => {
-                // 切换勾选状态
-                if (chat.worldBookIds.includes(book.id)) {
-                    chat.worldBookIds = chat.worldBookIds.filter(id => id !== book.id);
-                    row.querySelector('.checkmark').style.display = 'none';
-                } else {
-                    chat.worldBookIds.push(book.id);
-                    row.querySelector('.checkmark').style.display = 'block';
-                }
-                // ★ 立即保存聊天数据，确保刷新不丢 ★
-                saveChatAndRefresh(chat);
+            // 3. 渲染文件列表
+            if (book.entries.length === 0) {
+                entriesContainer.innerHTML = `<div style="padding:10px; font-size:12px; color:#ccc;">(空文件夹)</div>`;
+            } else {
+                book.entries.forEach(entry => {
+                    const row = document.createElement('div');
+                    row.style.cssText = `
+                        display:flex; align-items:center; justify-content:space-between;
+                        padding: 12px 0; border-bottom: 0.5px solid #f0f0f0; cursor:pointer;
+                    `;
+                    
+                    const isChecked = chat.activeEntryIds.includes(entry.id);
+                    
+                    row.innerHTML = `
+                        <div style="font-size:15px; color:#333;">${entry.title}</div>
+                        <div class="checkmark" style="color:#007AFF; font-size:18px; display:${isChecked ? 'block' : 'none'}">✓</div>
+                    `;
+                    
+                    // 点击勾选文件
+                    row.onclick = () => {
+                        if (chat.activeEntryIds.includes(entry.id)) {
+                            chat.activeEntryIds = chat.activeEntryIds.filter(id => id !== entry.id);
+                            row.querySelector('.checkmark').style.display = 'none';
+                        } else {
+                            chat.activeEntryIds.push(entry.id);
+                            row.querySelector('.checkmark').style.display = 'block';
+                        }
+                        
+                        // 实时更新头部计数
+                        const newCount = book.entries.filter(e => chat.activeEntryIds.includes(e.id)).length;
+                        groupHeader.children[2].innerText = `${newCount}/${book.entries.length}`;
+                        groupHeader.children[2].style.background = newCount > 0 ? '#007aff' : '#eee';
+                        groupHeader.children[2].style.color = newCount > 0 ? '#fff' : '#999';
+                        
+                        saveChatAndRefresh(chat);
+                        updateControlPanelText(chat);
+                    };
+                    entriesContainer.appendChild(row);
+                });
+            }
 
-                const wbNamesEl = document.getElementById('cc-wb-names');
-                if (wbNamesEl) {
-                    const boundIds = chat.worldBookIds || [];
-                    if (boundIds.length === 0) {
-                        wbNamesEl.innerText = "Link settings to this chat";
-                        wbNamesEl.style.color = "#999";
-                    } else {
-                        const names = boundIds.map(id => {
-                            const b = worldBooks.find(wb => wb.id === id);
-                            return b ? b.title : null;
-                        }).filter(n => n);
-                        wbNamesEl.innerText = names.join(', ');
-                        wbNamesEl.style.color = "#5856D6";
-                    }
-                }
+            // 折叠/展开逻辑
+            let isExpanded = true;
+            groupHeader.onclick = () => {
+                isExpanded = !isExpanded;
+                entriesContainer.style.display = isExpanded ? 'block' : 'none';
+                groupHeader.querySelector('.arrow-icon').style.transform = isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)';
             };
-            
-            list.appendChild(row);
+
+            list.appendChild(groupHeader);
+            list.appendChild(entriesContainer);
         });
     }
 
-    // 5. 绑定关闭事件
+    // 关闭逻辑
     const closeFunc = () => {
         overlay.classList.remove('active');
         setTimeout(() => overlay.remove(), 300);
     };
-    
     overlay.onclick = closeFunc;
     drawer.querySelector('.vis-done-btn').onclick = closeFunc;
 
     overlay.appendChild(drawer);
     document.body.appendChild(overlay);
 }
+
+// 辅助：更新控制面板上的文字
+function updateControlPanelText(chat) {
+    const wbNamesEl = document.getElementById('cc-wb-names');
+    if (wbNamesEl) {
+        const count = (chat.activeEntryIds || []).length;
+        if (count === 0) {
+            wbNamesEl.innerText = "Link settings to this chat";
+            wbNamesEl.style.color = "#999";
+        } else {
+            wbNamesEl.innerText = `${count} entries active`;
+            wbNamesEl.style.color = "#5856D6"; 
+        }
+    }
+}
+// ================= 模拟消息功能 (自定义弹窗版) =================
+
+// 1. 发送图片描述
+function handleSimulatedImage() {
+    // 检查是否有自定义弹窗，没有则回退到原生
+    if (typeof showPromptDialog === 'function') {
+        showPromptDialog("发送图片", "请描述图片内容（AI能看见哦）：", (desc) => {
+            if (desc && desc.trim()) {
+                const chat = chatsData.find(c => c.id === currentChatId);
+                pushMsgToData(chat, desc, 'me', null, 'simulated_image');
+                // 关闭菜单
+                const menu = document.getElementById('chat-plus-menu');
+                if(menu) menu.classList.remove('active');
+            }
+        });
+    } else {
+        // 兜底原生
+        const desc = prompt("【发送图片】\n请描述这张图片的内容：", "一只在晒太阳的猫咪");
+        if (desc && desc.trim()) {
+            const chat = chatsData.find(c => c.id === currentChatId);
+            pushMsgToData(chat, desc, 'me', null, 'simulated_image');
+            document.getElementById('chat-plus-menu').classList.remove('active');
+        }
+    }
+}
+
+// 2. 发送语音
+function handleSimulatedVoice() {
+    if (typeof showPromptDialog === 'function') {
+        showPromptDialog("发送语音", "请输入要转换的文字内容：", (text) => {
+            if (text && text.trim()) {
+                const chat = chatsData.find(c => c.id === currentChatId);
+                pushMsgToData(chat, text, 'me', null, 'voice');
+                const menu = document.getElementById('chat-plus-menu');
+                if(menu) menu.classList.remove('active');
+            }
+        });
+    } else {
+        // 兜底原生
+        const text = prompt("【发送语音】\n请输入语音转换的文字：", "");
+        if (text && text.trim()) {
+            const chat = chatsData.find(c => c.id === currentChatId);
+            pushMsgToData(chat, text, 'me', null, 'voice');
+            document.getElementById('chat-plus-menu').classList.remove('active');
+        }
+    }
+}
+// 切换显示气泡下面的“翻译/描述框”
+window.toggleTrans = function(el) {
+    // 找到气泡容器 (.msg-bubble-container) 里的下一个兄弟元素
+    const transBox = el.nextElementSibling;
+    if (transBox && transBox.classList.contains('msg-translation-box')) {
+        const isHidden = transBox.style.display === 'none' || transBox.style.display === '';
+        transBox.style.display = isHidden ? 'block' : 'none';
+    }
+};

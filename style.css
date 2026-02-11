@@ -1977,10 +1977,10 @@ html {
 .chl-avatar { width: 44px; height: 44px; border-radius: 12px; background-color: #ddd; background-size: cover; background-position: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
 .chl-frame {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 120%;
-    height: 120%;
+    top: 2;
+    left: 2;
+    width: 115%;
+    height: 115%;
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -2485,9 +2485,103 @@ body.offline-active #chat-msg-area {
 .multi-act-btn.delete { color: #ff3b30; }
 /* --- 3. 底部多选栏粗边框 --- */
 .msg-multi-bar {
-    border-top: 1px solid #565656 !important; /* 加粗到3px */
+    border-top: 1px solid rgba(0,0,0,0.0.08);
     box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
 }
+/* ================= 模拟消息样式 ================= */
+.msg-sim-image {
+    width: 150px;
+    height: 150px;
+    background-color: #EFEFF4; /* 很浅的灰 */
+    border-radius: 8px;
+    /* 关键：内容布局 */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 0.5px solid rgba(0,0,0,0.05);
+    margin-bottom: 5px !important;
+}
+
+/* 图片中间的文字 "Image" */
+.msg-sim-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #B0B0B5; /* 浅灰色文字 */
+    margin-top: 0px; /* 居中 */
+}
+
+/* --- 2. 语音条 (精致瘦版) --- */
+.msg-voice-bubble {
+    padding: 0 16px;   /* 上下不要padding，靠height撑开 */
+    height: 35px;      /* 固定高度，看着很瘦 */
+    border-radius: 12px; /* 圆角是高度的一半 */
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: opacity 0.2s;
+    margin-bottom: 5px !important;
+}
+.msg-voice-bubble:active { opacity: 0.7; }
+
+/* 我发的语音 (深色背景) */
+.msg-bubble-right.msg-voice-bubble {
+    background-color: #565656 !important;
+    color: #FFFFFF !important;
+    border: none !important;
+}
+
+/* AI发的语音 (浅色背景) */
+.msg-bubble-left.msg-voice-bubble {
+    background-color: #E9E8E9 !important;
+    color: #000000 !important;
+    border: none !important;
+}
+/* ================= 翻译/描述框 ================= */
+.msg-translation-box {
+    display: none; 
+    margin-top: 6px;
+    padding: 8px 12px;
+    background: #FFFFFF;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #333;
+    line-height: 1.4;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    max-width: 240px;
+    position: relative;
+    animation: fadeIn 0.2s ease;
+    margin-bottom: 5px !important; }
+
+/* 小尖角通用样式 */
+.msg-translation-box::before {
+    content: "";
+    position: absolute;
+    top: -6px;            /* 往上提 */
+    width: 12px; height: 12px;
+    background: #FFFFFF;
+    transform: rotate(45deg);
+    box-shadow: -1px -1px 1px rgba(0,0,0,0.03); }
+.msg-translation-box.trans-right {
+    align-self: flex-end; 
+    margin-right: 4px;
+    background: #fcfcfc; }
+/* 尖角在右边 */
+.msg-translation-box.trans-right::before {
+    right: 15px; 
+    left: auto;
+    background: #fcfcfc; }
+/* ★★★ 情况B：对方发的消息 (靠左) ★★★ */
+.msg-translation-box.trans-left {
+    align-self: flex-start;
+    margin-left: 4px; }
+/* 尖角在左边 */
+.msg-translation-box.trans-left::before {
+    left: 15px; 
+    right: auto; }
 /* ============================================================
    6.4. 表情包系统 (Sticker System) 
    ============================================================ */
@@ -2496,12 +2590,10 @@ body.offline-active #chat-msg-area {
 .sticker-picker-container {
     position: fixed; bottom: 0; left: 0; width: 100%; height: 100%;
     z-index: 20000 !important;
-    display: none; align-items: flex-end; pointer-events: none;
-}
+    display: none; align-items: flex-end; pointer-events: none; }
 
 .sticker-picker-container.active {
-    display: flex !important; pointer-events: auto !important;
-}
+    display: flex !important; pointer-events: auto !important; }
 
 .sticker-glass-panel {
     width: 100%; height: 45vh;
@@ -4620,7 +4712,7 @@ body, button, input, textarea, select, .edit-text {
    TYPE B: 聊天详情页顶栏 (改：不透明纯白版)
    ------------------------------------------------------------ */
 .chat-header-layer {
-    height: 110px !important;
+    height: 120px !important;
     padding-top: 40px !important; /* 保持原有的位置 */
     
     /* ★ 1. 背景改成纯白 */
@@ -5111,7 +5203,7 @@ body, button, input, textarea, select, .edit-text {
 
 /* --- 5. 详情页列表 (白色干净版) --- */
 .wb-navbar-inline {
-    height: 90px; padding-top: 44px; /* 降低高度 */
+    height: 90px; padding-top: 50px; /* 降低高度 */
     background: rgba(255,255,255,0.95);
     border-bottom: 0.5px solid rgba(0,0,0,0.15);
     display: flex; align-items: center; justify-content: space-between;
@@ -5427,4 +5519,41 @@ body, button, input, textarea, select, .edit-text {
 /* 稍微调整一下标题的下边距，让它离关键词近一点 */
 .wb-input-line {
     margin-bottom: 5px; /* 之前是 10px */
+}
+/* --- 世界书选择器 (分组样式) --- */
+.vis-group-header {
+    background: #F2F2F7;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #8E8E93;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.vis-group-item {
+    background: #fff;
+    padding: 12px 16px; 
+    border-bottom: 0.5px solid #E5E5EA;
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between;
+    cursor: pointer;
+    /* 给个左边距，显得是里面的 */
+    padding-left: 24px; 
+}
+.vis-group-item:active { background-color: #f9f9f9; }
+
+.vis-check {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 1px solid #C7C7CC;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 14px;
+}
+.vis-check.checked {
+    background: #007AFF; border-color: #007AFF;
 }

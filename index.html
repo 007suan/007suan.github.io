@@ -927,7 +927,7 @@
             </div>
 <div class="s-item" onclick="openWorldBookApp()">
     <div class="s-left">
-        <img src="https://i.postimg.cc/769JkR9F/wu-biao-ti115-20260101190850.png" class="ios-icon-img">
+        <img src="https://i.postimg.cc/jjFks6Qx/wu-biao-ti125-20260211100644.png" class="ios-icon-img">
         <span style="margin-left: 12px;">世界书</span>
     </div>
     <span class="s-arrow">›</span>
@@ -1062,24 +1062,24 @@
         <svg viewBox="0 0 24 24" width="24" height="24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
     </div>
     
-    <div class="wx-p3-footer-text edit-text">有你不是很坏。</div>
+    <div class="wx-p3-footer-text edit-text" id="wx-profile-text">有你不是很坏。</div>
 </div>
             <div class="wx-p3-container">
                 <div class="wx-p3-header-area">
-                    <div class="wx-p3-bubble"><span class="edit-text">你的存在 即之我所爱 = > u < =</span></div>
-                    <div class="wx-p3-bubble-right"><span class="edit-text">杏树杏树 今天幸不幸福。</span></div>
+                    <div class="wx-p3-bubble"><span class="edit-text" id="wx-profile-text-1">你的存在 即之我所爱 = > u < =</span></div>
+                    <div class="wx-p3-bubble-right"><span class="edit-text" id="wx-profile-text-2">杏树杏树 今天幸不幸福。</span></div>
                     <div class="wx-small-avatar-right upload-img" id="wx_p3_right_avatar"></div>
                     <div class="wx-big-avatar-new upload-img sync-avatar" id="wx_p2_big_avatar"></div>
                 </div>
                 <div class="wx-p3-info-block">
                     <div class="wx-p3-name edit-text sync-name" id="wx_p2_name">昵称</div>
-                    <div class="wx-p3-id edit-text">成分复杂、</div>
-                    <div class="wx-p3-desc edit-text">你好像过的很好，<br>迫不及待地抹去我的存在。</div>
+                    <div class="wx-p3-id edit-text" id="wx-profile-text-5">成分复杂、</div>
+                    <div class="wx-p3-desc edit-text" id="wx-profile-text-6">你好像过的很好，<br>迫不及待地抹去我的存在。</div>
                 </div>
                 <div class="wx-p3-tags">
-                    <div class="wx-p3-tag edit-text">让过去过去，让将来将来</div>
-                    <div class="wx-p3-tag edit-text">淡淡的就会顺顺的。</div>
-                    <div class="wx-p3-tag grey edit-text">誓言是一场有时差的雨</div>
+                    <div class="wx-p3-tag edit-text" id="wx-profile-text-7">让过去过去，让将来将来</div>
+                    <div class="wx-p3-tag edit-text" id="wx-profile-text-8">淡淡的就会顺顺的。</div>
+                    <div class="wx-p3-tag grey edit-text" id="wx-profile-text-9">誓言是一场有时差的雨</div>
       </div>
          </div>
             </div>
@@ -1103,11 +1103,11 @@
             <div class="chl-text-info">
                 <div style="display: flex; align-items: center; gap: 6px;">
                     <div class="chl-name" id="chat_layer_name">Name</div>
-                    <div class="chl-status-pill">
+                    <div class="chl-status-pill edit-text">
                          <span style="color:#555">★</span> <span id="chat-mood-text">i luv u <3…🩶</span>
                     </div>
                 </div>
-                <div class="chl-status edit-text">˚❅𝓦𝓲𝓷𝓽𝓮𝓻 𝓲𝓼 𝓬𝓸𝓶𝓲𝓷𝓰✲*</div>
+                <div class="chl-status edit-text" id="chat-mood-text-2">˚❅𝓦𝓲𝓷𝓽𝓮𝓻 𝓲𝓼 𝓬𝓸𝓶𝓲𝓷𝓰✲*</div>
             </div>
         </div> 
 
@@ -1160,8 +1160,7 @@
         <img src="https://i.postimg.cc/xCZd1nbx/wu-biao-ti119-20260117101708.png" class="plus-icon-img">
         <div class="plus-label">相册</div>
     </div>
-
-    <div class="plus-item" onclick="alert('还没搓出来...')">
+<div class="plus-item" onclick="handleSimulatedImage()">
         <img src="https://i.postimg.cc/j51jStJv/wu-biao-ti119-20260117101925.png" class="plus-icon-img">
         <div class="plus-label">相机</div>
     </div>
@@ -1171,7 +1170,7 @@
         <div class="plus-label">转账</div>
     </div>
 
-    <div class="plus-item" onclick="alert('还没搓完！...')">
+    <div class="plus-item" onclick="handleSimulatedVoice()">
         <img src="https://i.postimg.cc/SNr6W67H/wu-biao-ti124-20260209132051.png" class="plus-icon-img">
         <div class="plus-label">语音</div>
     </div>
@@ -1933,7 +1932,7 @@
     <div class="vis-drawer" onclick="event.stopPropagation()">
         <div class="vis-header">
             <span style="flex:1"></span>
-            <span class="vis-title">Who can see this?</span>
+            <span class="vis-title">你想让谁看见？</span>
             <span class="vis-done-btn" onclick="toggleVisibilitySelector()">确定</span>
         </div>
         
@@ -1968,7 +1967,7 @@
         <span class="wb-nav-action" onclick="closeWorldBook()">Done</span>
     </div>
 </div>
-            <span class="wb-large-title">Browse</span>
+            <span class="wb-large-title">World Book</span>
             
             <div class="wb-search-bar">
                 <span style="margin-right:6px">★</span> Search
