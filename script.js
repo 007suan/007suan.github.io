@@ -2410,79 +2410,88 @@ window.triggerAI = async function() {
     // (历史消息处理)
     const limit = chat.contextLimit || 20;
     const historySource = (chat.messages || []).slice(-limit);
-    
-    // =======================================================
-    // 超级透视眼 
-    // =======================================================
+
+    // 构建历史上下文
     const history = historySource.map((m, i) => { 
-        let content = m.text;
+        // ★ 1. 身份锚点 (解决 AI 脸盲的核心)
+        const role = (m.role === 'me') ? 'user' : 'model';
+        const senderName = (m.role === 'me') ? (me.name || 'User') : (chat.name || 'Char');
+
+        // ★ 2. 原始内容
+        let content = m.text || "";
         
-        // 1. 处理特殊消息类型 (动作/转账/表情包/图片)
+        // --- 3. 超级透视眼逻辑 (处理特殊消息) ---
+        
+        // A. 动作消息
         if (m.type === 'action') {
             content = `((动作: ${content}))`;
         }
+        // B. 表情包
         else if (m.type === 'sticker') {
-            content = `[对方发送了一个表情包: ${m.desc || '未知表情包'}]`; 
+            // 这里加个保底，防止 m.desc 为空
+            content = `[发送了一个表情包: ${m.desc || '未知表情'}]`; 
         }
-        // ★★★ 新增：专门处理普通图片 ★★★
+        // C. 普通图片 (上传的)
         else if (m.type === 'image') {
-            content = `[对方发送了一张图片]`;
+            content = `[发送了一张图片]`;
         }
-        // ★ 新增：模拟图片 ★
+        // D. 模拟图片 (带描述的)
         else if (m.type === 'simulated_image') {
-            content = `[对方发送了一张图片，内容是：${m.text}]`;
+            // 这里的 m.text 是图片描述，万一为空给个默认值
+            content = `[发送了一张图片，内容是：${m.text || '未描述'}]`;
         }
-        // ★ 新增：语音 ★
+        // E. 语音消息
         else if (m.type === 'voice') {
-            content = `[对方发送了一条语音说："${m.text}"]`;
+            content = `[发送了一条语音说："${m.text || '...' }"]`;
         }
+        // F. 转账
         else if (m.type === 'transfer') {
-            content = `[对方发起了一条转账: ${parseFloat(content || 0).toFixed(2)}]`; 
+            content = `[发起了一条转账: ¥${parseFloat(content || 0).toFixed(2)}]`; 
         }
 
-        // 2. 处理引用/卡片内容
+        // --- 4. 处理引用/卡片 (Quote Logic) ---
         if (m.quote) {
-            // --- A. 朋友圈被艾特 (Mention Card) ---
+            // A. 朋友圈被艾特
             if (m.quote.type === 'mention_card') {
-                // 尝试去朋友圈数据库找原文
                 const targetPost = momentsData.find(p => String(p.id) === String(m.quote.id));
                 if (targetPost) {
                     const hasImg = targetPost.image ? '(包含图片)' : '';
-                    content += `\n【🔔 系统通知：user想邀请你看ta的朋友圈！】\n其关联内容：“${targetPost.content}” ${hasImg}`;
+                    // 加上换行，让 AI 看得更清楚
+                    content += `\n【🔔 系统通知：User 想邀请你看 ta 的朋友圈！】\n关联动态：“${targetPost.content}” ${hasImg}`;
                     
-                    // 如果是最后一条，触发强指令
+                    // 强指令 (放在最后一条才生效)
                     if (i === historySource.length - 1) {
-                        content += `\n【🔴 强指令】请回复User并在句尾加 [ACT:MOMENT_REACT:评论内容]`;
+                        content += `\n【🔴 强指令】请回复此动态并在句尾加 [ACT:MOMENT_REACT:你的评论]`;
                     }
                 } else {
                     content += ` [提醒卡片: (动态已被删除)]`;
                 }
             } 
             
-            // --- B. 朋友圈转发 (Moment Share) ---
+            // B. 朋友圈转发
             else if (m.quote.type === 'moment_share') {
                  content += ` [分享了一条朋友圈: "${m.quote.text}"]`;
             }
             
-            // --- C. ★★★ 新增：聊天记录卡片 (通风报信！) ★★★ ---
+            // C. 聊天记录转发 (通风报信)
             else if (m.quote.type === 'merged_record') {
-                 // 把卡片里的摘要提取出来，喂给 AI
-                 content += `\n【📂 系统通知：User转发了一份聊天记录】\n📄 标题：${m.quote.title}\n内容摘要：\n${m.quote.summary}`;
+                 content += `\n【📂 系统通知：User 转发了一份聊天记录】\n📄 标题：${m.quote.title}\n内容摘要：\n${m.quote.summary}`;
             }
             
-            // --- D. 普通引用 ---
-            else {
-                // 防止 merged_record 误入这里 (因为它没有 text 属性)
-                if (m.quote.text) {
-                    content += ` (引用了: "${m.quote.text}")`;
-                }
+            // D. 普通引用
+            else if (m.quote.text) {
+                content += ` (引用了: "${m.quote.text}")`;
             }
         }
 
-        // 拼接说话人名字
-        const speaker = m.role === 'me' ? (me.name || 'User') : char.name;
-        return `${speaker}: ${content}`;
-    }).join('\n');
+        // ★ 5. 最终组装
+        const finalContent = `${senderName}: ${content}`;
+
+        return {
+            role: role,
+            parts: [{ text: finalContent }]
+        };
+    }); 
 
     // (回忆逻辑)
     const summaryList = chat.summaries || [];
@@ -2778,8 +2787,10 @@ ${triggeredEntries.join('\n\n')}
 1.你可以使用换行符来模拟分段发送
 2.每一行内容，我都会在前端拆分成一条独立的消息发给User
 #【发送图片/语音】
-· 发送图片描述：[IMG: 图片内容的详细描述]
-· 发送语音消息：[VOICE: 语音转换成的文字内容]
+· 发送图片描述：
+格式：[IMG: 图片内容的详细描述]
+· 发送语音消息：
+格式：[VOICE: 语音转换成的文字内容]
 
 #【维持表面矜持】
 **请勿滥用**！⚠️使用前请确保你上次使用在10轮对话以前，不准滥用
@@ -2791,11 +2802,6 @@ ${triggeredEntries.join('\n\n')}
 · **右边（重发内容）**：是**找补/掩饰**，假装冷静、傲娇、找借口或转移话题
 4.**注意**：默认User只能看到右边的假话，但你的情绪要基于左边的真话来延续
 5.**格式**：{{被撤回的话::撤回后发的话}}
-
-
-#【代码输出规则】
-如果你需要输出 HTML、CSS、JS 或任何代码片段（例如世界书的小游戏代码）：
-**必须**使用 Markdown 代码块包裹
 
 ###⚠️你需要避免的###
 #【**避雷指南**】
@@ -2838,8 +2844,14 @@ a.⚠️仅当你在对话情境中看到【系统提醒：User 发送了提醒�
 b.**操作要求**：在回复完 User 的私聊后，必须在句尾加上标签：[ACT:MOMENT_REACT:你的评论内容]
 c.系统检测到该标签后，会自动帮你执行点赞和评论同步
 3.【引用/针对回复功能】
-· 若你觉得有必要**针对**User刚才说的某句话进行特定回复（比如反驳、强调、调侃），请在回复中加上标签：[QUOTE: 消息原文]
+· 你觉得有必要**针对**User刚才说的某句话进行特定回复（比如反驳、强调、调侃），则可以引用user的话
+格式：[QUOTE: 消息原文]
 · 系统会自动将其渲染为引用气泡
+
+#【代码输出规则】
+如果世界书要求你输出 HTML代码，
+**必须**使用 Markdown 代码块包裹
+
 
 ##【当前对话情境】##
 · 注意：请你保持对话连贯！
@@ -3815,10 +3827,11 @@ window.updatePlusDots = function(el) {
     document.getElementById('p-dot-1').className = pageIndex === 1 ? 'plus-dot active' : 'plus-dot';
 };
 
-// ====================
-// [新版] 切换加号菜单 (悬浮窗模式)
-// ====================
+// 切换加号菜单
 window.toggleChatMenu = function() {
+
+    if(window.event) window.event.stopPropagation();
+
     const menu = document.getElementById('chat-plus-menu');
     const btn = document.querySelector('.cf-icon-btn'); // 加号按钮
     
@@ -3957,9 +3970,7 @@ window.openEditOverlay = function(text) {
         input.value = text;
         overlay.style.display = 'flex';
         input.focus();
-    } else {
-        alert("好像有点错误...");
-    }
+    } 
 };
 
 // === 新增：关闭编辑弹窗 ===
@@ -6457,7 +6468,6 @@ document.addEventListener('DOMContentLoaded', () => {
 window.showGlobalConfirm = function(title, desc, onConfirm) {
     const modal = document.getElementById('global-confirm-modal');
     if(!modal) {
-        alert("发生了点错误...");
         return;
     }
     
@@ -6680,12 +6690,15 @@ function initStickerSystem() {
 
 // 菜单开关
 window.toggleStickerMenu = function() {
+
+    if(window.event) window.event.stopPropagation();
+
     const picker = document.getElementById('sticker-picker-overlay');
     if (!picker) return;
     
     if(isMultiSelectMode && window.exitMultiSelect) exitMultiSelect();
 
-    picker.style.zIndex = '20000'; // 确保比普通弹窗低，但比页面高
+    picker.style.zIndex = '20000'; 
     if (picker.classList.contains('active')) {
         picker.classList.remove('active');
         document.body.classList.remove('menu-open');
