@@ -10,6 +10,7 @@ const MEMORY_KEY = 'huanhuan_System_Data_v6';
 let contactsData = []; // 角色列表
 let personasData = []; // 我的面具列表
 let chatsData = [];    // 会话列表
+let isInnerVoiceEnabled = localStorage.getItem('huanhuan_inner_voice') === 'true'; 
 let apiPresets = [];   // API预设
 let creatorMode = 'character'; // 当前捏人模式
 let currentEditingId = null;   // 当前编辑ID
@@ -2091,16 +2092,14 @@ window.renderMessages = function(chatId, autoScroll = true) {
         } 
         else {
             const row = document.createElement('div');
-            
-            // ★★★ 核心修改：如果是 Chat History 卡片，强制要把尾巴去掉！ ★★★
+
             let hasTail = !nextMsg || nextMsg.role !== msg.role || (nextMsg.timestamp - msg.timestamp > 30 * 60 * 1000);
             if (msg.type === 'merged_record') {
                 hasTail = false; // 强制隐藏小尾巴
             }
             // ★★★ 修改结束 ★★★
-            
-            row.className = `msg-row ${isMe ? 'me' : 'other'} ${hasTail ? 'has-tail' : ''} ${animClass}`;
-            row.id = `msg-${msg.timestamp}`;
+const tailClass = (hasTail && msg.type !== 'inner_voice') ? 'has-tail' : '';
+row.className = `msg-row ${isMe ? 'me' : 'other'} ${tailClass} ${animClass} ${msg.type === 'inner_voice' ? 'inner-voice-row' : ''}`;
 
             // 头像逻辑
             const bgStyle = getAvatarStyle(isMe ? persona.avatar : (contact ? contact.avatar : ''));
@@ -2138,12 +2137,10 @@ window.renderMessages = function(chatId, autoScroll = true) {
 "max-width:120px;border-radius:10px;"
             mainBubble = `<img src="${msg.text}" class="sticker-img-big" style="max-width:120px; border-radius:10px; margin: 6px 0; display:block;">`;
         } 
-            // ★★★ 1. 模拟图片 (极简版 + 下方描述) ★★★
+            // 模拟图片 
             else if (msg.type === 'simulated_image') {
-                const safeText = (msg.text || '').replace(/'/g, "&#39;"); // 安全转义
-                
-                // 1. 极简灰块 (去掉相机图标，只留文字)
-                // 2. 下面挂一个隐藏的 div 存描述
+                const safeText = (msg.text || '').replace(/'/g, "&#39;"); 
+
                 mainBubble = `
                     <div class="msg-bubble-wrapper" style="display:flex; flex-direction:column; align-items:${isMe ? 'flex-end' : 'flex-start'}">
                         <div class="msg-sim-image" onclick="toggleTrans(this)">
@@ -2155,7 +2152,7 @@ window.renderMessages = function(chatId, autoScroll = true) {
                     </div>
                 `;
             }
-            // ★★★ 2. 语音消息 (防飞出修复版) ★★★
+            // 语音消息
             else if (msg.type === 'voice') {
                 const duration = Math.max(2, Math.floor((msg.text || '').length / 3));
                 const safeText = (msg.text || '').replace(/'/g, "&#39;");
@@ -2167,9 +2164,6 @@ window.renderMessages = function(chatId, autoScroll = true) {
                 const meVoiceIconUrl = 'https://i.postimg.cc/rpPY8GC8/wu-biao-ti125-20260211100530.png'; 
                 const iconSrc = isMe ? meVoiceIconUrl : aiVoiceIconUrl;
 
-                // ★★★ 核心修复在这里！！ ★★★
-                // 以前是：const width = 60 + duration * 6; (如果是60秒，宽度会飙到420px！)
-                // 现在：加个 Math.min(220, ...) 只要超过220px，就强制按220px算！
                 const width = Math.min(220, 60 + duration * 6);
 
                 const flexDir = isMe ? 'row-reverse' : 'row';
@@ -2194,6 +2188,26 @@ window.renderMessages = function(chatId, autoScroll = true) {
             else if (msg.type === 'image') {
                 mainBubble = `<img src="${msg.text}" class="chat-image" style="max-width:150px;border-radius:10px;" onclick="previewImage('${msg.text}')">`;
             } 
+            // ★★★ [优化版] 渲染心声气泡逻辑 ★★★
+            else if (msg.type === 'inner_voice') {
+                const favorability = msg.extra || '??';
+                
+                // 1. 强制重置头像状态！
+                groupShownAvatar = false; 
+                lastRole = null; 
+
+                // 2. 气泡结构
+                mainBubble = `
+                    <div class="inner-voice-float-layer">
+                        <div class="thought-bubble-main">
+                            <div class="thought-text">꩜ ${msg.text}</div>
+                            <div class="thought-fav">★ 好感度: ${favorability}</div>
+                        </div>
+                        <div class="thought-tail-1"></div>
+                        <div class="thought-tail-2"></div>
+                    </div>
+                `;
+            }
             // 渲染合并转发记录卡片
             else if (msg.type === 'merged_record') {
                 const record = msg.quote || {}; 
@@ -2400,24 +2414,22 @@ window.triggerAI = async function() {
     const chat = chatsData.find(c => c.id === targetChatId);
     if (!chat) return;
 
-    // --- 准备 Prompt 数据 ---
+    // --- 1. 准备数据 ---
     const char = contactsData.find(c => c.id === chat.contactId); 
     const me = personasData.find(p => p.id === chat.personaId) || { name: 'User', desc: '无', persona: '无' };
     
-    // (引用逻辑)
-    let aiQuote = null;
-
-    // (历史消息处理)
     const limit = chat.contextLimit || 20;
     const historySource = (chat.messages || []).slice(-limit);
 
     // 构建历史上下文
-        const history = historySource.map((m, i) => { 
-            // 1. 获取名字 (身份锚点)
-            const senderName = (m.role === 'me') ? (me.name || 'User') : (chat.name || 'Char');
-            
-            // 2. 原始内容
-            let content = m.text || "";
+    const history = historySource.map((m, i) => { 
+        const senderName = (m.role === 'me') ? (me.name || 'User') : (chat.name || 'Char');
+        let content = m.text || "";
+        
+        if (m.type === 'inner_voice') {
+            content = `[你的内心OS: ${m.text} | 当前好感度: ${m.extra || '?'}]`;
+            return `(内心深处): ${content}`; 
+        }
             
             // A. HTML 小游戏 (新功能)
             if (m.type === 'html') {
@@ -2573,6 +2585,17 @@ ${triggeredEntries.join('\n\n')}
     - 如果User问“几点了”，请准确回答上述时间
         `;
     }
+
+let innerVoicePrompt = "";
+if (chat.enableInnerVoice === true) {
+    innerVoicePrompt = `
+【核心指令：心声感知模式已开启】
+1. **触发概率**：请你在回复中，以约 30% 的概率（即感触颇深时）输出你的内心 OS
+2. **输出格式**：必须在回复的最开头，严格使用标签：[INNER_VOICE: {"thought": "你的真实内心戏", "favorability": "当前好感度(0-100)"}]
+3. **角色准则**：心声应体现你高冷外表下的反差感、占有欲、或者是连你自己都没察觉的温柔，请以简洁为主，50字以内
+4. **连贯性**：请查阅历史记录中的 (内心深处) 记录，确保情感演变是合理连贯的
+    `;
+}
     // =======================================================
     // 5. 组装 System Prompt
     // =======================================================
@@ -2611,6 +2634,7 @@ ${triggeredEntries.join('\n\n')}
     ${transferDecisionPrompt}  
     ${timePrompt} 
     ${typeof offlinePrompt !== 'undefined' ? offlinePrompt : ''} 
+    ${innerVoicePrompt}
 
     【活人感聊天法则 (必须严格遵守)】
     1. **拒绝“像个AI”**：
@@ -2756,6 +2780,7 @@ ${triggeredEntries.join('\n\n')}
     ${timePrompt} 
     ${typeof offlinePrompt !== 'undefined' ? offlinePrompt : ''} 
     ${transferDecisionPrompt}
+    ${innerVoicePrompt}
 
 ###遵守法则###
 #【活人感聊天法则】
@@ -2853,25 +2878,26 @@ c.系统检测到该标签后，会自动帮你执行点赞和评论同步
     `;
     }
         
-    // =======================================================
-    // ★★★ 执行请求与处理 ★★★
-    // =======================================================
-    
-    // 1. 【思考阶段】
+    // --- 2. 执行请求 ---
     if (currentChatId === targetChatId) showTypingBubble(char.avatar);
 
     try {
-        // 2. 请求 API
         const reply = await callApiInternal(finalSystemPrompt);
-        
-        // ★★★ 在这里加一行监控！看看AI到底吐出了什么！ ★★★
-        console.log(" AI回复原文(Raw):", reply); 
-
-        // 3. 【思考结束】
         if (currentChatId === targetChatId) removeTypingBubble();
 
         if (reply) {
             let cleanReply = reply;
+
+            // ★ 核心解析：心声
+            const ivMatch = cleanReply.match(/\[INNER_VOICE:\s*({[\s\S]+?})\]/i);
+            if (ivMatch && chat.enableInnerVoice) {
+                try {
+                    const ivData = JSON.parse(ivMatch[1]);
+                    cleanReply = cleanReply.replace(ivMatch[0], '').trim();
+                    // 插入心声消息
+                    pushMsgToData(chat, ivData.thought, 'char', null, 'inner_voice', ivData.favorability);
+                } catch(e) { console.error("心声解析失败", e); }
+            }
 
             // --- [Step 1] 处理全局侧边效应
             const momentActMatch = cleanReply.match(/\[\s*(?:ACT|Act)\s*[:：]\s*(?:MOMENT_REACT|moment_react)\s*[:：]\s*([\s\S]+?)\s*\]/i);
@@ -4433,12 +4459,12 @@ window.openChatControl = function() {
     const userNameEl = document.getElementById('cc-user-name-big');
     const userAvatarEl = document.getElementById('cc-user-avatar-big');
 
-    if (charNameEl) charNameEl.innerText = contact.name; // 这里显示真名，方便你知道原本是谁
+    if (charNameEl) charNameEl.innerText = contact.name; 
     if (userNameEl) userNameEl.innerText = persona.name;
     if (charAvatarEl) charAvatarEl.style.cssText = getAvatarStyle(contact.avatar);
     if (userAvatarEl) userAvatarEl.style.cssText = getAvatarStyle(persona.avatar);
 
-    // 2. ★★★ [修复] 填充私有备注 (优先读取 chat.privateAlias) ★★★
+    // 2. 填充私有备注
     document.getElementById('cc-private-alias').value = chat.privateAlias || '';
 
     // 3. 相识天数
@@ -4464,7 +4490,8 @@ window.openChatControl = function() {
     }
     const activeInterval = document.getElementById('detail-active-interval');
     if (activeInterval) activeInterval.value = chat.activeInterval || 60;
-    // 6. ★★★ 新增：世界书绑定回显 (V2.0 计数版) ★★★
+
+    // 6. 世界书绑定回显
     const wbNamesEl = document.getElementById('cc-wb-names');
     if (wbNamesEl) {
         const count = (chat.activeEntryIds || []).length;
@@ -4472,11 +4499,22 @@ window.openChatControl = function() {
             wbNamesEl.innerText = "Link settings to this chat";
             wbNamesEl.style.color = "#999";
         } else {
-            // 显示已选数量
             wbNamesEl.innerText = `${count} entries active`;
-            wbNamesEl.style.color = "#5856D6"; // 紫色高亮
+            wbNamesEl.style.color = "#5856D6";
         }
     }
+
+    // ★★★ 7. 心声模式回显 (新增部分) ★★★
+    const ivStatus = document.getElementById('inner-voice-status');
+    const ivDot = document.getElementById('inner-voice-toggle-dot');
+    if (ivStatus && ivDot) {
+        // 检查当前这个 chat 对象的 enableInnerVoice 属性
+        const isIV = (chat.enableInnerVoice === true);
+        ivStatus.innerText = isIV ? "已开启 - 偶尔窥探他的内心" : "已关闭 - 保持纯粹聊天";
+        ivStatus.style.color = isIV ? "#FF9500" : "#999";
+        ivDot.style.background = isIV ? "#34C759" : "#ccc"; // 开启变绿，关闭变灰
+    }
+
     // 显示面板
     const panel = document.getElementById('chat-control-overlay');
     panel.style.display = 'flex';
@@ -4574,6 +4612,28 @@ window.saveDetailSettings = function() {
         console.error(err);
         showSystemAlert('保存失败惹(T_T)', 'error');
     });
+};
+window.toggleInnerVoice = function() {
+    if (!currentChatId) return;
+    const chat = chatsData.find(c => c.id === currentChatId);
+    if (!chat) return;
+
+    chat.enableInnerVoice = !chat.enableInnerVoice;
+
+    const ivStatus = document.getElementById('inner-voice-status');
+    const ivDot = document.getElementById('inner-voice-toggle-dot');
+    
+    const isIV = chat.enableInnerVoice;
+    if(ivStatus) ivStatus.innerText = isIV ? "已开启 - 偶尔窥探他的内心" : "已关闭 - 保持纯粹聊天";
+    if(ivStatus) ivStatus.style.color = isIV ? "#FF9500" : "#999";
+    if(ivDot) ivDot.style.background = isIV ? "#34C759" : "#ccc";
+
+    // ★ 修复：保存数据到正确的数据库
+    localforage.setItem('Wx_Chats_Data', chatsData);
+    
+    if (window.showSystemAlert) {
+        showSystemAlert(isIV ? "已获得心声感应能力" : "已恢复常规交流模式");
+    }
 };
 // 打开世界书选择器 (中转函数)
 window.openWorldBookSelector = function() {
@@ -10321,7 +10381,7 @@ function handleSimulatedVoice() {
         });
     } else {
         // 兜底原生
-        const text = prompt("【发送语音】\n请输入语音转换的文字：", "");
+        const text = prompt("【发送语音】\n请输入语音：", "");
         if (text && text.trim()) {
             const chat = chatsData.find(c => c.id === currentChatId);
             pushMsgToData(chat, text, 'me', null, 'voice');
@@ -10395,3 +10455,429 @@ function handleAiTransferCommand(chat, action, transferMsg) {
         renderMessages(chat); 
     }
 }
+// ==========================================================
+// iOS 相册 App 
+// ==========================================================
+let photoLibrary = [];
+let isPhotosSelectMode = false;
+let selectedPhotoIds = new Set();
+let userAlbums = []; 
+let currentBrowserIndex = 0;
+let currentBrowserList = []; 
+
+const STORAGE_KEY_DELETED = 'ios_photos_deleted_ids';
+const STORAGE_KEY_UPLOADS = 'ios_photos_uploads';
+const STORAGE_KEY_ALBUMS = 'ios_photos_albums';
+
+window.initPhotosApp = function() {
+    loadLocalData();
+    collectAllPhotos();
+    renderPhotosApp();
+    
+    setInterval(() => {
+        const d = document.getElementById('ph-status-time');
+        if(d) {
+            const now = new Date();
+            d.innerText = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+        }
+    }, 1000);
+};
+
+function loadLocalData() {
+    try {
+        const albumsData = localStorage.getItem(STORAGE_KEY_ALBUMS);
+        if(albumsData) userAlbums = JSON.parse(albumsData);
+    } catch(e) { console.error(e); }
+}
+
+function saveData() {
+    localStorage.setItem(STORAGE_KEY_ALBUMS, JSON.stringify(userAlbums));
+    const uploads = photoLibrary.filter(p => p.type === 'upload');
+    localStorage.setItem(STORAGE_KEY_UPLOADS, JSON.stringify(uploads));
+}
+
+window.collectAllPhotos = function() {
+    let tempLib = [];
+    
+    if (typeof momentsData !== 'undefined') {
+        momentsData.forEach(m => { if (m.image) tempLib.push({ id: m.id, src: m.image, time: m.time }); });
+    }
+    if (typeof chatsData !== 'undefined') {
+        chatsData.forEach(chat => {
+            if (chat.messages) {
+                chat.messages.forEach(msg => {
+                    if (msg.type === 'image' && msg.text) tempLib.push({ id: msg.id || msg.timestamp, src: msg.text, time: msg.timestamp });
+                });
+            }
+        });
+    }
+    if(tempLib.length < 3) {
+        tempLib.push({ id: 'sys1', src: "https://i.postimg.cc/k4kM9S4h/default-cover.png", time: Date.now() });
+    }
+
+    try {
+        const localUploads = localStorage.getItem(STORAGE_KEY_UPLOADS);
+        if (localUploads) {
+            const parsed = JSON.parse(localUploads);
+            tempLib = parsed.concat(tempLib);
+        }
+    } catch(e) {}
+
+    try {
+        const deletedIds = JSON.parse(localStorage.getItem(STORAGE_KEY_DELETED) || '[]');
+        const deletedSet = new Set(deletedIds);
+        tempLib = tempLib.filter(p => !deletedSet.has(p.id));
+    } catch(e) {}
+
+    tempLib.sort((a, b) => b.time - a.time);
+    photoLibrary = tempLib;
+};
+
+window.renderPhotosApp = function() {
+    renderGrid('photos-main-grid', photoLibrary);
+
+    const recentScroll = document.getElementById('photos-recent-scroll');
+    if (recentScroll) {
+        recentScroll.innerHTML = '';
+        photoLibrary.slice(0, 6).forEach((photo, index) => {
+            const card = document.createElement('div');
+            card.className = 'ph-memory-card';
+            card.innerHTML = `<img src="${photo.src}" class="ph-mem-img"><div class="ph-mem-overlay">${smartTimeFormat(photo.time, true)}</div>`;
+            card.onclick = () => { if(!isPhotosSelectMode) openPhotoBrowser(index, photoLibrary); };
+            recentScroll.appendChild(card);
+        });
+    }
+
+    const peopleScroll = document.getElementById('photos-people-scroll');
+    if (peopleScroll && typeof contactsData !== 'undefined') {
+        peopleScroll.innerHTML = '';
+        contactsData.forEach(c => {
+             let url = c.avatar ? c.avatar.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '') : '';
+             if(url) {
+                 const p = document.createElement('div');
+                 p.className = 'ph-person-item';
+                 p.innerHTML = `<div class="ph-person-avatar" style="background-image: url('${url}')"></div><div style="font-size:12px;margin-top:4px;">${c.name}</div>`;
+                 peopleScroll.appendChild(p);
+             }
+        });
+    }
+
+    renderAlbums();
+};
+
+function renderGrid(containerId, list) {
+    const grid = document.getElementById(containerId);
+    if (!grid) return;
+    grid.innerHTML = '';
+    
+    if (isPhotosSelectMode) grid.classList.add('select-mode-active');
+    else grid.classList.remove('select-mode-active');
+
+    list.forEach((photo, index) => {
+        const item = document.createElement('div');
+        item.id = `ph-item-${photo.id}`;
+        item.className = `ph-grid-item ${selectedPhotoIds.has(photo.id) ? 'selected' : ''}`;
+        item.innerHTML = `<img src="${photo.src}" class="ph-grid-img" loading="lazy"><div class="ph-check-circle"></div>`;
+        item.onclick = () => handlePhotoClick(photo, index, list);
+        grid.appendChild(item);
+    });
+}
+
+function handlePhotoClick(photo, index, list) {
+    if (isPhotosSelectMode) {
+        if (selectedPhotoIds.has(photo.id)) {
+            selectedPhotoIds.delete(photo.id);
+        } else {
+            selectedPhotoIds.add(photo.id);
+        }
+        const items = document.querySelectorAll(`[id="ph-item-${photo.id}"]`);
+        items.forEach(item => {
+            if (selectedPhotoIds.has(photo.id)) item.classList.add('selected');
+            else item.classList.remove('selected');
+        });
+        updateSelectTitle();
+    } else {
+        openPhotoBrowser(index, list);
+    }
+}
+
+window.togglePhotosSelectMode = function(active) {
+    isPhotosSelectMode = active;
+    document.getElementById('ph-btns-normal').style.display = active ? 'none' : 'flex';
+    document.getElementById('ph-btns-select').style.display = active ? 'flex' : 'none';
+    document.getElementById('ph-footer-select').style.display = active ? 'flex' : 'none';
+    
+    const grids = document.querySelectorAll('.photos-grid-container');
+    grids.forEach(g => active ? g.classList.add('select-mode-active') : g.classList.remove('select-mode-active'));
+
+    if(!active) {
+        selectedPhotoIds.clear();
+        document.querySelectorAll('.ph-grid-item.selected').forEach(el => el.classList.remove('selected'));
+    }
+    updateSelectTitle();
+};
+
+function updateSelectTitle() {
+    const t = document.getElementById('ph-mode-title');
+    if(t) t.innerText = isPhotosSelectMode && selectedPhotoIds.size > 0 ? `已选 ${selectedPhotoIds.size} 张` : '照片';
+}
+
+window.renderAlbums = function() {
+    const scroll = document.getElementById('photos-albums-scroll');
+    if(!scroll) return;
+    scroll.innerHTML = '';
+
+    const recentsDiv = document.createElement('div');
+    recentsDiv.className = 'ph-album-card';
+    recentsDiv.innerHTML = `
+        <div class="ph-album-cover" style="background-image: url('${photoLibrary[0]?.src || ''}');"></div>
+        <span class="ph-album-name">最近项目</span>
+        <span class="ph-album-count">${photoLibrary.length}</span>
+    `;
+    recentsDiv.onclick = () => openAlbumDetail('最近项目', photoLibrary);
+    scroll.appendChild(recentsDiv);
+
+    userAlbums.forEach((album, idx) => {
+        const div = document.createElement('div');
+        div.className = 'ph-album-card';
+        div.innerHTML = `
+            <div class="ph-album-cover" style="background-image: url('${album.photos[0] || ''}');"></div>
+            <span class="ph-album-name">${album.name}</span>
+            <span class="ph-album-count">${album.photos.length}</span>
+            <div class="ph-album-delete-badge" style="display:none;"></div>
+        `;
+        
+        let pressTimer;
+        const startPress = (e) => {
+            pressTimer = setTimeout(() => {
+                div.classList.add('shaking');
+                div.querySelector('.ph-album-delete-badge').style.display = 'flex';
+                div.onclick = (evt) => {
+                    evt.stopPropagation();
+                    deleteAlbum(idx, album.name);
+                };
+            }, 600);
+        };
+        const cancelPress = () => {
+            clearTimeout(pressTimer);
+        };
+
+        div.addEventListener('mousedown', startPress);
+        div.addEventListener('touchstart', startPress);
+        div.addEventListener('mouseup', cancelPress);
+        div.addEventListener('touchend', cancelPress);
+        div.addEventListener('touchmove', cancelPress);
+        
+        div.onclick = () => {
+             if(div.classList.contains('shaking')) return; 
+             const albumPhotos = photoLibrary.filter(p => album.photos.includes(p.src));
+             openAlbumDetail(album.name, albumPhotos);
+        };
+        
+        scroll.appendChild(div);
+    });
+};
+
+function deleteAlbum(index, name) {
+    if(confirm(`删除相簿“${name}”？\n相簿内的照片不会被删除。`)) {
+        userAlbums.splice(index, 1);
+        saveData();
+        renderAlbums();
+        showSystemAlert("相簿已删除");
+    } else {
+        renderAlbums();
+    }
+}
+
+window.createNewAlbum = function() {
+    if (!isPhotosSelectMode || selectedPhotoIds.size === 0) {
+        showSystemAlert('请先点击右上角“选择”，勾选照片后再点+号！');
+        return;
+    }
+    
+    const inputHtml = `
+        <div style="font-weight:600;margin-bottom:5px;">新建相簿</div>
+        <input type="text" id="temp-album-input" placeholder="相簿名称" 
+               style="width:90%;padding:8px;border:1px solid #ccc;border-radius:5px;outline:none;">
+    `;
+    
+    if (typeof showConfirmDialog === 'function') {
+        showConfirmDialog(inputHtml, () => {
+            const input = document.getElementById('temp-album-input');
+            const name = input ? input.value.trim() : "未命名相簿";
+            if(name) {
+                const selectedSrcs = [];
+                photoLibrary.forEach(p => {
+                    if(selectedPhotoIds.has(p.id)) selectedSrcs.push(p.src);
+                });
+                
+                userAlbums.push({ name: name, photos: selectedSrcs });
+                
+                saveData();
+                renderAlbums();
+                togglePhotosSelectMode(false);
+                showSystemAlert("相簿已创建");
+            }
+        });
+        setTimeout(() => document.getElementById('temp-album-input')?.focus(), 100);
+    }
+};
+
+window.openPhotoBrowser = function(index, list) {
+    currentBrowserList = list;
+    currentBrowserIndex = index;
+    
+    const browser = document.getElementById('photo-browser-overlay');
+    const img = document.getElementById('pb-current-img');
+    
+    img.style.opacity = '0';
+    img.style.transform = 'scale(0.95)';
+    
+    updatePhotoBrowserUI();
+    
+    browser.style.display = 'flex';
+    img.onload = () => {
+        img.style.opacity = '1';
+        img.style.transform = 'scale(1)';
+        browser.classList.add('show');
+    };
+};
+
+window.closePhotoBrowser = function() {
+    const browser = document.getElementById('photo-browser-overlay');
+    browser.classList.remove('show');
+    setTimeout(() => browser.style.display = 'none', 300);
+};
+
+window.navigatePhoto = function(direction) {
+    let newIndex = currentBrowserIndex + direction;
+    if (newIndex < 0) newIndex = 0;
+    if (newIndex >= currentBrowserList.length) newIndex = currentBrowserList.length - 1;
+    
+    if(newIndex !== currentBrowserIndex) {
+        currentBrowserIndex = newIndex;
+        const img = document.getElementById('pb-current-img');
+        img.style.opacity = 0.5;
+        setTimeout(() => {
+            updatePhotoBrowserUI();
+            img.style.opacity = 1;
+        }, 150);
+    }
+};
+
+function smartTimeFormat(timestamp, simple = false) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+    const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+    const isYesterday = date.getDate() === yesterday.getDate() && date.getMonth() === yesterday.getMonth() && date.getFullYear() === yesterday.getFullYear();
+    const timeStr = date.getHours().toString().padStart(2,'0') + ':' + date.getMinutes().toString().padStart(2,'0');
+    
+    if (simple) {
+        if (isToday) return "今天";
+        if (isYesterday) return "昨天";
+        return (date.getMonth()+1) + '/' + date.getDate();
+    } else {
+        if (isToday) return `今天 ${timeStr}`;
+        if (isYesterday) return `昨天 ${timeStr}`;
+        return `${date.getFullYear()}/${date.getMonth()+1}/${date.getDate()} ${timeStr}`;
+    }
+}
+
+function updatePhotoBrowserUI() {
+    const photo = currentBrowserList[currentBrowserIndex];
+    if(!photo) return;
+    document.getElementById('pb-current-img').src = photo.src;
+    const smartTime = smartTimeFormat(photo.time);
+    document.getElementById('pb-photo-time').innerText = smartTime.split(' ')[0]; 
+    document.getElementById('pb-photo-date').innerText = smartTime.split(' ')[1] || ''; 
+}
+
+window.openAlbumDetail = function(name, list) {
+    const mainView = document.getElementById('ph-view-main');
+    const detailView = document.getElementById('ph-view-detail');
+    document.getElementById('ph-album-title').innerText = name;
+    document.getElementById('ph-album-big-title').innerText = name;
+    document.getElementById('ph-album-count-sub').innerText = `${list.length} 张照片`;
+    renderGrid('ph-album-detail-grid', list);
+    mainView.classList.add('prev-page'); mainView.classList.remove('active');
+    detailView.classList.add('active'); detailView.classList.remove('next-page');
+};
+
+window.closeAlbumDetail = function() {
+    const mainView = document.getElementById('ph-view-main');
+    const detailView = document.getElementById('ph-view-detail');
+    mainView.classList.add('active'); mainView.classList.remove('prev-page');
+    detailView.classList.add('next-page'); detailView.classList.remove('active');
+};
+
+window.deleteSelectedPhotos = function() {
+    if (selectedPhotoIds.size === 0) return;
+    if(typeof showConfirmDialog === 'function') {
+        showConfirmDialog(`确定删除这 ${selectedPhotoIds.size} 张照片吗？\n删除后无法恢复。`, () => {
+            const deletedIds = JSON.parse(localStorage.getItem(STORAGE_KEY_DELETED) || '[]');
+            selectedPhotoIds.forEach(id => deletedIds.push(id));
+            localStorage.setItem(STORAGE_KEY_DELETED, JSON.stringify(deletedIds));
+
+            photoLibrary = photoLibrary.filter(p => !selectedPhotoIds.has(p.id));
+            
+            const uploads = photoLibrary.filter(p => p.type === 'upload');
+            localStorage.setItem(STORAGE_KEY_UPLOADS, JSON.stringify(uploads));
+
+            togglePhotosSelectMode(false);
+            renderPhotosApp();
+            showSystemAlert('已删除');
+        }, "destructive");
+    }
+};
+
+window.triggerPhotoUpload = function() {
+    let input = document.getElementById('hidden-ph-uploader');
+    if (!input) {
+        input = document.createElement('input');
+        input.id = 'hidden-ph-uploader';
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.multiple = true;
+        input.style.cssText = 'position:fixed; bottom:0; opacity:0; z-index:-1;';
+        document.body.appendChild(input);
+    }
+    
+    input.onchange = (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length > 0) {
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    const newPhoto = {
+                        id: 'up_' + Date.now() + Math.random().toString(36).substr(2, 5),
+                        src: evt.target.result,
+                        time: Date.now(),
+                        type: 'upload'
+                    };
+                    photoLibrary.unshift(newPhoto);
+                    saveData();
+                    renderPhotosApp();
+                };
+                reader.readAsDataURL(file);
+            });
+            showSystemAlert(`正在导入 ${files.length} 张照片...`);
+        }
+        togglePhotosSelectMode(false);
+        input.value = '';
+    };
+    
+    input.click();
+};
+
+const _appPhotosFinal31 = window.openApp;
+window.openApp = function(appId) {
+    if (appId === 'photos') {
+        window.initPhotosApp();
+    }
+    if (typeof _appPhotosFinal31 === 'function') _appPhotosFinal31(appId);
+    else {
+        const app = document.getElementById('app-window-' + appId);
+        if(app) { app.style.display = 'flex'; setTimeout(() => app.classList.add('active'), 10); }
+    }
+};

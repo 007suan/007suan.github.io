@@ -233,10 +233,10 @@
         </div>
     <div class="p3-app-group-container">
         <div class="p3-app-grid">
-            <div class="app-item">
-                <div id="app-icon-photos-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/xCZd1nbx/wu-biao-ti119-20260117101708.png');"></div>
-                <div class="app-name">相册</div>
-            </div>
+<div class="app-item" onclick="openApp('photos')">
+    <div id="app-icon-photos-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/xCZd1nbx/wu-biao-ti119-20260117101708.png');"></div>
+    <div class="app-name">相册</div>
+</div>
             <div class="app-item" onclick="openApp('douyin')">
                 <div id="app-icon-douyin" class="app-icon" style="background-image: url('https://i.postimg.cc/nchtw6jd/wu-biao-ti119-20260117103441.png');"></div>
                 <div class="app-name">抖音</div>
@@ -927,7 +927,7 @@
             </div>
 <div class="s-item" onclick="openWorldBookApp()">
     <div class="s-left">
-        <img src="https://i.postimg.cc/jjFks6Qx/wu-biao-ti125-20260211100644.png" class="ios-icon-img">
+        <img src="https://i.postimg.cc/769JkR9F/wu-biao-ti115-20260101190850.png" class="ios-icon-img">
         <span style="margin-left: 12px;">世界书</span>
     </div>
     <span class="s-arrow">›</span>
@@ -1062,24 +1062,24 @@
         <svg viewBox="0 0 24 24" width="24" height="24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
     </div>
     
-    <div class="wx-p3-footer-text edit-text" id="wx-profile-text">有你不是很坏。</div>
+    <div class="wx-p3-footer-text edit-text">有你不是很坏。</div>
 </div>
             <div class="wx-p3-container">
                 <div class="wx-p3-header-area">
-                    <div class="wx-p3-bubble"><span class="edit-text" id="wx-profile-text-1">你的存在 即之我所爱 = > u < =</span></div>
-                    <div class="wx-p3-bubble-right"><span class="edit-text" id="wx-profile-text-2">杏树杏树 今天幸不幸福。</span></div>
+                    <div class="wx-p3-bubble"><span class="edit-text">你的存在 即之我所爱 = > u < =</span></div>
+                    <div class="wx-p3-bubble-right"><span class="edit-text">杏树杏树 今天幸不幸福。</span></div>
                     <div class="wx-small-avatar-right upload-img" id="wx_p3_right_avatar"></div>
                     <div class="wx-big-avatar-new upload-img sync-avatar" id="wx_p2_big_avatar"></div>
                 </div>
                 <div class="wx-p3-info-block">
                     <div class="wx-p3-name edit-text sync-name" id="wx_p2_name">昵称</div>
-                    <div class="wx-p3-id edit-text" id="wx-profile-text-5">成分复杂、</div>
-                    <div class="wx-p3-desc edit-text" id="wx-profile-text-6">你好像过的很好，<br>迫不及待地抹去我的存在。</div>
+                    <div class="wx-p3-id edit-text">成分复杂、</div>
+                    <div class="wx-p3-desc edit-text">你好像过的很好，<br>迫不及待地抹去我的存在。</div>
                 </div>
                 <div class="wx-p3-tags">
-                    <div class="wx-p3-tag edit-text" id="wx-profile-text-7">让过去过去，让将来将来</div>
-                    <div class="wx-p3-tag edit-text" id="wx-profile-text-8">淡淡的就会顺顺的。</div>
-                    <div class="wx-p3-tag grey edit-text" id="wx-profile-text-9">誓言是一场有时差的雨</div>
+                    <div class="wx-p3-tag edit-text">让过去过去，让将来将来</div>
+                    <div class="wx-p3-tag edit-text">淡淡的就会顺顺的。</div>
+                    <div class="wx-p3-tag grey edit-text">誓言是一场有时差的雨</div>
       </div>
          </div>
             </div>
@@ -1103,11 +1103,11 @@
             <div class="chl-text-info">
                 <div style="display: flex; align-items: center; gap: 6px;">
                     <div class="chl-name" id="chat_layer_name">Name</div>
-                    <div class="chl-status-pill edit-text">
+                    <div class="chl-status-pill">
                          <span style="color:#555">★</span> <span id="chat-mood-text">i luv u <3…🩶</span>
                     </div>
                 </div>
-                <div class="chl-status edit-text" id="chat-mood-text-2">˚❅𝓦𝓲𝓷𝓽𝓮𝓻 𝓲𝓼 𝓬𝓸𝓶𝓲𝓷𝓰✲*</div>
+                <div class="chl-status edit-text">˚❅𝓦𝓲𝓷𝓽𝓮𝓻 𝓲𝓼 𝓬𝓸𝓶𝓲𝓷𝓰✲*</div>
             </div>
         </div> 
 
@@ -1160,7 +1160,8 @@
         <img src="https://i.postimg.cc/xCZd1nbx/wu-biao-ti119-20260117101708.png" class="plus-icon-img">
         <div class="plus-label">相册</div>
     </div>
-<div class="plus-item" onclick="handleSimulatedImage()">
+
+    <div class="plus-item" onclick="alert('还没搓出来...')">
         <img src="https://i.postimg.cc/j51jStJv/wu-biao-ti119-20260117101925.png" class="plus-icon-img">
         <div class="plus-label">相机</div>
     </div>
@@ -1170,7 +1171,7 @@
         <div class="plus-label">转账</div>
     </div>
 
-    <div class="plus-item" onclick="handleSimulatedVoice()">
+    <div class="plus-item" onclick="alert('还没搓完！...')">
         <img src="https://i.postimg.cc/SNr6W67H/wu-biao-ti124-20260209132051.png" class="plus-icon-img">
         <div class="plus-label">语音</div>
     </div>
@@ -1355,6 +1356,16 @@
             </div>
             <div class="ins-arrow">›</div>
         </div>
+<div class="ins-menu-item" onclick="toggleInnerVoice()">
+    <div class="ins-menu-left">
+        <div class="ins-point" style="color: #FF9500;">☁︎</div>
+        <div class="ins-menu-text">
+            <div class="title">心声模式 (Inner Voice)</div>
+            <div class="desc" id="inner-voice-status">已关闭 - 偶尔窥探他的内心</div>
+        </div>
+    </div>
+    <div id="inner-voice-toggle-dot" style="width: 10px; height: 10px; border-radius: 50%; background: #ccc;"></div>
+</div>
         <div class="ins-menu-item" onclick="requestDeleteChat(currentChatId); closeChatControl();">
             <div class="ins-menu-left">
                 <div class="ins-point" style="color: #ff3b30;">✖</div>
@@ -1932,7 +1943,7 @@
     <div class="vis-drawer" onclick="event.stopPropagation()">
         <div class="vis-header">
             <span style="flex:1"></span>
-            <span class="vis-title">你想让谁看见？</span>
+            <span class="vis-title">Who can see this?</span>
             <span class="vis-done-btn" onclick="toggleVisibilitySelector()">确定</span>
         </div>
         
@@ -1967,7 +1978,7 @@
         <span class="wb-nav-action" onclick="closeWorldBook()">Done</span>
     </div>
 </div>
-            <span class="wb-large-title">World Book</span>
+            <span class="wb-large-title">Browse</span>
             
             <div class="wb-search-bar">
                 <span style="margin-right:6px">★</span> Search
@@ -2036,6 +2047,119 @@
             <div class="wb-ctx-cancel" onclick="closeWBContextMenu()">Cancel</div>
         </div>
     </div>
+ </div>
+<div id="app-window-photos" class="app-window ios-photos-app" style="display: none;">
+    
+    <div id="ph-view-main" class="ph-view-layer active">
+        <div class="ph-header-bar">
+            <div class="ph-header-left-group">
+                <div class="ph-header-spacer"></div>
+                <span id="ph-mode-title" class="ph-main-title">照片</span>
+            </div>
+            
+            <div class="ph-header-right-group">
+                <div id="ph-btns-normal" class="ph-btn-container">
+                    <div class="ph-icon-btn" onclick="showSystemAlert('搜索功能暂未开放')">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="#007aff"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    </div>
+                    <div class="ph-select-capsule" onclick="togglePhotosSelectMode(true)">
+                        <span>选择</span>
+                    </div>
+                    <div class="ph-icon-btn" style="margin-left:5px;">
+                        <img src="https://i.postimg.cc/L6swrn3N/wu-biao-ti125-20260210155727.png" style="width:24px; height:24px;">
+                    </div>
+                </div>
+
+                <div id="ph-btns-select" class="ph-btn-container" style="display: none;">
+                    <div class="ph-cancel-btn" onclick="togglePhotosSelectMode(false)">取消</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="photos-scroll-area" class="photos-scroll-view">
+            <div id="photos-main-grid" class="photos-grid-container"></div>
+
+            <div class="photos-section-header">
+                <span>最近的日子</span><span class="arrow">›</span>
+            </div>
+            <div id="photos-recent-scroll" class="photos-h-scroll"></div>
+
+            <div class="photos-section-header">
+                <span>人物</span><span class="arrow">›</span>
+            </div>
+            <div id="photos-people-scroll" class="photos-h-scroll"></div>
+
+            <div class="photos-section-header">
+                <span>我的相簿</span>
+                <span class="ph-add-album-btn" onclick="createNewAlbum()">+</span>
+            </div>
+            <div id="photos-albums-scroll" class="photos-h-scroll"></div>
+            
+            <div style="height: 150px;"></div>
+        </div>
+    </div>
+
+    <div id="ph-view-detail" class="ph-view-layer next-page">
+        <div class="ph-header-bar">
+            <div class="ph-header-left-group" onclick="closeAlbumDetail()" style="cursor: pointer; flex-direction: row; align-items: center;">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="#007aff" style="margin-left:-8px;"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+                <span style="font-size: 17px; color: #007aff;">相簿</span>
+            </div>
+            <div class="ph-header-center-title" id="ph-album-title">相簿名称</div>
+            <div class="ph-header-right-group">
+                <div class="ph-icon-btn" style="width:32px;height:32px;">
+                    <img src="https://i.postimg.cc/L6swrn3N/wu-biao-ti125-20260210155727.png" style="width:20px;">
+                </div>
+            </div>
+        </div>
+        
+        <div class="photos-scroll-view">
+             <div class="photos-stat-title" style="padding-top:10px;">
+                <h1 id="ph-album-big-title">Recents</h1>
+                <span id="ph-album-count-sub">0 张照片</span>
+             </div>
+             <div id="ph-album-detail-grid" class="photos-grid-container"></div>
+             <div style="height: 100px;"></div>
+        </div>
+    </div>
+
+    <div id="ph-footer-select" class="ph-footer-bar" style="display: none;">
+        <div class="ph-footer-icon-btn" onclick="triggerPhotoUpload()">
+            <img src="https://i.postimg.cc/6qPPBLBd/wu-biao-ti125-20260212103546.png" class="ph-custom-icon">
+        </div>
+        <div style="flex:1"></div>
+        <div class="ph-footer-icon-btn" onclick="deleteSelectedPhotos()">
+            <img src="https://i.postimg.cc/8cYYTBTM/wu-biao-ti125-20260212103626.png" class="ph-custom-icon">
+        </div>
+        <div class="ph-footer-icon-btn" style="margin-left: 25px;">
+            <img src="https://i.postimg.cc/L6swrn3N/wu-biao-ti125-20260210155727.png" class="ph-custom-icon">
+        </div>
+    </div>
+
+    <div id="photo-browser-overlay" class="photo-browser" style="display: none;">
+        <div class="pb-header">
+            <div class="pb-back" onclick="closePhotoBrowser()">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="#fff"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+            </div>
+            <div class="pb-time-info">
+                <div class="pb-time-main" id="pb-photo-time">09:41</div>
+                <div class="pb-date-sub" id="pb-photo-date">2026/02/12</div>
+            </div>
+            <div style="width:28px;"></div>
+        </div>
+        
+        <div class="pb-main-stage">
+            <img id="pb-current-img" class="pb-image" src="">
+        </div>
+
+        <div class="pb-nav-left" onclick="navigatePhoto(-1)"></div>
+        <div class="pb-nav-right" onclick="navigatePhoto(1)"></div>
+        
+        <div class="pb-footer">
+             <svg viewBox="0 0 24 24" width="24" height="24" fill="#fff" style="opacity:0.9"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        </div>
+    </div>
+</div>
     <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
     <script src="security.js"></script>
     <script src="script.js"></script>
