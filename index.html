@@ -127,9 +127,9 @@
                     <div id="app-icon-Alipay-p1" class="app-icon" style="background-image: url('https://i.postimg.cc/Kv8ysdkp/wu-biao-ti119-20260117103413.png');"></div>
     <div class="app-name">Alipay</div>
 </div>
-                <div class="app-item" onclick="openApp('contacts')">
-                    <div id="app-icon-contacts-p1" class="app-icon" style="background-image: url('https://i.postimg.cc/mDTWfrYB/wu-biao-ti124-20260209111417.png');"></div>
-                    <div class="app-name">通讯录</div>
+<div class="app-item" onclick="openApp('instagram')">
+    <div id="app-icon-ins-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/V6zPQNjD/wu-biao-ti124-20260209111551.png');"></div>
+    <div class="app-name">Instagram</div>
 </div>
                 <div class="app-item" onclick="openApp('Memo')">
                     <div id="app-icon-Memo-p1" class="app-icon" style="background-image: url('https://i.postimg.cc/YqQc9gbz/wu-biao-ti124-20260209110952.png');"></div>
@@ -927,7 +927,7 @@
             </div>
 <div class="s-item" onclick="openWorldBookApp()">
     <div class="s-left">
-        <img src="https://i.postimg.cc/769JkR9F/wu-biao-ti115-20260101190850.png" class="ios-icon-img">
+        <img src="https://i.postimg.cc/jjFks6Qx/wu-biao-ti125-20260211100644.png" class="ios-icon-img">
         <span style="margin-left: 12px;">世界书</span>
     </div>
     <span class="s-arrow">›</span>
@@ -1161,7 +1161,7 @@
         <div class="plus-label">相册</div>
     </div>
 
-    <div class="plus-item" onclick="alert('还没搓出来...')">
+<div class="plus-item" onclick="handleSimulatedImage()">
         <img src="https://i.postimg.cc/j51jStJv/wu-biao-ti119-20260117101925.png" class="plus-icon-img">
         <div class="plus-label">相机</div>
     </div>
@@ -1171,14 +1171,14 @@
         <div class="plus-label">转账</div>
     </div>
 
-    <div class="plus-item" onclick="alert('还没搓完！...')">
+    <div class="plus-item" onclick="handleSimulatedVoice()">
         <img src="https://i.postimg.cc/SNr6W67H/wu-biao-ti124-20260209132051.png" class="plus-icon-img">
         <div class="plus-label">语音</div>
     </div>
 
     <div class="plus-item" onclick="alert('还没搓出来呢...')">
         <img src="https://i.postimg.cc/L6Ttzt3K/wu-biao-ti124-20260209131919.png" class="plus-icon-img">
-        <div class="plus-label">视频</div>
+        <div class="plus-label">通话</div>
     </div>
 
     <div class="plus-item" onclick="alert('还没搓出来呢...')">
@@ -1978,7 +1978,7 @@
         <span class="wb-nav-action" onclick="closeWorldBook()">Done</span>
     </div>
 </div>
-            <span class="wb-large-title">Browse</span>
+            <span class="wb-large-title">World Book</span>
             
             <div class="wb-search-bar">
                 <span style="margin-right:6px">★</span> Search
@@ -2160,6 +2160,188 @@
         </div>
     </div>
 </div>
+   </div>
+<div id="app-window-instagram" class="app-window" style="display:none; flex-direction:column; background: #fff; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; overflow: hidden;">
+    
+    <div class="insta-status-bar-placeholder" style="height: 48px; flex-shrink: 0;"></div>
+
+    <div id="insta-top-nav" style="flex-shrink: 0; position: relative;">
+        <div class="insta-nav-header active" data-nav-for="insta-feed-page">
+            <div class="insta-logo">Instagram</div>
+            <div class="insta-header-actions">
+                <i class="fa-regular fa-heart" style="font-size: 22px;"></i>
+                <i class="fa-brands fa-facebook-messenger" style="font-size: 22px;"></i>
+            </div>
+        </div>
+        
+        <div class="insta-nav-header" data-nav-for="insta-profile-page" style="justify-content: space-between;">
+            <div class="insta-header-left">
+                <img src="https://i.postimg.cc/SsLQqbVN/wu-biao-ti130-20260214081818.png" class="insta-header-icon-small">
+            </div>
+            
+            <div class="insta-center-title-wrap">
+                <span id="insta-top-username" class="insta-profile-username edit-text">HuanHuan_Official</span>
+                <img src="https://i.postimg.cc/G2n3ZmF5/无标题130_20260214082151.png" class="username-arrow-big">
+            </div>
+
+            <div class="insta-header-actions">
+                <img src="https://i.postimg.cc/Jn37mCKh/wu-biao-ti130-20260214081835.png" class="insta-header-icon-small">
+                <img src="https://i.postimg.cc/C1pMWxCL/wu-biao-ti130-20260214081903.png" class="insta-header-icon-small">
+            </div>
+        </div>
+    </div>
+
+    <div id="insta-main-content" style="flex-grow: 1; position: relative; overflow: hidden;">
+
+        <div id="insta-feed-page" class="insta-page active-page">
+            <div class="insta-scroll-container">
+                <div class="insta-stories-bar">
+                    <div class="story-item">
+                        <div class="story-ring unread">
+                            <img id="insta-story-my-avatar" class="upload-img" src="https://i.postimg.cc/Kjv9djkM/avatars-000355926005-8j602r-t500x500.jpg">
+                        </div>
+                        <span>我的故事</span>
+                    </div>
+                    <div class="story-item">
+                        <div class="story-ring unread">
+                            <img src="https://i.postimg.cc/cCsYy9kX/Snipaste-2024-09-18-14-47-42.png">
+                        </div>
+                        <span>Chen_Hz</span>
+                    </div>
+                </div>
+                
+                <div class="insta-post">
+                    <div class="post-header">
+                        <div class="post-user">
+                            <img src="https://i.postimg.cc/cCsYy9kX/Snipaste-2024-09-18-14-47-42.png" class="post-avatar">
+                            <span class="post-username">Chen_Huaizhi</span>
+                        </div>
+                        <i class="fa-solid fa-ellipsis post-more-btn"></i>
+                    </div>
+                    <div class="post-image-container">
+                        <img id="insta-feed-post-img-1" class="upload-img" src="https://i.postimg.cc/CMjJz22r/Snipaste-2025-02-12-23-30-49.png">
+                    </div>
+                    <div class="post-info">
+                        <div class="post-likes">1,024 次赞</div>
+                        <div class="post-caption">
+                            <span class="post-username">Chen_Huaizhi</span> 
+                            <span id="insta-feed-caption-1" class="edit-text">UI已升级到 Pixel Perfect 级别。</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="height: 100px;"></div>
+            </div>
+        </div>
+
+        <div id="insta-profile-page" class="insta-page">
+            <div class="insta-scroll-container">
+                <div style="height: 25px;"></div>
+
+                <div class="profile-header-new section-padding">
+                    <div class="profile-avatar-wrapper">
+                        <div class="story-ring-outer">
+                            <div class="profile-avatar-big">
+                                <img id="insta-profile-avatar" class="upload-img">
+                            </div>
+                        </div>
+                        
+                        <div class="status-bubble-wrap">
+                            <div class="status-bubble-main">
+                                <span id="insta-status-text" class="bubble-text edit-text" style="min-width: 20px; display: inline-block;">在忙...</span>
+                            </div>
+                            <div class="bubble-dot-1"></div>
+                            <div class="bubble-dot-2"></div>
+                        </div>
+
+                        <img src="https://i.postimg.cc/MGQKPQQp/wu-biao-ti130-20260214083147.png" class="avatar-plus-icon-new">
+                    </div>
+
+                    <div class="profile-stats-container">
+                        <div class="stat-box">
+                            <span id="insta-stat-posts" class="stat-num edit-text">8</span>
+                            <span class="stat-label">帖子</span>
+                        </div>
+                        <div class="stat-box">
+                            <span id="insta-stat-followers" class="stat-num edit-text">2.4W</span>
+                            <span class="stat-label">粉丝</span>
+                        </div>
+                        <div class="stat-box">
+                            <span id="insta-stat-following" class="stat-num edit-text">12</span>
+                            <span class="stat-label">关注</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-bio-new section-padding">
+                    <div id="insta-bio-name" class="bio-name edit-text">HuanHuan_Official</div>
+                    <div id="insta-bio-text" class="bio-text edit-text">有一小部分人，<br>如果把他们比喻成我生命的玻璃窗上缓缓划过的雨水，<br>我情愿一辈子生活在雨季。</div>
+                </div>
+
+                <div class="professional-dashboard-wrap section-padding">
+                    <div class="professional-dashboard">
+                        <div class="dash-content">
+                            <span class="dash-title">专业主页</span>
+                            <span id="insta-dash-sub" class="dash-sub edit-text">过去 30 天内覆盖了 1.2W 个帐号。</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </div>
+                </div>
+
+                <div class="profile-actions-new section-padding">
+                    <button class="insta-btn-action">编辑主页</button>
+                    <button class="insta-btn-action">分享主页</button>
+                    <button class="insta-btn-icon">
+                        <img src="https://i.postimg.cc/MT0ZxJtw/wu-biao-ti130-20260214081934.png">
+                    </button>
+                </div>
+
+                <div class="insta-stories-bar highlights-bar section-padding">
+                     <div class="story-item">
+                        <div class="story-ring highlight">
+                            <img id="insta-highlight-cover-1" class="upload-img">
+                        </div>
+                        <span id="insta-highlight-text-1" class="edit-text">日常</span>
+                    </div>
+                    <div class="story-item">
+                        <div class="story-ring highlight add-highlight"><i class="fa-solid fa-plus"></i></div>
+                        <span>新建</span>
+                    </div>
+                </div>
+
+                <div class="profile-tabs-container">
+                    <div class="profile-tabs">
+                        <div class="tab-item active" onclick="moveTabIndicator(0)">
+                            <img src="https://i.postimg.cc/1t1RL30y/wu-biao-ti130-20260214082015.png" class="tab-icon" data-selected="https://i.postimg.cc/1t1RL30y/wu-biao-ti130-20260214082015.png" data-unselected="https://i.postimg.cc/RZ8ZLRN6/wu-biao-ti130-20260214083314.png">
+                        </div>
+                        <div class="tab-item" onclick="moveTabIndicator(1)">
+                            <img src="https://i.postimg.cc/pTQVxMkV/wu-biao-ti130-20260214081949.png" class="tab-icon" data-selected="https://i.postimg.cc/VkTkWRd0/wu-biao-ti130-20260214083243.png" data-unselected="https://i.postimg.cc/pTQVxMkV/wu-biao-ti130-20260214081949.png">
+                        </div>
+                        <div class="tab-item" onclick="moveTabIndicator(2)">
+                            <img src="https://i.postimg.cc/xCVjW1Gj/wu-biao-ti130-20260214082002.png" class="tab-icon" data-selected="https://i.postimg.cc/HkKk92V7/wu-biao-ti130-20260214083344.png" data-unselected="https://i.postimg.cc/xCVjW1Gj/wu-biao-ti130-20260214082002.png">
+                        </div>
+                    </div>
+                    <div id="tab-sliding-line"></div>
+                </div>
+
+                <div class="profile-grid">
+                    <div class="grid-item"><img id="insta-grid-1" class="upload-img"></div>
+                    <div class="grid-item"></div>
+                    <div class="grid-item"></div>
+                </div>
+                <div style="height: 120px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="insta-bottom-nav">
+        <div class="insta-nav-item active" data-target="insta-feed-page" data-unselected="https://i.postimg.cc/ZRzY15PZ/wu-biao-ti130-20260214082029.png" data-selected="https://i.postimg.cc/q73Mb333/wu-biao-ti130-20260214082917.png"><img src="https://i.postimg.cc/q73Mb333/wu-biao-ti130-20260214082917.png" class="insta-nav-icon"></div>
+        <div class="insta-nav-item" data-target="insta-search-page-placeholder" data-unselected="https://i.postimg.cc/RFxCjZ72/wu-biao-ti130-20260214082046.png" data-selected="https://i.postimg.cc/8C6PK66d/wu-biao-ti130-20260214082543.png"><img src="https://i.postimg.cc/RFxCjZ72/wu-biao-ti130-20260214082046.png" class="insta-nav-icon"></div>
+        <div class="insta-nav-item" data-target="insta-add-page-placeholder" data-unselected="https://i.postimg.cc/Kzhcd87h/wu-biao-ti130-20260214082100.png" data-selected="https://i.postimg.cc/rm2yvw1N/wu-biao-ti130-20260214082412.png"><img src="https://i.postimg.cc/Kzhcd87h/wu-biao-ti130-20260214082100.png" class="insta-nav-icon"></div>
+        <div class="insta-nav-item" data-target="insta-activity-page-placeholder" data-unselected="https://i.postimg.cc/qRHB9vcV/wu-biao-ti130-20260214082112.png" data-selected="https://i.postimg.cc/Pqwr3wwR/wu-biao-ti130-20260214082345.png"><img src="https://i.postimg.cc/qRHB9vcV/wu-biao-ti130-20260214082112.png" class="insta-nav-icon"></div>
+        <div class="insta-nav-item" data-target="insta-profile-page" data-unselected="https://i.postimg.cc/R0HVsHHd/wu-biao-ti130-20260214082446.png" data-selected="https://i.postimg.cc/tTGRL43f/wu-biao-ti130-20260214082125.png"><img src="https://i.postimg.cc/R0HVsHHd/wu-biao-ti130-20260214082446.png" class="insta-nav-icon"></div>
+    </div>
+</div>
+
     <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
     <script src="security.js"></script>
     <script src="script.js"></script>

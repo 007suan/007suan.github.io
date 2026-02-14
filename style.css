@@ -77,6 +77,7 @@ html {
             display: flex;
             flex-direction: column;
             background-color: #ffffff; 
+            overscroll-behavior: none; 
         }
 .phone-screen::before {
     content: '';
@@ -116,7 +117,7 @@ html {
 }
 
 /* STATUS BAR & HOME BAR (状态栏与底部条) */
-.status-bar { height: 47px; display: flex; justify-content: space-between; align-items: center; padding: 12px 26px 0 26px; font-size: 15px; font-weight: 600; color: #000; z-index: 1000; position: absolute; top: 0; width: 100%; pointer-events: none; }
+.status-bar { height: 47px; display: flex; justify-content: space-between; align-items: center; padding: 12px 26px 0 26px; font-size: 15px; font-weight: 600; color: #000; z-index: 1000; position: fixed; top: 0; width: 100%; pointer-events: none; }
 .status-left { display: flex; align-items: center; gap: 4px; }
 .status-star { font-size: 12px; margin-top: 1px; pointer-events: auto; cursor: text; }
 .right-icons { display: flex; align-items: center; gap: 6px; }
@@ -2228,7 +2229,21 @@ body.offline-active #chat-msg-area {
 .msg-row.action-aside .msg-avatar, 
 .msg-row.action-aside .msg-avatar-col {
     display: none !important; }
+/* 当开启多选模式时，允许动作条响应点击 */
+.msg-multi-select-active .msg-row.action-aside,
+.msg-multi-select-active .msg-time-pill,
+.msg-multi-select-active .msg-recall-pill {
+    pointer-events: auto !important; 
+    cursor: pointer;
+}
 
+/* 给这些居中的条目也加上小勾勾的位置补丁 */
+.msg-multi-select-active .msg-row.action-aside .msg-check-circle,
+.msg-multi-select-active .msg-time-pill-row .msg-check-circle,
+.msg-multi-select-active .msg-recall-row .msg-check-circle {
+    display: block;
+    left: 15px; /* 居中条目的勾勾固定在左侧 */
+}
 /* ------------------------------------------------------------
    6.3. 消息气泡系统 (Message Bubbles)
    ------------------------------------------------------------ */
@@ -2303,9 +2318,9 @@ body.offline-active #chat-msg-area {
     margin-top: 15px; }
 /* 正在输入 */
 .typing-row { display: flex; align-items: flex-end; margin-bottom: 10px; padding-left: 4px; animation: slideUpFade 0.3s ease-out; }
-.typing-bubble { background-color: #F1F1F1; padding: 10px 18px; border-radius: 20px; display: flex; align-items: center; gap: 5px; height: 40px; width: fit-content; position: relative; margin-left: 20px; border-bottom-left-radius: 20px; }
-.typing-bubble::before { content: ""; position: absolute; z-index: 0; bottom: 0px; left: -4px; width: 20px; height: 20px; border-radius: 50%; background-color: #F1F1F1; }
-.typing-bubble::after { content: ""; position: absolute; z-index: 0; bottom: -3px; left: -15px; width: 10px; height: 10px; border-radius: 50%; background-color: #F1F1F1; }
+.typing-bubble { background-color: #F1F1F1; padding: 4px 12px; border-radius: 20px; display: flex; align-items: center; gap: 5px; height: 40px; width: fit-content; position: relative; margin-left: 20px; border-bottom-left-radius: 20px; }
+.typing-bubble::before { content: ""; position: absolute; z-index: 0; bottom: 1px; left: -4px; width: 16px; height: 16px; border-radius: 50%; background-color: #F1F1F1; }
+.typing-bubble::after { content: ""; position: absolute; z-index: 0; bottom: -3px; left: -15px; width: 6px; height: 6px; border-radius: 50%; background-color: #F1F1F1; }
 .typing-dot { width: 9px; height: 9px; background-color: #8e8e93; border-radius: 50%; opacity: 0.6; animation: typingBounce 1.4s infinite ease-in-out both; }
 .typing-dot:nth-child(1) { animation-delay: -0.32s; }
 .typing-dot:nth-child(2) { animation-delay: -0.16s; }
@@ -2337,48 +2352,6 @@ body.offline-active #chat-msg-area {
     animation: bubble-pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     transform-origin: 10px bottom;
     padding-left: 10px; }
-/* 正在输入气泡本体美化 */
-.typing-bubble {
-    background-color: #f0f0f0; 
-    padding: 10px 18px;
-    border-radius: 18px;
-    border-bottom-left-radius: 4px; 
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-/* 三个跳动的小点点 */
-@keyframes dot-dance {
-    0%, 60%, 100% { transform: translateY(0); opacity: 0.6; }
-    30% { transform: translateY(-5px); opacity: 1; } 
-}
-.typing-dot {
-    width: 7px;
-    height: 7px;
-    background-color: #8e8e93; 
-    border-radius: 50%;
-    animation: dot-dance 1.4s infinite ease-in-out; }
-
-.typing-dot:nth-child(1) { animation-delay: 0s; }
-.typing-dot:nth-child(2) { animation-delay: 0.2s; }
-.typing-dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes bubble-pop-out {
-    0% { 
-        opacity: 1; 
-        transform: scale(1); 
-    }
-    30% { 
-        transform: scale(1.05); 
-    }
-    100% { 
-        opacity: 0; 
-        transform: scale(0); 
-    }
-}
-.typing-row.removing {
-    transform-origin: 10px bottom; 
-    animation: bubble-pop-out 0.5s ease-in forwards !important;
-}
 /* 纯图片消息  */
 /* 气泡隐身 */
 .msg-content:has(img) {
@@ -2655,7 +2628,51 @@ body.offline-active #chat-msg-area {
 .msg-row.inner-voice-row .msg-avatar-col,
 .msg-row.inner-voice-row .msg-avatar-placeholder {
     display: none !important; }
+/* 状态页脚样式，确保占位稳定 */
+.msg-status-foot {
+    color: #8e8e93;
+    font-size: 11px;
+    margin-top: 2px;
+    margin-bottom: 12px;
+    clear: both; }
 
+/* 消息行基础间距 */
+.msg-row {
+    margin-bottom: 4px; }
+.msg-row.has-tail {
+    margin-bottom: 8px; }
+
+/* 丝滑进场动画 */
+@keyframes msgSlideUp {
+    0% { opacity: 0; transform: translateY(15px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+.new-msg-anim {
+    animation: msgSlideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+/* 灰飞烟灭动画：元素会向上飘散并消失 */
+@keyframes disintegrate {
+    0% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+        filter: blur(0) grayscale(0);
+    }
+    20% {
+        /* 先微微抖动一下，有种要碎开的感觉 */
+        transform: scale(1.02) translateX(2px);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.5) translateY(-40px) rotate(5deg);
+        filter: blur(15px) grayscale(1) brightness(2);
+    }
+}
+
+/* 触发类名 */
+.disintegrating {
+    animation: disintegrate 0.6s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards !important;
+    pointer-events: none !important;
+}
 /* ============================================================
    6.4. 表情包系统 (Sticker System) 
    ============================================================ */
@@ -4805,25 +4822,25 @@ body, button, input, textarea, select, .edit-text {
 /* --- 2. 滚动区域 --- */
 .photos-scroll-view {
     flex: 1;
-    overflow-y: scroll;
+    overflow-y: scroll; /* 允许滚动 */
     padding-top: 100px;
-    padding-bottom: 50px;
+    padding-bottom: 120px; 
+    
     background: #ffffff;
     -webkit-overflow-scrolling: touch;
-}
+    height: 100%; 
+    position: relative; }
 
 /* 隐藏滚动条 */
 .photos-scroll-view::-webkit-scrollbar {
-    display: none;
-}
+    display: none; }
 
 /* --- 3. 核心照片网格 (Ins 宫格) --- */
 .photos-grid-container {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1.5px; /* 极细间距 */
-    margin-bottom: 35px;
-}
+    margin-bottom: 35px; }
 
 .ph-grid-item {
     position: relative;
@@ -5034,14 +5051,25 @@ body, button, input, textarea, select, .edit-text {
 .photo-browser.show { opacity: 1; pointer-events: auto; }
 
 .pb-header {
-    height: 100px;
+    position: absolute; 
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100px; 
+    
     padding: 44px 20px 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
     color: #ffffff;
-    z-index: 10;
-}
+    z-index: 2010; 
+    background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%);
+    pointer-events: none; }
+
+/* 让里面的按钮恢复可点击 */
+.pb-back, .pb-time-info {
+    pointer-events: auto;
+    cursor: pointer; }
 
 .pb-time-info {
     text-align: center;
@@ -5085,3 +5113,250 @@ body, button, input, textarea, select, .edit-text {
 .ph-footer-icon-btn:active { transform: scale(0.85); }
 
 .ph-custom-icon { width: 26px; height: 26px; }
+
+/* --- 撤回消息整行居中 --- */
+.msg-row.recall-row {
+    justify-content: center !important; /* 核心：让 Flex 容器内容居中 */
+    width: 100% !important;
+    margin: 12px 0 !important;
+    pointer-events: none; /* 默认不可点，防止误触 */
+}
+
+/* --- 撤回提醒的胶囊样式 --- */
+.msg-recall-pill {
+    background: rgba(0, 0, 0, 0.05); /* 淡淡的灰色背景 */
+    color: #999;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 4px; /* 微信风格是小方圆角 */
+    text-align: center;
+    max-width: 80%;
+    pointer-events: auto; /* 恢复内部文字和链接的可点属性 */
+}
+
+/* 多选模式下的勾勾偏移补丁 */
+.msg-multi-select-active .recall-row .msg-check-circle {
+    display: block;
+    left: 20px; /* 固定在左侧，不破坏中间的文字对齐 */
+}
+/* --- 1. 个人主页退场：向左滑出 --- */
+@keyframes slideOutToLeft { 
+    from { transform: translateX(0); opacity: 1; } 
+    to { transform: translateX(-100%); opacity: 0.8; } 
+}
+#wx-profile-view.closing { 
+    animation: slideOutToLeft 0.4s cubic-bezier(0.19, 1, 0.22, 1) forwards; 
+}
+
+/* ============================================================
+   INSTAGRAM APP - 完美高仿整理版 (Chun_Hz Edit)
+   ============================================================ */
+
+/* --- 1. 基础 App 框架 --- */
+#app-window-instagram {
+    background-color: #fff;
+    color: #000;
+    display: flex;
+    flex-direction: column;
+    z-index: 9999;
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    overflow: hidden;
+    font-family: var(--font-family);
+}
+
+.section-padding { padding: 0 16px; }
+
+#insta-main-content {
+    flex-grow: 1;
+    position: relative;
+    overflow: hidden;
+    background-color: #fff;
+}
+
+.insta-page {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    overflow-y: auto;
+    display: none;
+    scrollbar-width: none;
+}
+.insta-page::-webkit-scrollbar { display: none; }
+.insta-page.active-page { display: block; }
+
+/* --- 2. 顶部导航 (灵动岛适配 & ID 居中) --- */
+.insta-status-bar-placeholder {
+    height: 48px; /* 预留灵动岛位置 */
+    flex-shrink: 0;
+}
+
+#insta-top-nav {
+    height: 44px;
+    background: #fff;
+    border-bottom: 0.5px solid rgba(0,0,0,0.1);
+    position: relative;
+    z-index: 10;
+    flex-shrink: 0;
+}
+
+.insta-nav-header {
+    display: none;
+    height: 100%;
+    align-items: center;
+    padding: 0 12px;
+}
+.insta-nav-header.active { display: flex; justify-content: space-between; }
+
+/* ID 绝对居中逻辑 */
+.insta-center-title-wrap {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.insta-profile-username { font-size: 16px; font-weight: 700; color: #000; }
+.username-arrow-big { width: 14px; height: 14px; object-fit: contain; }
+
+.insta-header-left { display: flex; align-items: center; }
+.insta-header-actions { display: flex; gap: 18px; align-items: center; font-size: 22px; }
+.insta-header-icon-small { width: 22px; height: 22px; object-fit: contain; }
+
+/* --- 3. 首页 Feed 样式 --- */
+.insta-stories-bar {
+    display: flex;
+    gap: 15px;
+    padding: 10px 15px;
+    overflow-x: auto;
+    border-bottom: 0.5px solid rgba(0,0,0,0.1);
+}
+
+.story-item { display: flex; flex-direction: column; align-items: center; width: 64px; flex-shrink: 0; }
+.story-ring { width: 64px; height: 64px; border-radius: 50%; padding: 3px; display: flex; justify-content: center; align-items: center; margin-bottom: 5px; }
+.story-ring.unread { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+.story-ring.read { background-color: #dbdbdb; }
+.story-ring img { width: 100%; height: 100%; border-radius: 50%; border: 2px solid #fff; object-fit: cover; }
+.story-item span { font-size: 11px; text-align: center; }
+
+.insta-post { border-bottom: 1px solid #efefef; padding-bottom: 10px; }
+.post-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; }
+.post-user { display: flex; align-items: center; gap: 10px; }
+.post-avatar { width: 32px; height: 32px; border-radius: 50%; }
+.post-image-container img { width: 100%; display: block; }
+.post-info { padding: 10px 15px; font-size: 14px; }
+.post-likes { font-weight: 700; margin-bottom: 4px; }
+
+/* --- 4. 个人主页 Profile (重中之重) --- */
+
+/* 头像与气泡组 */
+.profile-header-new { display: flex; align-items: center; padding: 12px 16px; }
+
+.profile-avatar-wrapper {
+    position: relative;
+    width: 86px;
+    height: 86px;
+    margin-right: 28px;
+}
+
+.story-ring-outer {
+    width: 86px; height: 86px;
+    border-radius: 50%;
+    border: 1px solid #dbdbdb;
+    display: flex; justify-content: center; align-items: center;
+    padding: 3px;
+}
+
+.profile-avatar-big { width: 100%; height: 100%; border-radius: 50%; overflow: hidden; }
+.profile-avatar-big img { width: 100%; height: 100%; object-fit: cover; }
+
+/* 状态气泡 (Note Bubble) */
+.status-bubble-wrap { position: absolute; top: -18px; left: 10px; z-index: 10; }
+.status-bubble-main {
+    background: #fff; border-radius: 18px; padding: 12px 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 0.5px solid #eee;
+    display: flex; align-items: center; gap: 4px;
+}
+.bubble-text { font-size: 11px; color: #666; font-weight: 500; }
+
+.bubble-dot-1 { width: 15px; height: 15px; background: #fff; border-radius: 50%; margin-left: 10px; margin-top: -12px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+.bubble-dot-2 { width: 5px; height: 5px; background: #fff; border-radius: 50%; margin-left: 20px; margin-top: 1px; }
+
+.avatar-plus-icon-new { position: absolute; right: 0px; bottom: 0px; width: 24px; height: 24px;}
+
+/* 数据统计 */
+.profile-stats-container { flex: 1; display: flex; justify-content: space-around; }
+.stat-box { text-align: center; }
+.stat-num { font-size: 17px; font-weight: 700; color: #000; letter-spacing: -0.5px; }
+.stat-label { font-size: 14px; color: #000; }
+
+/* 简介 */
+.profile-bio-new { padding: 0 16px; font-size: 14px; line-height: 1.4; color: #000; }
+.bio-name { font-weight: 700; font-size: 15px; margin-bottom: 2px; }
+
+/* 专业面板与按钮组 (紧凑布局) */
+.professional-dashboard-wrap { margin-top: 10px; }
+.professional-dashboard {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #efefef;
+    border-radius: 10px;
+    padding: 10px 14px; }
+
+.dash-content {
+    display: flex;
+    flex-direction: column; 
+    gap: 2px; }
+.dash-title { font-size: 14px; font-weight: 600; color: #000; }
+.dash-sub { font-size: 13px; color: #737373; margin-top: 1px; }
+
+.profile-actions-new { margin-top: 8px; display: flex; gap: 6px; padding: 0 16px 16px 16px; }
+.insta-btn-action { flex: 1; background: #efefef; border: none; border-radius: 8px; height: 34px; font-weight: 600; font-size: 14px; color: #000; cursor: pointer; }
+.insta-btn-icon { width: 34px; height: 34px; background: #efefef; border: none; border-radius: 8px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+.insta-btn-icon img { width: 18px; }
+
+/* 精选 */
+.highlights-bar { padding-bottom: 16px; border: none; }
+.story-ring.highlight { background-color: #fff; border: 1px solid #dbdbdb; }
+.add-highlight { display: flex; justify-content: center; align-items: center; font-size: 20px; color: #000; }
+
+/* Tab 栏与 1/2 滑动黑条 */
+.profile-tabs-container { position: relative; border-top: 0.5px solid #dbdbdb; }
+.profile-tabs { display: flex; height: 44px; }
+.tab-item { flex: 1; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+.tab-icon { width: 22px; height: 22px; }
+
+#tab-sliding-line {
+    position: absolute; bottom: 0; left: 0;
+    width: 33.333%; height: 1.5px; background: transparent;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex; justify-content: center;
+}
+#tab-sliding-line::after { content: ''; width: 50%; height: 100%; background: #000; }
+
+/* 网格 */
+.profile-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background-color: #fff; }
+.grid-item { aspect-ratio: 1/1; background-color: #f8f8f8; overflow: hidden; }
+.grid-item img { width: 100%; height: 100%; object-fit: cover; }
+
+/* --- 5. 底部导航栏 (iOS 抬高适配) --- */
+#insta-bottom-nav {
+    height: 85px;
+    padding-bottom: 25px; /* 抬高图标，留出系统 Home Bar 位置 */
+    background: #fff;
+    border-top: 0.5px solid #dbdbdb;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    flex-shrink: 0;
+    z-index: 100;
+}
+
+.insta-nav-item { flex: 1; display: flex; justify-content: center; align-items: center; height: 100%; }
+.insta-nav-icon { width: 26px; height: 26px; object-fit: contain; transition: transform 0.1s ease; }
+.insta-nav-item:active .insta-nav-icon { transform: scale(0.9); }
