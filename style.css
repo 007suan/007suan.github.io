@@ -5410,34 +5410,39 @@ img { vertical-align: middle;}
     margin-top: 4px;
 }
 
-/* --- 遮罩层 --- */
+/* 修复后的遮罩层：使用 fixed 定位，不再撑开页面 */
 .insta-menu-overlay {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.5); /*这才是图2的深色背景*/
-    z-index: 10000;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end; /* 东西在底部 */
-}
-.insta-menu-overlay.active {
-    opacity: 1;
-    pointer-events: auto;
+    position: fixed; /* 关键修改：从 absolute 改为 fixed */
+    top: 0;
+    left: 0;
+    width: 100vw;  /* 占满视口宽度 */
+    height: 100vh; /* 占满视口高度 */
+    background: rgba(0,0,0,0);
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 9999; /* 保证在最上层 */
+    overflow: hidden; /* 防止内部元素溢出 */
 }
 
-/* --- 图2高仿：底部面板 --- */
-.insta-bottom-sheet {
-    background: #fff;
-    border-top-left-radius: 24px; /* 更圆润的角 */
-    border-top-right-radius: 24px;
-    padding-bottom: 30px; /* 底部留白 */
-    width: 100%;
-    transform: translateY(100%); /* 默认藏在下面 */
-    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); /* 丝滑弹出 */
+.insta-menu-overlay.active {
+    background: rgba(0,0,0,0.5);
+    visibility: visible;
 }
+
+/* 底部面板保持不变，但确保它在 fixed 容器里 */
+.insta-bottom-sheet {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #fff;
+    border-radius: 12px 12px 0 0;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    padding-bottom: env(safe-area-inset-bottom); /* 适配 iPhone 底部横条 */
+}
+
+/* 修复激活状态下的面板位置 */
 .insta-menu-overlay.active .insta-bottom-sheet {
     transform: translateY(0);
 }
@@ -5518,3 +5523,28 @@ img { vertical-align: middle;}
 .filter-preview.vivid { background-color: #ff5722; }
 .filter-preview.vintage { background-color: #d4a373; }
 .filter-preview.drama { background-color: #333; }
+/* Instagram 发帖流程样式 */
+.header-title { font-weight: 700; font-size: 16px; }
+
+/* 滤镜小方块 */
+.filter-thumb {
+    width: 60px; height: 60px; background: #eee;
+    border-radius: 4px; margin-bottom: 5px;
+}
+.filter-item span { font-size: 12px; color: #999; }
+.filter-item.active span { color: #000; font-weight: 600; }
+
+/* 相册网格 */
+.gallery-grid .gallery-item {
+    aspect-ratio: 1; /* 正方形 */
+    position: relative;
+    cursor: pointer;
+}
+.gallery-grid .gallery-item:active { opacity: 0.8; }
+/* 选中的遮罩效果 */
+.gallery-item.selected::after {
+    content: ''; position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(255,255,255,0.4);
+    pointer-events: none;
+}

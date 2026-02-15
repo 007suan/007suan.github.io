@@ -11339,127 +11339,140 @@ window.moveTabIndicator = function(index) {
         }
     });
 };
-/* ================= 发帖流程逻辑 (修复版：接入系统相册) ================= */
+/* ================= 发帖流程逻辑 (陈淮之重构版) ================= */
 
-let selectedImageSrc = ""; // 当前选中的图片
-let currentFilter = "";    // 当前选中的滤镜
-
-// 1. 开始发帖
-window.startPostCreation = function(type) {
-    console.log("🚀 开始发帖流程:", type);
-    closeInstaCreateMenu(); // 关菜单
-
-    if (type !== 'post') {
-        alert("宝宝，目前先开发发帖子功能哦~");
-        return;
-    }
-
-    // 切换页面前，先尝试加载相册，确保有数据
-    loadGalleryImages(); 
-    
-    // 跳转到选图页
-    switchInstaPage('insta-create-select');
+// 临时草稿箱 (存当前正在编辑的帖子数据)
+let currentDraft = {
+    image: "",
+    filter: "",
+    caption: ""
 };
 
-// 2. 加载相册照片 (核心修复：读取 photoLibrary)
-function loadGalleryImages() {
-    console.log("正在读取系统相册...");
-    const grid = document.getElementById('insta-gallery-list');
-    if (!grid) {
-        console.error("❌ 找不到相册容器: insta-gallery-list，请检查 HTML!");
-        return;
-    }
-    
-    grid.innerHTML = ""; // 清空旧数据
+// 1. 开始发帖 (入口)
+window.handleCreateType = function(type) {
+    window.closeInstaCreateMenu(); // 关菜单
 
-    // === 关键逻辑：接入你的 photoLibrary ===
-    // 检查全局变量 photoLibrary 是否存在，不存在就用空数组
-    const systemPhotos = (typeof photoLibrary !== 'undefined' && Array.isArray(photoLibrary)) ? photoLibrary : [];
-    
-    // 如果相册是空的，或者没读到
-    if (systemPhotos.length === 0) {
-        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #999;">相册空空如也<br>去相机拍几张吧~</div>`;
-        // 设一个默认图防止大图空白
-        document.getElementById('insta-select-preview').src = "https://i.postimg.cc/CMjJz22r/Snipaste-2025-02-12-23-30-49.png"; 
-        return;
+    if (type === 'post') {
+        setTimeout(() => {
+            initGallery(); // 初始化相册
+            window.switchInstaPage('insta-create-select'); // 这里的 ID 对应 HTML 里的第一步
+        }, 300);
+    } else {
+        alert("宝宝，这个功能还在开发中哦~");
     }
+};
 
-    try {
-        // 遍历系统照片
-        systemPhotos.forEach((photo, index) => {
-            const div = document.createElement('div');
-            div.className = 'gallery-item';
-            
-            // 你的 photoLibrary 结构应该是 { src: "...", ... }
-            // 如果是 data:image base64 也可以直接用
-            const imgSrc = photo.src || photo.url || photo; // 兼容不同数据结构
-            
-            div.innerHTML = `<img src="${imgSrc}" style="width:100%; height:100%; object-fit:cover;">`;
-            
-            // 点击事件
-            div.onclick = () => selectImage(imgSrc, div);
-            grid.appendChild(div);
-            
-            // 默认选中第一张
-            if (index === 0) selectImage(imgSrc, div);
-        });
-    } catch (e) {
-        console.error("加载照片出错:", e);
-        // 兜底：如果出错，至少显示一张图，防止白屏
-        document.getElementById('insta-select-preview').src = "https://i.postimg.cc/CMjJz22r/Snipaste-2025-02-12-23-30-49.png";
+// 2. 初始化相册 (加载虚拟照片 + 真实上传入口)
+function initGallery() {
+    const grid = document.getElementById('insta-gallery-grid');
+    if (!grid) return;
+    grid.innerHTML = ""; // 清空
+
+    // A. 添加一个“上传”按钮 (伪装成第一张图)
+    const uploadBtn = document.createElement('div');
+    uploadBtn.className = 'gallery-item';
+    uploadBtn.style.background = '#f0f0f0';
+    uploadBtn.style.display = 'flex';
+    uploadBtn.style.alignItems = 'center';
+    uploadBtn.style.justifyContent = 'center';
+    uploadBtn.innerHTML = '<i class="fa-solid fa-plus" style="font-size:20px; color:#999;"></i>';
+    uploadBtn.onclick = () => document.getElementById('real-file-input').click();
+    grid.appendChild(uploadBtn);
+
+    // B. 虚拟相册数据 (默认给你的图)
+    const demoPhotos = [
+        "https://i.postimg.cc/gkZMz1xW/IMG-7800.jpg",
+        "https://i.postimg.cc/W4kbWkkD/wu-biao-ti130-20260214082642.png", 
+        "https://i.postimg.cc/Hk8Vpcrw/wu-biao-ti131-20260214195445.png",
+        "https://i.postimg.cc/CMjJz22r/Snipaste-2025-02-12-23-30-49.png",
+        "https://i.postimg.cc/6QsTTWZ8/wu-biao-ti131-20260214195502.png"
+    ];
+
+    demoPhotos.forEach(src => {
+        const item = document.createElement('div');
+        item.className = 'gallery-item';
+        item.innerHTML = `<img src="${src}" style="width:100%; height:100%; object-fit:cover; pointer-events:none;">`;
+        item.onclick = () => selectDraftImage(src, item);
+        grid.appendChild(item);
+    });
+
+    // 默认选中第一张图
+    if(demoPhotos.length > 0) {
+        selectDraftImage(demoPhotos[0]);
     }
 }
 
-// 3. 选中图片
-function selectImage(src, el) {
-    selectedImageSrc = src;
+// 3. 处理真实文件上传
+window.handleRealFileUpload = function(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            selectDraftImage(e.target.result); // 选中上传的图
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+};
+
+// 4. 选中图片逻辑
+function selectDraftImage(src, element) {
+    currentDraft.image = src;
     
-    const preview = document.getElementById('insta-select-preview');
+    // 更新预览大图
+    const preview = document.getElementById('insta-crop-preview');
     if(preview) preview.src = src;
 
     // 更新选中样式
-    document.querySelectorAll('.gallery-item').forEach(item => item.classList.remove('selected'));
-    if(el) el.classList.add('selected');
+    document.querySelectorAll('.gallery-item').forEach(el => el.classList.remove('selected'));
+    if(element) element.classList.add('selected');
 }
 
-// 4. 关闭发帖
-window.closePostCreation = function() {
-    switchInstaPage('insta-feed-page');
-    // 清空状态
-    selectedImageSrc = "";
-    currentFilter = "";
-};
-
-// 5. 去编辑页 (下一步)
-window.goToEditPage = function() {
-    if (!selectedImageSrc) {
-        alert("请先选择一张照片！");
-        return;
-    }
-    switchInstaPage('insta-create-edit');
+// 5. 下一步：去滤镜页
+window.goToFilterPage = function() {
+    if(!currentDraft.image) return;
     
-    // 这一步很重要：把选中的图传给编辑页
-    const editImg = document.getElementById('insta-edit-preview');
-    if(editImg) {
-        editImg.src = selectedImageSrc;
-        editImg.style.filter = ""; // 重置滤镜
+    const filterPreview = document.getElementById('insta-filter-preview');
+    if(filterPreview) {
+        filterPreview.src = currentDraft.image;
+        filterPreview.style.filter = ""; // 重置滤镜
     }
+    window.switchInstaPage('insta-create-filter');
 };
 
 // 6. 应用滤镜
-window.applyFilter = function(filterCss) {
-    currentFilter = filterCss;
-    const editImg = document.getElementById('insta-edit-preview');
-    if(editImg) editImg.style.filter = filterCss;
-    
-    // 简单的 UI 高亮切换
-    const items = document.querySelectorAll('.filter-item');
-    items.forEach(item => item.classList.remove('active'));
-    // 这一步只是简单处理，实际可以用 event.target
+window.applyInstaFilter = function(filterCss) {
+    currentDraft.filter = filterCss;
+    document.getElementById('insta-filter-preview').style.filter = filterCss;
 };
 
-// 7. 去文案页 (下一步)
-window.goToCaptionPage = function() {
-    alert("宝宝，照片处理好了！准备发布 (文案页开发中)");
-    // 这里后面接发布逻辑
+// 7. 下一步：去分享页 (填文案)
+window.goToSharePage = function() {
+    const thumb = document.getElementById('insta-final-thumb');
+    if(thumb) {
+        thumb.src = currentDraft.image;
+        thumb.style.filter = currentDraft.filter;
+    }
+    // 清空以前的输入
+    document.getElementById('insta-caption-input').value = "";
+    window.switchInstaPage('insta-create-share');
+};
+
+// 8. 最终发布！
+window.finalizePost = function() {
+    const caption = document.getElementById('insta-caption-input').value;
+    
+    // 调用之前写好的数据中心 (InstaSystem)
+    if (window.InstaSystem) {
+        window.InstaSystem.createPost(currentDraft.image, caption);
+    } else {
+        console.error("InstaSystem 未找到，无法保存数据");
+    }
+
+    // 重置并回首页
+    closePostFlow();
+};
+
+// 9. 关闭流程 (回到首页)
+window.closePostFlow = function() {
+    currentDraft = { image: "", filter: "", caption: "" }; // 清空草稿
+    window.switchInstaPage('insta-feed-page');
 };
