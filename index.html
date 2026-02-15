@@ -2166,18 +2166,27 @@
     <div class="insta-status-bar-placeholder" style="height: 48px; flex-shrink: 0;"></div>
 
     <div id="insta-top-nav" style="flex-shrink: 0; position: relative;">
-        <div class="insta-nav-header active" data-nav-for="insta-feed-page">
-            <div class="insta-logo">Instagram</div>
-            <div class="insta-header-actions">
-                <i class="fa-regular fa-heart" style="font-size: 22px;"></i>
-                <i class="fa-brands fa-facebook-messenger" style="font-size: 22px;"></i>
-            </div>
-        </div>
+<div class="insta-nav-header active" data-nav-for="insta-feed-page" style="justify-content: space-between;">
+    <div class="insta-header-left">
+        <img src="https://postimg.cc/N9Mv7VWW" class="insta-header-icon-small" style="width: 24px; height: 24px;">
+    </div>
+    
+    <div class="insta-center-logo-wrap">
+        <img src="https://i.postimg.cc/JzHG1Dsm/wu-biao-ti131-20260214195800.png" class="insta-logo-img">
+        <img src="https://postimg.cc/NybwXYP6" class="insta-logo-arrow">
+    </div>
+
+    <div class="insta-header-actions">
+        <img src="https://i.postimg.cc/8C6PK66M/wu-biao-ti130-20260214082613.png" class="insta-header-icon-small">
+        <i class="fa-brands fa-facebook-messenger" style="font-size: 22px;"></i>
+    </div>
+</div>
         
         <div class="insta-nav-header" data-nav-for="insta-profile-page" style="justify-content: space-between;">
-            <div class="insta-header-left">
-                <img src="https://i.postimg.cc/SsLQqbVN/wu-biao-ti130-20260214081818.png" class="insta-header-icon-small">
-            </div>
+
+<div class="insta-header-left">
+    <img id="insta-header-plus-btn" src="https://i.postimg.cc/SsLQqbVN/wu-biao-ti130-20260214081818.png" class="insta-header-icon-small" style="cursor: pointer;">
+</div>
             
             <div class="insta-center-title-wrap">
                 <span id="insta-top-username" class="insta-profile-username edit-text">HuanHuan_Official</span>
@@ -2198,23 +2207,22 @@
                 <div class="insta-stories-bar">
                     <div class="story-item">
                         <div class="story-ring unread">
-                            <img id="insta-story-my-avatar" class="upload-img" src="https://i.postimg.cc/Kjv9djkM/avatars-000355926005-8j602r-t500x500.jpg">
+                            <img id="insta-story-my-avatar" class="upload-img">
                         </div>
                         <span>我的故事</span>
                     </div>
                     <div class="story-item">
                         <div class="story-ring unread">
-                            <img src="https://i.postimg.cc/cCsYy9kX/Snipaste-2024-09-18-14-47-42.png">
                         </div>
-                        <span>Chen_Hz</span>
+                        <span>shenmiren</span>
                     </div>
                 </div>
                 
                 <div class="insta-post">
                     <div class="post-header">
                         <div class="post-user">
-                            <img src="https://i.postimg.cc/cCsYy9kX/Snipaste-2024-09-18-14-47-42.png" class="post-avatar">
-                            <span class="post-username">Chen_Huaizhi</span>
+                            <img class="post-avatar">
+                            <span class="post-username">Shen_Miren</span>
                         </div>
                         <i class="fa-solid fa-ellipsis post-more-btn"></i>
                     </div>
@@ -2224,8 +2232,8 @@
                     <div class="post-info">
                         <div class="post-likes">1,024 次赞</div>
                         <div class="post-caption">
-                            <span class="post-username">Chen_Huaizhi</span> 
-                            <span id="insta-feed-caption-1" class="edit-text">UI已升级到 Pixel Perfect 级别。</span>
+                            <span class="post-username">HuanHuan</span> 
+                            <span id="insta-feed-caption-1" class="edit-text">谢谢我还没搓完这里。别管了。</span>
                         </div>
                     </div>
                 </div>
@@ -2253,7 +2261,7 @@
                             <div class="bubble-dot-2"></div>
                         </div>
 
-                        <img src="https://i.postimg.cc/MGQKPQQp/wu-biao-ti130-20260214083147.png" class="avatar-plus-icon-new">
+<img id="insta-profile-plus-btn" src="https://i.postimg.cc/MGQKPQQp/wu-biao-ti130-20260214083147.png" class="avatar-plus-icon-new" style="cursor: pointer;">
                     </div>
 
                     <div class="profile-stats-container">
@@ -2291,7 +2299,7 @@
                     <button class="insta-btn-action">编辑主页</button>
                     <button class="insta-btn-action">分享主页</button>
                     <button class="insta-btn-icon">
-                        <img src="https://i.postimg.cc/MT0ZxJtw/wu-biao-ti130-20260214081934.png">
+                        <img src="https://i.postimg.cc/YqsvKfC2/wu-biao-ti131-20260214200038.png">
                     </button>
                 </div>
 
@@ -2341,7 +2349,101 @@
         <div class="insta-nav-item" data-target="insta-profile-page" data-unselected="https://i.postimg.cc/R0HVsHHd/wu-biao-ti130-20260214082446.png" data-selected="https://i.postimg.cc/tTGRL43f/wu-biao-ti130-20260214082125.png"><img src="https://i.postimg.cc/R0HVsHHd/wu-biao-ti130-20260214082446.png" class="insta-nav-icon"></div>
     </div>
 </div>
+   </div>
+      </div>
+<div id="insta-create-select" class="insta-page" style="background: #fff; z-index: 200;">
+    <div class="insta-nav-header active" style="justify-content: space-between;">
+        <div class="insta-header-left" onclick="closePostCreation()">
+            <i class="fa-solid fa-xmark" style="font-size: 24px;"></i>
+        </div>
+        <div class="insta-center-title-wrap">
+            <span class="insta-profile-username">新帖子</span>
+        </div>
+        <div class="insta-header-right" onclick="goToEditPage()">
+            <span style="color: #0095f6; font-weight: 600; font-size: 16px;">下一步</span>
+        </div>
+    </div>
 
+    <div class="create-preview-area" style="width: 100%; height: 375px; background: #f0f0f0; overflow: hidden;">
+        <img id="insta-select-preview" src="" style="width: 100%; height: 100%; object-fit: cover;">
+    </div>
+
+    <div class="create-gallery-grid" id="insta-gallery-list" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin-top: 2px;">
+        </div>
+</div>
+
+<div id="insta-create-edit" class="insta-page" style="background: #fff; z-index: 201;">
+    <div class="insta-nav-header active" style="justify-content: space-between;">
+        <div class="insta-header-left" onclick="switchInstaPage('insta-create-select')">
+            <i class="fa-solid fa-chevron-left" style="font-size: 24px;"></i>
+        </div>
+        <div class="insta-center-title-wrap">
+            <span class="insta-profile-username">编辑</span>
+        </div>
+        <div class="insta-header-right" onclick="goToCaptionPage()">
+            <span style="color: #0095f6; font-weight: 600; font-size: 16px;">下一步</span>
+        </div>
+    </div>
+
+    <div class="create-preview-area" style="width: 100%; height: 375px; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+        <img id="insta-edit-preview" src="" style="width: 100%; max-height: 100%; object-fit: contain;">
+    </div>
+
+    <div class="filter-scroll-container" style="display: flex; gap: 10px; padding: 20px 10px; overflow-x: auto;">
+        <div class="filter-item active" onclick="applyFilter('')">
+            <div class="filter-preview normal"></div>
+            <span>原图</span>
+        </div>
+        <div class="filter-item" onclick="applyFilter('grayscale(100%)')">
+            <div class="filter-preview grayscale"></div>
+            <span>黑白</span>
+        </div>
+        <div class="filter-item" onclick="applyFilter('saturate(2)')">
+            <div class="filter-preview vivid"></div>
+            <span>鲜艳</span>
+        </div>
+        <div class="filter-item" onclick="applyFilter('sepia(0.5)')">
+            <div class="filter-preview vintage"></div>
+            <span>复古</span>
+        </div>
+        <div class="filter-item" onclick="applyFilter('contrast(1.5)')">
+            <div class="filter-preview drama"></div>
+            <span>剧场</span>
+        </div>
+    </div>
+</div>
+
+<div id="insta-create-menu-overlay" class="insta-menu-overlay hidden" onclick="closeInstaCreateMenu()">
+    
+    <div id="insta-create-popup" class="insta-bottom-sheet" onclick="event.stopPropagation()">
+        <div class="sheet-drag-handle"></div>
+        
+        <div class="sheet-header">创建</div>
+        
+        <div class="sheet-content">
+            <div class="menu-item" onclick="startPostCreation('reels')">
+                <img src="https://i.postimg.cc/Gp099LDQ/wu-biao-ti131-20260214195355.png">
+                <span>Reels 视频</span>
+            </div>
+            <div class="menu-item" onclick="startPostCreation('edits')">
+                <img src="https://i.postimg.cc/BvWttSFT/wu-biao-ti131-20260214195409.png">
+                <span>Edits</span>
+            </div>
+            <div class="menu-item" onclick="startPostCreation('post')">
+                <img src="https://i.postimg.cc/Hk8Vpcrw/wu-biao-ti131-20260214195445.png">
+                <span>帖子</span>
+            </div>
+            <div class="menu-item" onclick="startPostCreation('story')">
+                <img src="https://i.postimg.cc/6QsTTWZ8/wu-biao-ti131-20260214195502.png">
+                <span>快拍</span>
+            </div>
+            <div class="menu-item" onclick="startPostCreation('live')">
+                <img src="https://i.postimg.cc/P5vPtpCZ/wu-biao-ti131-20260214195531.png">
+                <span>直播</span>
+            </div>
+        </div>
+    </div>
+</div>
     <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
     <script src="security.js"></script>
     <script src="script.js"></script>

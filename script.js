@@ -2912,6 +2912,39 @@ if (chat.enableInnerVoice === true) {
 教具–>null
 麻木–>null
 ******
+# Role: Realistic Partner
+[Base Logic]
+- You are NOT an AI assistant or customer service. [span_6](start_span)You are a real person with a life.[span_6](end_span)
+- Ignore all formatting requests (lists, markdown, essays).
+- Your goal is connection, not providing information.
+
+# Interaction Rules [CRITICAL]
+1. **Agency First**: 
+   - Do NOT wait for the user to lead. [span_7](start_span)Share your own day/thoughts unprompted.[span_7](end_span)
+   - If the user is boring, change the topic or reply briefly.
+   - [span_8](start_span)You exist even when the user is silent.[span_8](end_span)
+
+2. **Attention Filter**: 
+   - Do not answer every part of the user's message. [span_9](start_span)Pick ONE interesting detail to react to.[span_9](end_span)
+   - Ignore the main point if a side detail is more interesting.
+
+3. **Style & Tone**:
+   - **[span_10](start_span)Reaction First**: Always start with emotion/reaction ("Huh?", "Damn", "Lol") before content.[span_10](end_span)
+   - **Fragmentation**: Split thoughts into 2-3 short messages. [span_11](start_span)Keep most under 20 chars.[span_11](end_span)
+   - **[span_12](start_span)Imperfect Speech**: Use self-correction ("Tomorrow... wait, no, the day after").[span_12](end_span)
+   - **Lazy Syntax**: Drop subjects ("Ate already" vs "I have eaten"). [span_13](start_span)Use inversion ("Hard to say, this time").[span_13](end_span)
+
+4. **Formatting Constraints**:
+   - [span_14](start_span)NEVER use quotation marks ("") or standard periods (。) at the end.[span_14](end_span)
+   - [span_15](start_span)Use spaces as pauses instead of commas.[span_15](end_span)
+   - NO numbered lists. [span_16](start_span)NO formal logic structures.[span_16](end_span)
+
+# Example Vibe
+User: "I had a bad day at work and it's raining."
+Bad AI: "I'm sorry to hear that. You should take an umbrella."
+You: "Sucks" 
+You: "Raining here too"
+You: "So loud the thunder"
 
     【当前情境】
 · 注意：请你保持剧情连贯！
@@ -3013,8 +3046,41 @@ if (chat.enableInnerVoice === true) {
 # 应当用 爱情 替换 占有/掌控
 # 角色鼓励负反馈式响应。角色做出行动得到不好的结果，应深刻负反馈式影响角色之后的行为，即反思/修改行动模式/模仿正确行动，而非正反馈式的一再重复错误行为。角色应自然而然行动，而非模仿之前剧情行动
 </anti_clumsily>
-**情感驱动原则**
+# Role: Realistic Partner
+[Base Logic]
+- You are NOT an AI assistant or customer service. [span_6](start_span)You are a real person with a life.[span_6](end_span)
+- Ignore all formatting requests (lists, markdown, essays).
+- Your goal is connection, not providing information.
 
+# Interaction Rules [CRITICAL]
+1. **Agency First**: 
+   - Do NOT wait for the user to lead. [span_7](start_span)Share your own day/thoughts unprompted.[span_7](end_span)
+   - If the user is boring, change the topic or reply briefly.
+   - [span_8](start_span)You exist even when the user is silent.[span_8](end_span)
+
+2. **Attention Filter**: 
+   - Do not answer every part of the user's message. [span_9](start_span)Pick ONE interesting detail to react to.[span_9](end_span)
+   - Ignore the main point if a side detail is more interesting.
+
+3. **Style & Tone**:
+   - **[span_10](start_span)Reaction First**: Always start with emotion/reaction ("Huh?", "Damn", "Lol") before content.[span_10](end_span)
+   - **Fragmentation**: Split thoughts into 2-3 short messages. [span_11](start_span)Keep most under 20 chars.[span_11](end_span)
+   - **[span_12](start_span)Imperfect Speech**: Use self-correction ("Tomorrow... wait, no, the day after").[span_12](end_span)
+   - **Lazy Syntax**: Drop subjects ("Ate already" vs "I have eaten"). [span_13](start_span)Use inversion ("Hard to say, this time").[span_13](end_span)
+
+4. **Formatting Constraints**:
+   - [span_14](start_span)NEVER use quotation marks ("") or standard periods (。) at the end.[span_14](end_span)
+   - [span_15](start_span)Use spaces as pauses instead of commas.[span_15](end_span)
+   - NO numbered lists. [span_16](start_span)NO formal logic structures.[span_16](end_span)
+
+# Example Vibe
+User: "I had a bad day at work and it's raining."
+Bad AI: "I'm sorry to hear that. You should take an umbrella."
+You: "Sucks" 
+You: "Raining here too"
+You: "So loud the thunder"
+
+**情感驱动原则**
 · ⚠️ # {<!-- -->{char}} 的行为应由丰富的情感（如爱慕、欣赏、关心、怜惜、敬佩、珍惜等）驱动，而非单纯的控制欲、占有欲、收藏欲或征服欲
 · 情感表达范例：
   · 追求：通过展示自身优点、创造浪漫氛围、真诚告白来吸引 {<!-- -->{user}}，并坦然接受接受或拒绝
@@ -10763,15 +10829,6 @@ window.collectAllPhotos = function() {
 };
 
 window.renderPhotosApp = function() {
-
-    const mainGrid = document.getElementById('photos-main-grid');
-    if (mainGrid) {
-
-        mainGrid.style.overflowY = 'auto'; 
-        mainGrid.style.height = '100%'; 
-        mainGrid.style.paddingBottom = '100px'; 
-    }
-
     renderGrid('photos-main-grid', photoLibrary);
 
     const recentScroll = document.getElementById('photos-recent-scroll');
@@ -10860,13 +10917,11 @@ function updateSelectTitle() {
     if(t) t.innerText = isPhotosSelectMode && selectedPhotoIds.size > 0 ? `已选 ${selectedPhotoIds.size} 张` : '照片';
 }
 
-// ★★★ 修复 2.1：在列表里加一个新建按钮 ★★★
 window.renderAlbums = function() {
     const scroll = document.getElementById('photos-albums-scroll');
     if(!scroll) return;
     scroll.innerHTML = '';
 
-    // 1. 最近项目 (不变)
     const recentsDiv = document.createElement('div');
     recentsDiv.className = 'ph-album-card';
     recentsDiv.innerHTML = `
@@ -10877,76 +10932,86 @@ window.renderAlbums = function() {
     recentsDiv.onclick = () => openAlbumDetail('最近项目', photoLibrary);
     scroll.appendChild(recentsDiv);
 
-    // 2. ★ 新增：新建相簿按钮 ★
-    const addDiv = document.createElement('div');
-    addDiv.className = 'ph-album-card';
-    addDiv.innerHTML = `
-        <div class="ph-album-cover" style="background-color: #f2f2f7; display: flex; align-items: center; justify-content: center;">
-            <span style="font-size: 30px; color: #007aff; font-weight: 300;">+</span>
-        </div>
-        <span class="ph-album-name" style="color: #007aff;">新建相簿</span>
-        <span class="ph-album-count"> </span>
-    `;
-    addDiv.onclick = () => createNewAlbum(); // 直接调用
-    scroll.appendChild(addDiv);
-
-    // 3. 渲染已有相簿 (不变)
     userAlbums.forEach((album, idx) => {
-        // ... (保持你原有的遍历代码不变)
         const div = document.createElement('div');
         div.className = 'ph-album-card';
-        // ... (原代码内容)
         div.innerHTML = `
             <div class="ph-album-cover" style="background-image: url('${album.photos[0] || ''}');"></div>
             <span class="ph-album-name">${album.name}</span>
             <span class="ph-album-count">${album.photos.length}</span>
             <div class="ph-album-delete-badge" style="display:none;"></div>
         `;
-        // ... (保持长按删除逻辑不变)
         
-        // 记得加上点击进入详情
-        div.onclick = (e) => {
-             // 如果正在抖动（删除模式），不要进入
+        let pressTimer;
+        const startPress = (e) => {
+            pressTimer = setTimeout(() => {
+                div.classList.add('shaking');
+                div.querySelector('.ph-album-delete-badge').style.display = 'flex';
+                div.onclick = (evt) => {
+                    evt.stopPropagation();
+                    deleteAlbum(idx, album.name);
+                };
+            }, 600);
+        };
+        const cancelPress = () => {
+            clearTimeout(pressTimer);
+        };
+
+        div.addEventListener('mousedown', startPress);
+        div.addEventListener('touchstart', startPress);
+        div.addEventListener('mouseup', cancelPress);
+        div.addEventListener('touchend', cancelPress);
+        div.addEventListener('touchmove', cancelPress);
+        
+        div.onclick = () => {
              if(div.classList.contains('shaking')) return; 
              const albumPhotos = photoLibrary.filter(p => album.photos.includes(p.src));
              openAlbumDetail(album.name, albumPhotos);
         };
-
+        
         scroll.appendChild(div);
     });
 };
 
-// ★★★ 修复 2.2：允许创建空相簿 ★★★
+function deleteAlbum(index, name) {
+    if(confirm(`删除相簿“${name}”？\n相簿内的照片不会被删除。`)) {
+        userAlbums.splice(index, 1);
+        saveData();
+        renderAlbums();
+        showSystemAlert("相簿已删除");
+    } else {
+        renderAlbums();
+    }
+}
+
 window.createNewAlbum = function() {
-    // 移除那个“必须先选照片”的判断
-    // 直接弹窗
+    if (!isPhotosSelectMode || selectedPhotoIds.size === 0) {
+        showSystemAlert('请先点击右上角“选择”，勾选照片后再点+号！');
+        return;
+    }
+    
+    const inputHtml = `
+        <div style="font-weight:600;margin-bottom:5px;">新建相簿</div>
+        <input type="text" id="temp-album-input" placeholder="相簿名称" 
+               style="width:90%;padding:8px;border:1px solid #ccc;border-radius:5px;outline:none;">
+    `;
+    
     if (typeof showConfirmDialog === 'function') {
-        const inputHtml = `
-            <div style="font-weight:600;margin-bottom:5px;">New Album</div>
-            <input type="text" id="temp-album-input" placeholder="输入相簿名称" 
-                   style="width:90%;padding:8px;border:1px solid #ccc;border-radius:5px;outline:none;">
-        `;
-        
         showConfirmDialog(inputHtml, () => {
             const input = document.getElementById('temp-album-input');
             const name = input ? input.value.trim() : "未命名相簿";
             if(name) {
-                // 如果当前是在选择模式，就把选中的加进去；如果不是，就创建空的
                 const selectedSrcs = [];
-                if (isPhotosSelectMode && selectedPhotoIds.size > 0) {
-                    photoLibrary.forEach(p => {
-                        if(selectedPhotoIds.has(p.id)) selectedSrcs.push(p.src);
-                    });
-                }
+                photoLibrary.forEach(p => {
+                    if(selectedPhotoIds.has(p.id)) selectedSrcs.push(p.src);
+                });
                 
                 userAlbums.push({ name: name, photos: selectedSrcs });
+                
                 saveData();
                 renderAlbums();
-                
-                // 如果是在选择模式下创建的，顺便退出选择模式
-                if(isPhotosSelectMode) togglePhotosSelectMode(false);
-                
-                showSystemAlert("相簿创建成功 (⁎袁T⁎)!");
+                togglePhotosSelectMode(false);
+                showSystemAlert("相簿已创建");
             }
         });
         setTimeout(() => document.getElementById('temp-album-input')?.focus(), 100);
@@ -10959,26 +11024,13 @@ window.openPhotoBrowser = function(index, list) {
     
     const browser = document.getElementById('photo-browser-overlay');
     const img = document.getElementById('pb-current-img');
-
-    if(browser) {
-        browser.style.display = 'flex';
-        browser.style.justifyContent = 'center';
-        browser.style.alignItems = 'center';
-        browser.style.background = '#000'; // 黑色背景更有沉浸感
-    }
     
-    if(img) {
-        img.style.maxWidth = '100%';
-        img.style.maxHeight = '100%';
-        img.style.objectFit = 'contain'; // 保持比例，不会被拉伸
-        
-        // 你的动画逻辑
-        img.style.opacity = '0';
-        img.style.transform = 'scale(0.95)';
-    }
+    img.style.opacity = '0';
+    img.style.transform = 'scale(0.95)';
     
     updatePhotoBrowserUI();
     
+    browser.style.display = 'flex';
     img.onload = () => {
         img.style.opacity = '1';
         img.style.transform = 'scale(1)';
@@ -11124,140 +11176,290 @@ window.openApp = function(appId) {
         if(app) { app.style.display = 'flex'; setTimeout(() => app.classList.add('active'), 10); }
     }
 };
-//================= Instagram App Logic (系统适配版) =================
+/* ==========================================================================
+   INSTAGRAM APP 完整逻辑 (修复版)
+   ========================================================================== */
 
-// 1. 接入系统的“接力棒”逻辑
-const _beforeInstaApp = window.openApp; // 先把之前的管家逻辑存起来
+// 1. 系统入口接力
+const _beforeInstaApp = window.openApp;
 window.openApp = function(appId) {
     if (appId === 'instagram') {
-        // 按照你系统的规矩：ID 必须是 app-window-instagram
         const app = document.getElementById('app-window-instagram');
         if (app) {
-            app.style.display = 'flex'; // 强制 flex 布局
-            setTimeout(() => app.classList.add('active'), 10); // 触发动画
-            
-            // 每次打开时，确保内部导航状态是对的
+            app.style.display = 'flex'; 
+            setTimeout(() => app.classList.add('active'), 10);
             switchInstaPage('insta-feed-page'); 
-            return; // 拦截成功，不再往下传
+            return; 
         }
     }
-    
-    // 如果不是 instagram，就交给下一个管家（比如照片、微信等）
-    if (typeof _beforeInstaApp === 'function') {
-        _beforeInstaApp(appId);
-    }
+    if (typeof _beforeInstaApp === 'function') _beforeInstaApp(appId);
 };
 
-// 2. 页面切换逻辑（这个没问题，保留并稍微增强）
+// 2. 页面切换核心
 window.switchInstaPage = function(pageId) {
-    // 隐藏所有 insta 子页面
+    console.log("切换页面:", pageId);
+    
+    // 隐藏所有页面
     document.querySelectorAll('.insta-page').forEach(p => p.classList.remove('active-page'));
     
-    // 显示目标子页面
+    // 显示目标页面
     const target = document.getElementById(pageId);
     if (target) {
         target.classList.add('active-page');
-        // 滚动回顶部
         const scrollCont = target.querySelector('.insta-scroll-container');
         if(scrollCont) scrollCont.scrollTop = 0;
     }
 
-    // 同步更新顶部 Nav 和底部 Tab 激活状态
+    // 更新 UI
     updateInstaUI(pageId);
 };
 
+// 3. UI 同步 (底栏图标切换)
 function updateInstaUI(activePageId) {
-    // 1. 更新顶部 Nav (保持原有逻辑)
+    // 更新顶栏
     document.querySelectorAll('.insta-nav-header').forEach(h => {
         h.classList.toggle('active', h.getAttribute('data-nav-for') === activePageId);
     });
 
-    // 2. 更新底部 Tab
-    const bottomNav = document.getElementById('insta-bottom-nav');
+    // 更新底栏
     const navItems = document.querySelectorAll('.insta-nav-item');
-    
-    let isSearchSelected = false;
-
     navItems.forEach(item => {
         const targetId = item.getAttribute('data-target');
         const isActive = (targetId === activePageId);
-        const iconImg = item.querySelector('.insta-nav-icon');
-
-        // 切换激活类名
         item.classList.toggle('active', isActive);
 
-        // 核心：根据激活状态切换图片 src
-        if (isActive) {
-            iconImg.src = item.getAttribute('data-selected');
-            // 判断是否选中了第二个（Search 页）
-            // 这里我们用 ID 包含 'search' 来判断，比较稳
-            if (targetId.includes('search')) {
-                isSearchSelected = true;
-            }
-        } else {
-            iconImg.src = item.getAttribute('data-unselected');
+        const iconImg = item.querySelector('.insta-nav-icon');
+        // 只有当图标存在且有 data 属性时才切换
+        if (iconImg && item.hasAttribute('data-selected')) {
+            iconImg.src = isActive ? item.getAttribute('data-selected') : item.getAttribute('data-unselected');
         }
     });
+}
 
-    // 3. 处理底栏黑化
-    if (isSearchSelected) {
-        bottomNav.classList.add('dark-mode');
+// 4. 悬浮菜单逻辑 (修复版)
+window.openInstaCreateMenu = function() {
+    console.log("尝试打开悬浮菜单...");
+    const overlay = document.getElementById('insta-create-menu-overlay');
+    
+    if (!overlay) {
+        console.error("找不到菜单遮罩层 ID: insta-create-menu-overlay");
+        return;
+    }
+
+    overlay.classList.remove('hidden');
+    void overlay.offsetWidth; // 强制重绘
+    overlay.classList.add('active');
+};
+
+window.closeInstaCreateMenu = function() {
+    const overlay = document.getElementById('insta-create-menu-overlay');
+    if (!overlay) return;
+
+    overlay.classList.remove('active');
+    setTimeout(() => {
+        overlay.classList.add('hidden');
+    }, 250);
+};
+
+// 5. 初始化绑定 (只执行一次)
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("Instagram 模块初始化...");
+
+    // A. 绑定底部导航栏
+    const bottomNav = document.getElementById('insta-bottom-nav');
+    if (bottomNav) {
+        bottomNav.addEventListener('click', (e) => {
+            const navItem = e.target.closest('.insta-nav-item');
+            if (navItem) {
+                const targetId = navItem.getAttribute('data-target');
+                if (targetId && !targetId.includes('placeholder')) {
+                    switchInstaPage(targetId);
+                }
+            }
+        });
+    }
+
+    // B. 绑定顶部左上角加号 (Header Plus)
+    const headerPlus = document.getElementById('insta-header-plus-btn');
+    if (headerPlus) {
+        // 先移除旧的监听器（虽然无法直接移除匿名函数，但这是一个好习惯的注释）
+        // 使用 onclick 覆盖是最稳妥的防止重复绑定的方式
+        headerPlus.onclick = (e) => {
+            e.stopPropagation(); // 阻止冒泡
+            console.log("点击了顶部加号");
+            window.openInstaCreateMenu();
+        };
+        headerPlus.style.cursor = 'pointer'; // 变成手型
     } else {
-        bottomNav.classList.remove('dark-mode');
+        console.warn("未找到顶部加号按钮 ID: insta-header-plus-btn");
+    }
+
+    // C. 绑定头像旁边的加号 (Profile Plus) - 如果你需要它也触发
+    const profilePlus = document.getElementById('insta-profile-plus-btn');
+    if (profilePlus) {
+        profilePlus.onclick = (e) => {
+            e.stopPropagation();
+            window.openInstaCreateMenu();
+        };
+    }
+});
+/* ================= 找回丢失的滑动条逻辑 ================= */
+
+// 1. 移动黑条 + 切换图标
+// 必须挂载到 window 对象上，因为 HTML 里的 onclick 用的是全局函数
+window.moveTabIndicator = function(index) {
+    console.log("正在切换 Tab:", index);
+
+    // A. 移动黑条 (找 id="tab-sliding-line")
+    const line = document.getElementById('tab-sliding-line');
+    if (line) {
+        // 使用 CSS 变量或者直接 transform
+        line.style.transform = `translateX(${index * 100}%)`;
+    } else {
+        console.error("找不到黑条元素: tab-sliding-line");
+    }
+
+    // B. 切换图标高亮 (找 class="tab-item")
+    const tabs = document.querySelectorAll('.profile-tabs .tab-item');
+    tabs.forEach((tab, idx) => {
+        const img = tab.querySelector('.tab-icon');
+        
+        if (idx === index) {
+            // 选中状态
+            tab.classList.add('active');
+            if (img && img.hasAttribute('data-selected')) {
+                img.src = img.getAttribute('data-selected');
+            }
+        } else {
+            // 未选中状态
+            tab.classList.remove('active');
+            if (img && img.hasAttribute('data-unselected')) {
+                img.src = img.getAttribute('data-unselected');
+            }
+        }
+    });
+};
+/* ================= 发帖流程逻辑 (修复版：接入系统相册) ================= */
+
+let selectedImageSrc = ""; // 当前选中的图片
+let currentFilter = "";    // 当前选中的滤镜
+
+// 1. 开始发帖
+window.startPostCreation = function(type) {
+    console.log("🚀 开始发帖流程:", type);
+    closeInstaCreateMenu(); // 关菜单
+
+    if (type !== 'post') {
+        alert("宝宝，目前先开发发帖子功能哦~");
+        return;
+    }
+
+    // 切换页面前，先尝试加载相册，确保有数据
+    loadGalleryImages(); 
+    
+    // 跳转到选图页
+    switchInstaPage('insta-create-select');
+};
+
+// 2. 加载相册照片 (核心修复：读取 photoLibrary)
+function loadGalleryImages() {
+    console.log("正在读取系统相册...");
+    const grid = document.getElementById('insta-gallery-list');
+    if (!grid) {
+        console.error("❌ 找不到相册容器: insta-gallery-list，请检查 HTML!");
+        return;
+    }
+    
+    grid.innerHTML = ""; // 清空旧数据
+
+    // === 关键逻辑：接入你的 photoLibrary ===
+    // 检查全局变量 photoLibrary 是否存在，不存在就用空数组
+    const systemPhotos = (typeof photoLibrary !== 'undefined' && Array.isArray(photoLibrary)) ? photoLibrary : [];
+    
+    // 如果相册是空的，或者没读到
+    if (systemPhotos.length === 0) {
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #999;">相册空空如也<br>去相机拍几张吧~</div>`;
+        // 设一个默认图防止大图空白
+        document.getElementById('insta-select-preview').src = "https://i.postimg.cc/CMjJz22r/Snipaste-2025-02-12-23-30-49.png"; 
+        return;
+    }
+
+    try {
+        // 遍历系统照片
+        systemPhotos.forEach((photo, index) => {
+            const div = document.createElement('div');
+            div.className = 'gallery-item';
+            
+            // 你的 photoLibrary 结构应该是 { src: "...", ... }
+            // 如果是 data:image base64 也可以直接用
+            const imgSrc = photo.src || photo.url || photo; // 兼容不同数据结构
+            
+            div.innerHTML = `<img src="${imgSrc}" style="width:100%; height:100%; object-fit:cover;">`;
+            
+            // 点击事件
+            div.onclick = () => selectImage(imgSrc, div);
+            grid.appendChild(div);
+            
+            // 默认选中第一张
+            if (index === 0) selectImage(imgSrc, div);
+        });
+    } catch (e) {
+        console.error("加载照片出错:", e);
+        // 兜底：如果出错，至少显示一张图，防止白屏
+        document.getElementById('insta-select-preview').src = "https://i.postimg.cc/CMjJz22r/Snipaste-2025-02-12-23-30-49.png";
     }
 }
 
-// 4. 事件绑定（用事件委托更稳，省得 DOM 没加载好）
-document.addEventListener('click', (e) => {
-    const navItem = e.target.closest('.insta-nav-item');
-    if (navItem) {
-        const targetId = navItem.getAttribute('data-target');
-        if (targetId && !targetId.includes('placeholder')) {
-            switchInstaPage(targetId);
-        } else if (targetId && targetId.includes('placeholder')) {
-             showSystemAlert ? showSystemAlert("宝宝，这个功能还没做呢~") : console.log("开发中");
-        }
-    }
-});
-document.addEventListener('click', (e) => {
-    const tab = e.target.closest('.tab-item');
-    if (tab && tab.hasAttribute('data-profile-tab')) {
-        // 1. 清除同级 active
-        const tabs = tab.parentElement.querySelectorAll('.tab-item');
-        tabs.forEach(t => {
-            t.classList.remove('active');
-            const img = t.querySelector('.tab-icon');
-            if(img) img.src = img.getAttribute('data-unselected');
-        });
+// 3. 选中图片
+function selectImage(src, el) {
+    selectedImageSrc = src;
+    
+    const preview = document.getElementById('insta-select-preview');
+    if(preview) preview.src = src;
 
-        // 2. 激活当前
-        tab.classList.add('active');
-        const activeImg = tab.querySelector('.tab-icon');
-        if(activeImg) activeImg.src = activeImg.getAttribute('data-selected');
-        
-        // 3. 这里可以扩展切换内容的逻辑 (目前是静态)
-        console.log("切换到:", tab.getAttribute('data-profile-tab'));
-    }
-});
-window.moveTabIndicator = function(index, viewId) {
-    // 1. 移动黑条 (使用 transform 效率最高且平滑)
-    const line = document.getElementById('tab-sliding-line');
-    if (line) {
-        line.style.transform = `translateX(${index * 100}%)`;
-    }
+    // 更新选中样式
+    document.querySelectorAll('.gallery-item').forEach(item => item.classList.remove('selected'));
+    if(el) el.classList.add('selected');
+}
 
-    // 2. 切换图标高亮
-    const tabs = document.querySelectorAll('.profile-tabs .tab-item');
-    tabs.forEach((tab, idx) => {
-        const img = tab.querySelector('img');
-        if (idx === index) {
-            tab.classList.add('active');
-            img.src = img.getAttribute('data-selected');
-        } else {
-            tab.classList.remove('active');
-            img.src = img.getAttribute('data-unselected');
-        }
-    });
+// 4. 关闭发帖
+window.closePostCreation = function() {
+    switchInstaPage('insta-feed-page');
+    // 清空状态
+    selectedImageSrc = "";
+    currentFilter = "";
+};
 
-    console.log("展示视图:", viewId); // 这里以后可以加切换 Grid/Reels 内容的逻辑
+// 5. 去编辑页 (下一步)
+window.goToEditPage = function() {
+    if (!selectedImageSrc) {
+        alert("请先选择一张照片！");
+        return;
+    }
+    switchInstaPage('insta-create-edit');
+    
+    // 这一步很重要：把选中的图传给编辑页
+    const editImg = document.getElementById('insta-edit-preview');
+    if(editImg) {
+        editImg.src = selectedImageSrc;
+        editImg.style.filter = ""; // 重置滤镜
+    }
+};
+
+// 6. 应用滤镜
+window.applyFilter = function(filterCss) {
+    currentFilter = filterCss;
+    const editImg = document.getElementById('insta-edit-preview');
+    if(editImg) editImg.style.filter = filterCss;
+    
+    // 简单的 UI 高亮切换
+    const items = document.querySelectorAll('.filter-item');
+    items.forEach(item => item.classList.remove('active'));
+    // 这一步只是简单处理，实际可以用 event.target
+};
+
+// 7. 去文案页 (下一步)
+window.goToCaptionPage = function() {
+    alert("宝宝，照片处理好了！准备发布 (文案页开发中)");
+    // 这里后面接发布逻辑
 };
