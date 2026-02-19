@@ -128,7 +128,7 @@
     <div class="app-name">Alipay</div>
 </div>
 <div class="app-item" onclick="openApp('instagram')">
-    <div id="app-icon-ins-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/V6zPQNjD/wu-biao-ti124-20260209111551.png');"></div>
+    <div id="app-icon-ins-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/xT53YS6L/wu-biao-ti136-20260218150946.png');"></div>
     <div class="app-name">Instagram</div>
 </div>
                 <div class="app-item" onclick="openApp('Memo')">
@@ -284,7 +284,7 @@
                     <div class="app-name">edge</div>
                 </div>
                 <div class="app-item" onclick="openApp('icity')">
-                    <div id="app-icon-icity-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/V6zPQNjD/wu-biao-ti124-20260209111551.png');"></div>
+                    <div id="app-icon-icity-p3" class="app-icon" style="background-image: url('https://i.postimg.cc/V6zPQNjD/wu-biao-ti124-20260209111551.png');"></div>
                     <div class="app-name">icity</div>
                 </div>
                 <div class="app-item" onclick="openApp('YouTube')">
@@ -2161,85 +2161,121 @@
     </div>
 </div>
    </div>
+<!-- Instagram APP 窗口 -->
 <div id="app-window-instagram" class="app-window" style="display:none; flex-direction:column; background: #fff; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; overflow: hidden;">
     
-    <div class="insta-status-bar-placeholder" style="height: 48px; flex-shrink: 0;"></div>
+    <!-- 顶部状态栏占位 (通用的) -->
+    <div class="insta-status-bar-placeholder" style="height: 48px; flex-shrink: 0; background: #fff; z-index: 20002;"></div>
 
-    <div id="insta-top-nav" style="flex-shrink: 0; position: relative;">
-        <div class="insta-nav-header active" data-nav-for="insta-feed-page" style="justify-content: space-between;">
+    <!-- ============================================== -->
+    <!-- 区域 A：公共顶栏 (只在 首页 和 个人页 显示) -->
+    <!-- ============================================== -->
+    <div id="insta-public-header" style="flex-shrink: 0; position: relative; z-index: 10; background: #fff;">
+        
+        <!-- 首页顶栏 Header -->
+        <div id="header-for-feed" class="insta-nav-header active" style="display:flex; justify-content: space-between; height: 44px; align-items: center; padding: 0 16px;">
             <div class="insta-header-left">
-                <img src="https://postimg.cc/N9Mv7VWW" class="insta-header-icon-small" style="width: 24px; height: 24px;">
+                <img src="https://i.postimg.cc/SsLQqbVN/wu-biao-ti130-20260214081818.png" class="insta-header-icon-small" style="width: 24px; height: 24px;">
             </div>
-            
-            <div class="insta-center-logo-wrap">
-                <img src="https://i.postimg.cc/JzHG1Dsm/wu-biao-ti131-20260214195800.png" class="insta-logo-img">
-                <img src="https://postimg.cc/NybwXYP6" class="insta-logo-arrow">
-            </div>
-
+<div class="insta-center-logo-wrap" style="display: flex; align-items: center; justify-content: center;">
+    <img src="https://i.postimg.cc/JzHG1Dsm/wu-biao-ti131-20260214195800.png" 
+         class="insta-logo-img" 
+         style="height: 120px; object-fit: contain; margin-top: 0px;">
+</div>
             <div class="insta-header-actions">
-                <img src="https://i.postimg.cc/8C6PK66M/wu-biao-ti130-20260214082613.png" class="insta-header-icon-small">
+                <img src="https://i.postimg.cc/8C6PK66M/wu-biao-ti130-20260214082613.png" class="insta-header-icon-small" style="width: 28px; margin-right: -20px;">
                 <i class="fa-brands fa-facebook-messenger" style="font-size: 22px;"></i>
             </div>
         </div>
-        
-        <div class="insta-nav-header" data-nav-for="insta-profile-page" style="justify-content: space-between;">
-            <div class="insta-header-left">
-                <img id="insta-header-plus-btn" src="https://i.postimg.cc/SsLQqbVN/wu-biao-ti130-20260214081818.png" class="insta-header-icon-small" style="cursor: pointer;">
-            </div>
-            
-            <div class="insta-center-title-wrap">
-                <span id="insta-top-username" class="insta-profile-username edit-text">HuanHuan_Official</span>
-                <img src="https://i.postimg.cc/G2n3ZmF5/无标题130_20260214082151.png" class="username-arrow-big">
-            </div>
 
+        <!-- 个人页顶栏 Header -->
+        <div id="header-for-profile" class="insta-nav-header" style="display:none; justify-content: space-between; height: 44px; align-items: center; padding: 0 16px;">
+            <div class="insta-header-left">
+                <img id="insta-header-plus-btn" src="https://i.postimg.cc/SsLQqbVN/wu-biao-ti130-20260214081818.png" class="insta-header-icon-small" style="cursor: pointer; width: 24px;">
+            </div>
+            <div class="insta-center-title-wrap" style="display: flex; align-items: center;">
+    <span id="insta-top-username" class="insta-profile-username edit-text" 
+          style="font-weight: 700; font-size: 16px; margin-right: 5px;">HuanHuan_Official</span>
+    <img src="https://i.postimg.cc/G2n3ZmF5/wu-biao-130_20260214082151.png" 
+         class="username-arrow-big" 
+         style="width: 20px; height: auto; vertical-align: middle;">
+</div>
             <div class="insta-header-actions">
-                <img src="https://i.postimg.cc/Jn37mCKh/wu-biao-ti130-20260214081835.png" class="insta-header-icon-small">
-                <img src="https://i.postimg.cc/C1pMWxCL/wu-biao-ti130-20260214081903.png" class="insta-header-icon-small">
+                <img src="https://i.postimg.cc/Jn37mCKh/wu-biao-ti130-20260214081835.png" class="insta-header-icon-small" style="width: 24px; margin-right: -5px;">
+                <img src="https://i.postimg.cc/C1pMWxCL/wu-biao-ti130-20260214081903.png" class="insta-header-icon-small" style="width: 24px;">
             </div>
         </div>
     </div>
 
-    <div id="insta-main-content" style="flex-grow: 1; position: relative; overflow: hidden;">
+    <!-- ============================================== -->
+    <!-- 区域 B：主要内容区 (首页流 + 个人页) -->
+    <!-- ============================================== -->
+    <div id="insta-main-content" style="flex-grow: 1; position: relative; overflow: hidden; z-index: 1;">
 
-        <div id="insta-feed-page" class="insta-page active-page">
-            <div class="insta-scroll-container">
+        <!-- 1. 首页 (Feed) -->
+        <div id="insta-feed-page" class="insta-page active-page" style="height: 100%; display: flex; flex-direction: column;">
+            <div class="insta-scroll-container" style="flex: 1; overflow-y: auto;">
                 <div class="insta-stories-bar">
                     <div class="story-item">
                         <div class="story-ring unread">
-                            <img id="insta-story-my-avatar" class="upload-img">
+                            <img id="insta-story-my-avatar" class="upload-img" src="https://i.postimg.cc/k4kM9S4h/default-cover.png">
                         </div>
                         <span>我的故事</span>
                     </div>
-                    <div class="story-item">
-                        <div class="story-ring unread">
-                        </div>
-                        <span>shenmiren</span>
-                    </div>
                 </div>
-                
-                <div class="insta-post">
-                    <div class="post-header">
-                        <div class="post-user">
-                            <img class="post-avatar">
-                            <span class="post-username">Shen_Miren</span>
-                        </div>
-                        <i class="fa-solid fa-ellipsis post-more-btn"></i>
-                    </div>
-                    <div class="post-image-container">
-                        <img id="insta-feed-post-img-1" class="upload-img" src="https://i.postimg.cc/CMjJz22r/Snipaste-2025-02-12-23-30-49.png">
-                    </div>
-                    <div class="post-info">
-                        <div class="post-likes">1,024 次赞</div>
-                        <div class="post-caption">
-                            <span class="post-username">HuanHuan</span> 
-                            <span id="insta-feed-caption-1" class="edit-text">谢谢我还没搓完这里。别管了。</span>
-                        </div>
-                    </div>
-                </div>
-                <div style="height: 100px;"></div>
+                <div id="insta-feed-list" style="padding-bottom: 80px;"></div>
             </div>
         </div>
+<div id="insta-page-activity" class="insta-page" style="display: none;">
+    <div class="insta-header" style="justify-content: space-between; padding: 0 15px;">
+        <div class="insta-header-left" style="flex: 1;">
+            <span style="font-weight: 700; font-size: 20px; display: flex; align-items: center;">
+                Direct 
+                <i class="fas fa-chevron-down" style="font-size: 12px; margin-left: 5px;"></i>
+            </span>
+        </div>
+        
+        <div class="insta-header-right">
+            <img src="https://i.postimg.cc/SsbQwx61/wu-biao-ti130-20260214082210.png" 
+                 onclick="window.openNewChatSelector()"
+                 style="width: 24px; height: 24px; cursor: pointer;">
+        </div>
+    </div>
 
+    <div style="padding: 10px 15px;">
+        <div style="background: #efefef; border-radius: 10px; height: 36px; display: flex; align-items: center; padding: 0 10px;">
+            <i class="fas fa-search" style="color: #8e8e8e; margin-right: 8px;"></i>
+            <span style="color: #8e8e8e; font-size: 14px;">搜索</span>
+        </div>
+    </div>
+
+    <div id="insta-dm-list-container" style="flex: 1; overflow-y: auto; padding-bottom: 80px;">
+        </div>
+</div>
+
+<div id="insta-new-chat-overlay" class="insta-sub-page hidden" style="background: white; z-index: 20002; display: flex; flex-direction: column;">
+    <div class="insta-header" style="border-bottom: 1px solid #dbdbdb;">
+        <div class="insta-header-left" onclick="window.closeNewChatSelector()">
+            <img src="https://i.postimg.cc/G2n3ZmF5/无标题130_20260214082151.png" style="width: 20px; transform: rotate(90deg);">
+        </div>
+        <div class="insta-header-center">
+            <span style="font-weight: 600; font-size: 16px;">新消息</span>
+        </div>
+        <div class="insta-header-right">
+            <span style="color: #0095f6; font-weight: 600; font-size: 14px; opacity: 0.3;">聊天</span>
+        </div>
+    </div>
+
+    <div style="padding: 10px 15px; border-bottom: 1px solid #efefef;">
+        <span style="font-weight: 600; font-size: 15px; margin-right: 10px;">收件人:</span>
+        <input type="text" placeholder="搜索..." style="border: none; outline: none; font-size: 14px; width: 80%;">
+    </div>
+
+    <div style="padding: 10px 15px; font-weight: 600; color: #262626; margin-top: 10px;">建议</div>
+    <div id="insta-contact-selector-list" style="flex: 1; overflow-y: auto;">
+        </div>
+</div>
+        <!-- 2. 个人主页 (Profile) -->
         <div id="insta-profile-page" class="insta-page">
             <div class="insta-scroll-container">
                 <div style="height: 25px;"></div>
@@ -2247,8 +2283,8 @@
                 <div class="profile-header-new section-padding">
                     <div class="profile-avatar-wrapper">
                         <div class="story-ring-outer">
-                            <div class="profile-avatar-big">
-                                <img id="insta-profile-avatar" class="upload-img">
+                            <div class="profile-avatar-big" onclick="document.getElementById('file-input-avatar').click()">
+                                <img id="insta-profile-avatar" class="upload-img" src="https://i.postimg.cc/gkZMz1xW/IMG-7800.jpg" style="width:100%; height:100%; object-fit:cover; border-radius: 50%;">
                             </div>
                         </div>
                         
@@ -2260,12 +2296,14 @@
                             <div class="bubble-dot-2"></div>
                         </div>
 
-                        <img id="insta-profile-plus-btn" src="https://i.postimg.cc/MGQKPQQp/wu-biao-ti130-20260214083147.png" class="avatar-plus-icon-new" style="cursor: pointer;">
+                        <img id="insta-profile-plus-btn" src="https://i.postimg.cc/MGQKPQQp/wu-biao-ti130-20260214083147.png" class="avatar-plus-icon-new" style="cursor: pointer;" onclick="document.getElementById('file-input-avatar').click()">
+                    
+                        <input type="file" id="file-input-avatar" style="display: none;" accept="image/*">
                     </div>
 
                     <div class="profile-stats-container">
                         <div class="stat-box">
-                            <span id="insta-stat-posts" class="stat-num edit-text">8</span>
+                            <span id="insta-stat-posts" class="stat-num edit-text">0</span>
                             <span class="stat-label">帖子</span>
                         </div>
                         <div class="stat-box">
@@ -2278,9 +2316,8 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="profile-bio-new section-padding">
-                    <div id="insta-bio-name" class="bio-name edit-text">HuanHuan_Official</div>
+                    <div id="insta-bio-name" class="bio-name edit-text">昵称</div>
                     <div id="insta-bio-text" class="bio-text edit-text">有一小部分人，<br>如果把他们比喻成我生命的玻璃窗上缓缓划过的雨水，<br>我情愿一辈子生活在雨季。</div>
                 </div>
 
@@ -2303,9 +2340,9 @@
                 </div>
 
                 <div class="insta-stories-bar highlights-bar section-padding">
-                     <div class="story-item">
+                    <div class="story-item">
                         <div class="story-ring highlight">
-                            <img id="insta-highlight-cover-1" class="upload-img">
+                            <img id="insta-highlight-cover-1" class="upload-img" src="https://i.postimg.cc/k4kM9S4h/default-cover.png">
                         </div>
                         <span id="insta-highlight-text-1" class="edit-text">日常</span>
                     </div>
@@ -2330,117 +2367,207 @@
                     <div id="tab-sliding-line"></div>
                 </div>
 
-                <div class="profile-grid">
-                    <div class="grid-item"><img id="insta-grid-1" class="upload-img"></div>
-                    <div class="grid-item"></div>
-                    <div class="grid-item"></div>
-                </div>
+                <div class="profile-grid" id="insta-profile-grid"></div>
                 <div style="height: 120px;"></div>
             </div>
         </div>
     </div>
-
-    <div id="insta-bottom-nav">
-        <div class="insta-nav-item active" data-target="insta-feed-page" data-unselected="https://i.postimg.cc/ZRzY15PZ/wu-biao-ti130-20260214082029.png" data-selected="https://i.postimg.cc/q73Mb333/wu-biao-ti130-20260214082917.png"><img src="https://i.postimg.cc/q73Mb333/wu-biao-ti130-20260214082917.png" class="insta-nav-icon"></div>
+    <div id="insta-bottom-nav"> <div class="insta-nav-item active" data-target="insta-feed-page" data-unselected="https://i.postimg.cc/ZRzY15PZ/wu-biao-ti130-20260214082029.png" data-selected="https://i.postimg.cc/q73Mb333/wu-biao-ti130-20260214082917.png"><img src="https://i.postimg.cc/q73Mb333/wu-biao-ti130-20260214082917.png" class="insta-nav-icon"></div>
         <div class="insta-nav-item" data-target="insta-search-page-placeholder" data-unselected="https://i.postimg.cc/RFxCjZ72/wu-biao-ti130-20260214082046.png" data-selected="https://i.postimg.cc/8C6PK66d/wu-biao-ti130-20260214082543.png"><img src="https://i.postimg.cc/RFxCjZ72/wu-biao-ti130-20260214082046.png" class="insta-nav-icon"></div>
-        <div class="insta-nav-item" data-target="insta-add-page-placeholder" data-unselected="https://i.postimg.cc/Kzhcd87h/wu-biao-ti130-20260214082100.png" data-selected="https://i.postimg.cc/rm2yvw1N/wu-biao-ti130-20260214082412.png"><img src="https://i.postimg.cc/Kzhcd87h/wu-biao-ti130-20260214082100.png" class="insta-nav-icon"></div>
+<div class="insta-nav-item" 
+     data-target="insta-page-activity" 
+     data-unselected="https://i.postimg.cc/Kzhcd87h/wu-biao-ti130-20260214082100.png" 
+     data-selected="https://i.postimg.cc/rm2yvw1N/wu-biao-ti130-20260214082412.png">
+    <img src="https://i.postimg.cc/Kzhcd87h/wu-biao-ti130-20260214082100.png" class="insta-nav-icon">
+</div>
         <div class="insta-nav-item" data-target="insta-activity-page-placeholder" data-unselected="https://i.postimg.cc/qRHB9vcV/wu-biao-ti130-20260214082112.png" data-selected="https://i.postimg.cc/Pqwr3wwR/wu-biao-ti130-20260214082345.png"><img src="https://i.postimg.cc/qRHB9vcV/wu-biao-ti130-20260214082112.png" class="insta-nav-icon"></div>
         <div class="insta-nav-item" data-target="insta-profile-page" data-unselected="https://i.postimg.cc/R0HVsHHd/wu-biao-ti130-20260214082446.png" data-selected="https://i.postimg.cc/tTGRL43f/wu-biao-ti130-20260214082125.png"><img src="https://i.postimg.cc/R0HVsHHd/wu-biao-ti130-20260214082446.png" class="insta-nav-icon"></div>
-    </div>
-
-    <div id="insta-create-select" class="insta-page" style="display:none; background: #fff; z-index: 10000; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column;">
-        <div class="insta-nav-header active" style="justify-content: space-between;">
-            <div class="insta-header-left" onclick="closePostCreation()">
-                <i class="fa-solid fa-xmark" style="font-size: 24px;"></i>
-            </div>
-            <div class="insta-center-title-wrap">
-                <span class="insta-profile-username">新帖子</span>
-            </div>
-            <div class="insta-header-right" onclick="goToEditPage()">
-                <span style="color: #0095f6; font-weight: 600; font-size: 16px;">下一步</span>
-            </div>
-        </div>
-
-        <div class="create-preview-area" style="width: 100%; height: 375px; background: #f0f0f0; overflow: hidden;">
-            <img id="insta-select-preview" src="" style="width: 100%; height: 100%; object-fit: cover;">
-        </div>
-
-        <div class="create-gallery-grid" id="insta-gallery-list" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin-top: 2px;">
-        </div>
-    </div>
-
-    <div id="insta-create-edit" class="insta-page" style="display:none; background: #fff; z-index: 10001; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column;">
-        <div class="insta-nav-header active" style="justify-content: space-between;">
-            <div class="insta-header-left" onclick="switchInstaPage('insta-create-select')">
-                <i class="fa-solid fa-chevron-left" style="font-size: 24px;"></i>
-            </div>
-            <div class="insta-center-title-wrap">
-                <span class="insta-profile-username">编辑</span>
-            </div>
-            <div class="insta-header-right" onclick="goToCaptionPage()">
-                <span style="color: #0095f6; font-weight: 600; font-size: 16px;">下一步</span>
-            </div>
-        </div>
-
-        <div class="create-preview-area" style="width: 100%; height: 375px; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
-            <img id="insta-edit-preview" src="" style="width: 100%; max-height: 100%; object-fit: contain;">
-        </div>
-
-        <div class="filter-scroll-container" style="display: flex; gap: 10px; padding: 20px 10px; overflow-x: auto;">
-            <div class="filter-item active" onclick="applyFilter('')">
-                <div class="filter-preview normal"></div>
-                <span>原图</span>
-            </div>
-            <div class="filter-item" onclick="applyFilter('grayscale(100%)')">
-                <div class="filter-preview grayscale"></div>
-                <span>黑白</span>
-            </div>
-            <div class="filter-item" onclick="applyFilter('saturate(2)')">
-                <div class="filter-preview vivid"></div>
-                <span>鲜艳</span>
-            </div>
-            <div class="filter-item" onclick="applyFilter('sepia(0.5)')">
-                <div class="filter-preview vintage"></div>
-                <span>复古</span>
-            </div>
-            <div class="filter-item" onclick="applyFilter('contrast(1.5)')">
-                <div class="filter-preview drama"></div>
-                <span>剧场</span>
-            </div>
-        </div>
-    </div>
-
-    <div id="insta-create-menu-overlay" class="insta-menu-overlay hidden" onclick="closeInstaCreateMenu()" style="z-index: 10002;">
+<div class="home-bar" onclick="closeApp('instagram')" style="position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 130px; height: 5px; background-color: #000; border-radius: 10px; z-index: 9999; cursor: pointer;"></div>
+    </div> <div id="insta-create-menu-overlay" class="insta-menu-overlay hidden" onclick="closeInstaCreateMenu()" style="z-index: 30000;">
         <div id="insta-create-popup" class="insta-bottom-sheet" onclick="event.stopPropagation()">
             <div class="sheet-drag-handle"></div>
-            
             <div class="sheet-header">创建</div>
-            
             <div class="sheet-content">
                 <div class="menu-item" onclick="startPostCreation('reels')">
-                    <img src="https://i.postimg.cc/Gp099LDQ/wu-biao-ti131-20260214195355.png">
-                    <span>Reels 视频</span>
+                    <img src="https://i.postimg.cc/Gp099LDQ/wu-biao-ti131-20260214195355.png"><span>Reels 视频</span>
                 </div>
                 <div class="menu-item" onclick="startPostCreation('edits')">
-                    <img src="https://i.postimg.cc/BvWttSFT/wu-biao-ti131-20260214195409.png">
-                    <span>Edits</span>
+                    <img src="https://i.postimg.cc/BvWttSFT/wu-biao-ti131-20260214195409.png"><span>Edits</span>
                 </div>
                 <div class="menu-item" onclick="handleCreateType('post')">
-                    <img src="https://i.postimg.cc/Hk8Vpcrw/wu-biao-ti131-20260214195445.png">
-                    <span>帖子</span>
+                    <img src="https://i.postimg.cc/Hk8Vpcrw/wu-biao-ti131-20260214195445.png"><span>帖子</span>
                 </div>
                 <div class="menu-item" onclick="startPostCreation('story')">
-                    <img src="https://i.postimg.cc/6QsTTWZ8/wu-biao-ti131-20260214195502.png">
-                    <span>快拍</span>
+                    <img src="https://i.postimg.cc/6QsTTWZ8/wu-biao-ti131-20260214195502.png"><span>快拍</span>
                 </div>
                 <div class="menu-item" onclick="startPostCreation('live')">
-                    <img src="https://i.postimg.cc/P5vPtpCZ/wu-biao-ti131-20260214195531.png">
-                    <span>直播</span>
+                    <img src="https://i.postimg.cc/P5vPtpCZ/wu-biao-ti131-20260214195531.png"><span>直播</span>
                 </div>
             </div>
         </div>
     </div>
+<div id="insta-create-post-page" class="ios-page hidden" style="background: #fff; z-index: 30000; display: flex; flex-direction: column;">
+    
+    <div class="insta-header-bar" style="position: relative; flex-shrink: 0; border-bottom: 0.5px solid #dbdbdb; height: 100px; display: flex; align-items: flex-end; justify-content: space-between; padding: 0 16px; padding-bottom: 10px;">
+        <div class="left-action" onclick="closeInstaCreate()" style="z-index: 2;">
+            <img src="https://i.postimg.cc/MKZ6q8wX/wu-biao-ti136-20260217185906.png" class="insta-back-icon" style="width: 24px; height: 24px; display: block;">
+        </div>
+        
+        <div class="center-title" style="position: absolute; left: 50%; top: auto; transform: translate(-50%, -50%); font-weight: 700; font-size: 20px; width: 100%; text-align: center; z-index: 1; bottom: -2px;">
+            新帖子
+        </div>
 
+        <div class="right-action" style="width: 24px;"></div> 
+    </div>
+
+    <div class="insta-scroll-wrapper" style="flex: 1; overflow-y: auto; padding-bottom: 20px;">
+        
+        <div class="insta-compose-area-pro">
+            <div class="compose-main-image-box" onclick="triggerInstaFile()">
+                <img id="insta-preview-img" class="f-original">
+                <div class="add-overlay-hint" id="add-hint-text">点击选择照片</div>
+            </div>
+            <textarea id="insta-caption-input" placeholder="写下你的想法..."></textarea>
+        </div>
+
+        <div class="filter-scroll-view">
+            <div class="filter-chip active" onclick="applyInstaFilter('f-original', this)">
+                <div class="filter-preview f-original"></div>
+                <span class="filter-name">原图</span>
+            </div>
+            <div class="filter-chip" onclick="applyInstaFilter('f-vivid', this)">
+                <div class="filter-preview f-vivid"></div>
+                <span class="filter-name">鲜艳</span>
+            </div>
+            <div class="filter-chip" onclick="applyInstaFilter('f-warm', this)">
+                <div class="filter-preview f-warm"></div>
+                <span class="filter-name">暖色</span>
+            </div>
+            <div class="filter-chip" onclick="applyInstaFilter('f-cool', this)">
+                <div class="filter-preview f-cool"></div>
+                <span class="filter-name">冷调</span>
+            </div>
+            <div class="filter-chip" onclick="applyInstaFilter('f-bw', this)">
+                <div class="filter-preview f-bw"></div>
+                <span class="filter-name">黑白</span>
+            </div>
+            <div class="filter-chip" onclick="applyInstaFilter('f-film', this)">
+                <div class="filter-preview f-film"></div>
+                <span class="filter-name">胶片</span>
+            </div>
+        </div>
+
+        <div class="insta-divider-thick"></div>
+
+        <div class="insta-creative-tags">
+            <div class="creative-tag-btn">
+                <img src="https://i.postimg.cc/ZKfTqDYg/wu-biao-ti136-20260217185502.png" class="tag-icon">
+                <span class="tag-text">投票</span>
+            </div>
+            <div class="creative-tag-btn">
+                <img src="https://i.postimg.cc/vHPQmS8S/wu-biao-ti136-20260217185602.png" class="tag-icon">
+                <span class="tag-text">话题引子</span>
+            </div>
+        </div>
+
+        <div class="insta-divider-line"></div>
+
+        <div class="insta-option-list">
+            <div class="insta-list-item">
+                <div class="list-left">
+                    <img src="https://i.postimg.cc/Qx6XMnNz/wu-biao-ti136-20260217185531.png" class="list-icon">
+                    <span class="list-label">添加音乐</span>
+                </div>
+                <div class="list-right"><img src="https://i.postimg.cc/BQZS4G3v/wu-biao-ti136-20260217185844.png" class="list-arrow"></div>
+            </div>
+            <div class="insta-list-item">
+                <div class="list-left">
+                    <img src="https://i.postimg.cc/CLvFK6MN/wu-biao-ti136-20260217185722.png" class="list-icon">
+                    <span class="list-label">标记用户</span>
+                </div>
+                <div class="list-right"><img src="https://i.postimg.cc/BQZS4G3v/wu-biao-ti136-20260217185844.png" class="list-arrow"></div>
+            </div>
+            <div class="insta-list-item">
+                <div class="list-left">
+                    <img src="https://i.postimg.cc/8Py1CnkB/wu-biao-ti136-20260217185735.png" class="list-icon">
+                    <span class="list-label">添加地点</span>
+                </div>
+                <div class="list-right"><img src="https://i.postimg.cc/BQZS4G3v/wu-biao-ti136-20260217185844.png" class="list-arrow"></div>
+            </div>
+            <div class="insta-list-item">
+                <div class="list-left">
+                    <img src="https://i.postimg.cc/3JLKwbrp/wu-biao-ti136-20260217185747.png" class="list-icon">
+                    <span class="list-label">添加AI标签</span>
+                </div>
+                <div class="list-right"><img src="https://i.postimg.cc/BQZS4G3v/wu-biao-ti136-20260217185844.png" class="list-arrow">
+                </div>
+            </div>
+<div class="insta-gap"></div>
+            <div class="insta-list-item">
+                <div class="list-left">
+                    <img src="https://i.postimg.cc/NfNg0PGH/wu-biao-ti136-20260217185759.png" class="list-icon">
+                    <span class="list-label">分享对象</span>
+                </div>
+                <div class="list-right"><img src="https://i.postimg.cc/BQZS4G3v/wu-biao-ti136-20260217185844.png" class="list-arrow"></div>
+            </div>
+            <div class="insta-list-item">
+                <div class="list-left">
+                    <img src="https://i.postimg.cc/vH8Ybdyn/wu-biao-ti136-20260217185812.png" class="list-icon">
+                    <span class="list-label">同时分享到...</span>
+                </div>
+                <div class="list-right"><img src="https://i.postimg.cc/BQZS4G3v/wu-biao-ti136-20260217185844.png" class="list-arrow"></div>
+            </div>
+<div class="insta-gap"></div>
+            <div class="insta-list-item">
+                <div class="list-left">
+                    <img src="https://i.postimg.cc/ZYxbG5GR/wu-biao-ti136-20260217185824.png" class="list-icon">
+                    <span class="list-label">更多选项</span>
+                </div>
+                <div class="list-right"><img src="https://i.postimg.cc/BQZS4G3v/wu-biao-ti136-20260217185844.png" class="list-arrow"></div>
+            </div>
+        </div>
+    </div> 
+
+    <div class="insta-bottom-share-bar">
+        <button class="insta-share-btn-large" onclick="publishInstaPost()">分享</button>
+    </div>
+
+    <input type="file" id="insta-file-upload" accept="image/*" style="display: none;" onchange="handleInstaFileSelect(this)">
+</div>
+<div id="insta-comments-overlay" class="insta-menu-overlay hidden" onclick="closeInstaComments()" style="z-index: 30002;">
+    <div class="insta-bottom-sheet comments-sheet" onclick="event.stopPropagation()">
+        <div class="sheet-drag-handle"></div>
+        <div class="sheet-header" style="border-bottom: 0.5px solid #dbdbdb;">评论</div>
+        
+        <div id="insta-comments-list" class="comments-list-scroll">
+            <div class="comment-empty-state">暂无评论</div>
+        </div>
+
+<div class="comments-input-area">
+    <img id="comment-input-avatar" src="" class="input-avatar"> <div class="input-wrapper">
+        <input type="text" id="insta-comment-input" placeholder="添加评论...">
+        <img src="https://i.postimg.cc/sDSDZpQ3/wu-biao-ti136-20260218155314.png" 
+             class="post-comment-btn-icon" onclick="postInstaComment()">
+    </div>
+</div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="insta-post-options-overlay" class="insta-menu-overlay hidden" onclick="closePostOptions()" style="z-index: 30005;">
+    <div class="insta-bottom-sheet" onclick="event.stopPropagation()" style="padding-bottom: 30px;">
+        <div class="sheet-drag-handle"></div>
+        <div class="sheet-content">
+            <div class="menu-item" onclick="confirmDeletePost()" style="color: #ed4956;">
+                <i class="far fa-trash-alt" style="font-size: 20px; width: 24px; text-align: center;"></i>
+                <span style="color: #ed4956; font-weight: 600;">删除帖子</span>
+            </div>
+            <div class="menu-item">
+                <i class="far fa-eye-slash" style="font-size: 20px; width: 24px; text-align: center;"></i>
+                <span>不感兴趣</span>
+            </div>
+        </div>
+    </div>
 </div>
     <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
     <script src="security.js"></script>

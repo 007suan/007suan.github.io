@@ -5158,7 +5158,7 @@ body, button, input, textarea, select, .edit-text {
     color: #000;
     display: flex;
     flex-direction: column;
-    z-index: 9999;
+    z-index: 500;
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
@@ -5344,7 +5344,7 @@ body, button, input, textarea, select, .edit-text {
 .grid-item { aspect-ratio: 1/1; background-color: #f8f8f8; overflow: hidden; }
 .grid-item img { width: 100%; height: 100%; object-fit: cover; }
 
-/* --- 5. 底部导航栏 (iOS 抬高适配) --- */
+/* --- 底部导航栏 (iOS 抬高适配) --- */
 #insta-bottom-nav {
     height: 85px;
     padding-bottom: 25px; /* 抬高图标，留出系统 Home Bar 位置 */
@@ -5360,191 +5360,432 @@ body, button, input, textarea, select, .edit-text {
 .insta-nav-item { flex: 1; display: flex; justify-content: center; align-items: center; height: 100%; }
 .insta-nav-icon { width: 26px; height: 26px; object-fit: contain; transition: transform 0.1s ease; }
 .insta-nav-item:active .insta-nav-icon { transform: scale(0.9); }
-/* ================= 💀 终极封缝补丁 💀 ================= */
 
-/* 1. 锁死 App 窗口，禁止任何缝隙 */
 #app-window-instagram {
-    position: fixed !important; /* 强制固定 */
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    /* 解决部分手机 height:100% 不包含地址栏的问题 */
-    height: 100dvh !important; 
-    background-color: #fff !important; /* 确保背景纯白，盖住后面的缝 */
+    position: fixed !important;
+    top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+    width: 100% !important; height: 100dvh !important;
+    background-color: #fff !important;
     overflow: hidden !important;
+    z-index: 9999;
 }
+img { vertical-align: middle; }
 
-/* 2. 消除底部导航栏图标的“脚底缝隙” */
-.insta-nav-icon {
-    display: block !important; /* 核心：把图片变成块，消除底部留白 */
-    margin: 0 auto; /* 保持居中 */
-}
-
-/* 3. 智能底部高度适配 (解决硬编码 25px 导致的计算误差) */
-#insta-bottom-nav {
-    /* 使用 calc 计算：基础高度 + 手机的安全区域 */
-    height: calc(60px + env(safe-area-inset-bottom)) !important; 
-    padding-bottom: env(safe-area-inset-bottom) !important;
-    /* 如果 env 不生效（比如普通浏览器），给一个兜底值 */
-    min-height: 85px; 
-}
-
-/* 4. 全局消除图片缝隙 */
-img { vertical-align: middle;}
-/* --- 首页新 Header 样式 --- */
-.insta-center-logo-wrap {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-.insta-logo-img {
-    height: 28px; /* 根据图片调整 */
-    object-fit: contain;
-}
-.insta-logo-arrow {
-    width: 12px;
-    height: 12px;
-    margin-top: 4px;
-}
-
-/* 修复后的遮罩层：使用 fixed 定位，不再撑开页面 */
-.insta-menu-overlay {
-    position: fixed; /* 关键修改：从 absolute 改为 fixed */
-    top: 0;
-    left: 0;
-    width: 100vw;  /* 占满视口宽度 */
-    height: 100vh; /* 占满视口高度 */
-    background: rgba(0,0,0,0);
-    visibility: hidden;
-    transition: all 0.3s ease;
-    z-index: 9999; /* 保证在最上层 */
-    overflow: hidden; /* 防止内部元素溢出 */
-}
-
-.insta-menu-overlay.active {
-    background: rgba(0,0,0,0.5);
-    visibility: visible;
-}
-
-/* 底部面板保持不变，但确保它在 fixed 容器里 */
-.insta-bottom-sheet {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
+/* --- 页面切换隐身术 --- */
+.ios-page {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     background: #fff;
-    border-radius: 12px 12px 0 0;
+    z-index: 30000;
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transform: translateY(0);
+    display: flex; flex-direction: column; }
+.ios-page.hidden {
+    transform: translateY(100%);
+    pointer-events: none; }
+
+/* --- 顶部导航栏 --- */
+.insta-header-bar {
+    position: relative; flex-shrink: 0;
+    height: 100px;
+    padding-top: 100px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 0.5px solid #dbdbdb;
+    background: #fff; }
+
+/* --- 底部导航栏适配 --- */
+#insta-bottom-nav {
+    height: calc(60px + env(safe-area-inset-bottom)) !important;
+    padding-bottom: env(safe-area-inset-bottom) !important;
+    min-height: 85px;
+}
+.insta-nav-icon { display: block !important; margin: 0 auto; }
+
+/* --- 菜单遮罩层 --- */
+.insta-menu-overlay {
+    position: fixed; top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0);
+    visibility: hidden; transition: all 0.3s ease;
+    z-index: 9999; overflow: hidden;
+}
+.insta-menu-overlay.active {
+    background: rgba(0,0,0,0.5); visibility: visible;
+}
+.insta-bottom-sheet {
+    position: absolute; bottom: 0; left: 0; width: 100%;
+    background: #fff; border-radius: 12px 12px 0 0;
     transform: translateY(100%);
     transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-    padding-bottom: env(safe-area-inset-bottom); /* 适配 iPhone 底部横条 */
+    padding-bottom: env(safe-area-inset-bottom);
+}
+.insta-menu-overlay.active .insta-bottom-sheet { transform: translateY(0); }
+.sheet-drag-handle { width: 36px; height: 4px; background: #dbdbdb; border-radius: 2px; margin: 10px auto 8px auto; }
+.sheet-header { text-align: center; font-weight: 700; font-size: 16px; padding-bottom: 12px; border-bottom: 0.5px solid #dbdbdb; margin-bottom: 5px; }
+.sheet-content .menu-item { display: flex; align-items: center; padding: 12px 20px; gap: 15px; }
+.sheet-content .menu-item:active { background: #f5f5f5; }
+.menu-item img { width: 24px; height: 24px; object-fit: contain; }
+.menu-item span { font-size: 16px; font-weight: 500; color: #000; }
+
+/* --- 新建帖子：编辑区域 --- */
+.insta-compose-area-pro {
+    display: flex; flex-direction: column;
+    padding: 20px 16px 10px; background: #fff;
+}
+.compose-main-image-box {
+    width: 200px; height: 200px;
+    margin: 0 auto 16px;
+    background: #f0f0f0; border-radius: 4px;
+    overflow: hidden; position: relative;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.compose-main-image-box img { width: 100%; height: 100%; object-fit: cover; }
+.add-overlay-hint {
+    position: absolute; bottom: 0; left: 0; width: 100%;
+    background: rgba(0,0,0,0.5); color: #fff;
+    font-size: 10px; text-align: center; padding: 2px 0;
+    pointer-events: none;
+}
+#insta-caption-input {
+    width: 100%; border: none; outline: none;
+    font-size: 15px; line-height: 1.5; min-height: 60px;
+    resize: none; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* 修复激活状态下的面板位置 */
-.insta-menu-overlay.active .insta-bottom-sheet {
-    transform: translateY(0);
+/* --- 滤镜栏--- */
+.filter-scroll-view {
+    display: flex; overflow-x: auto;
+    gap: 12px; padding: 10px 16px; background: #fff;
+    -ms-overflow-style: none; scrollbar-width: none;
 }
+.filter-scroll-view::-webkit-scrollbar { display: none; }
+.filter-chip {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 4px; cursor: pointer;
+    opacity: 0.5; transform: scale(0.95); transition: all 0.2s ease;
+}
+.filter-chip.active { opacity: 1 !important; transform: scale(1.05); }
+.filter-preview {
+    width: 48px; height: 48px;
+    border-radius: 4px; background-color: #eee;
+    background-size: cover; background-position: center;
+    border: 1px solid #ddd;
+    box-sizing: border-box; transition: border-color 0.2s;
+}
+/* 选中状态：灰色框 */
+.filter-chip.active .filter-preview {
+    border: 3px solid #a0a0a0 !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.filter-name { font-size: 11px; color: #262626; }
+/* 滤镜效果定义 */
+.f-original { filter: none; }
+.f-vivid { filter: saturate(1.5) contrast(1.1); }
+.f-warm { filter: sepia(0.2) saturate(1.2); }
+.f-cool { filter: hue-rotate(180deg) sepia(0.1); }
+.f-bw { filter: grayscale(1); }
+.f-film { filter: contrast(1.2) brightness(0.9) sepia(0.1); }
 
-/* 顶部小横条 */
-.sheet-drag-handle {
-    width: 36px;
-    height: 4px;
-    background: #dbdbdb;
-    border-radius: 2px;
-    margin: 10px auto 8px auto;
+/* --- 话题与投票 --- */
+.insta-creative-tags {
+    display: flex; gap: 10px;
+    padding: 5px 16px 5px;
+    background: #fff; flex-wrap: wrap;
 }
+.creative-tag-btn {
+    width: fit-content;
+    display: flex; align-items: center; gap: 6px;
+    background: #efefef; border-radius: 6px;
+    padding: 8px 12px; cursor: pointer;
+}
+.creative-tag-btn:active { opacity: 0.7; }
+.tag-icon { width: 16px; height: 16px; display: block; }
+.tag-text { font-size: 13px; font-weight: 500; color: #262626; line-height: 1; }
+
+/* --- 通用列表项 --- */
+.insta-option-list { padding-bottom: 20px; }
+.insta-list-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 16px; border-bottom: 0.5px solid #efefef; background: #fff;
+}
+.list-left { display: flex; align-items: center; gap: 12px; }
+.list-icon { width: 20px; height: 20px; object-fit: contain; }
+.list-label { font-size: 15px; color: #262626; }
+.list-right { display: flex; align-items: center; height: 100%; }
+.list-arrow { width: 16px; height: 16px; opacity: 0.4; }
+.list-value { font-size: 14px; color: #8e8e8e; margin-right: 4px; }
+.insta-divider-thick { height: 8px; background: #f5f5f5; border-top: 0.5px solid #efefef; border-bottom: 0.5px solid #efefef; }
+.insta-divider-line { height: 0.5px; background: #efefef; margin-left: 16px; }
+/* === 只有你需要隔断时才用的“空砖头” === */
+.insta-gap {
+    height: 8px; /* 想要隔得宽一点就改大，比如 12px */
+    background: #f5f5f5; /* 这种浅灰色最像原生 App 的背景 */
+    border-top: 0.5px solid #efefef; /* 上边框线 */
+    border-bottom: 0.5px solid #efefef; /* 下边框线 */
+    width: 100%; }
+
+/* --- 底部固定分享按钮 --- */
+.insta-bottom-share-bar {
+    background: #fff;
+    padding: 12px 16px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    border-top: 0.5px solid #dbdbdb;
+    flex-shrink: 0; 
+    z-index: 30001; }
+.insta-share-btn-large {
+    width: 100%;
+    background: #4E5CEC;
+    color: #fff;
+    border: none; border-radius: 8px;
+    padding: 12px 0;
+    font-size: 15px; font-weight: 600;
+    cursor: pointer; }
+.insta-share-btn-large:active { opacity: 0.7; }
+
+/* --- 评论弹窗基础布局 --- */
+.comments-sheet {
+    height: 70vh;
+    display: flex;
+    flex-direction: column;
+    background: #fff; }
 
 .sheet-header {
-    text-align: center;
+    width: 100% !important;
+    text-align: center !important;
+    font-weight: 700 !important;
+    font-size: 16px !important;
+    padding: 12px 0 !important;
+    border-bottom: 0.5px solid #dbdbdb;
+    position: relative !important; }
+
+.comments-list-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 16px 80px; }
+
+/* --- 评论单项样式 --- */
+.comment-item {
+    display: flex;
+    gap: 12px;
+    padding: 8px;
+    margin: 0 -8px 8px;
+    font-size: 14px;
+    transition: background 0.2s;
+    border-radius: 8px;
+    -webkit-user-select: none;
+    user-select: none; }
+
+.comment-item:active { background: #f0f0f0; }
+
+.comment-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0; }
+
+.comment-username { font-weight: 600; margin-right: 4px; color: #262626; }
+.comment-text { color: #262626; line-height: 1.4; flex: 1; }
+
+.comment-meta {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #8e8e8e;
+    display: flex;
+    gap: 12px; }
+
+.reply-text-btn { font-weight: 600; cursor: pointer; }
+.comment-empty-state { text-align: center; color: #8e8e8e; margin-top: 40px; }
+
+/* --- 帖子操作栏 --- */
+.post-actions {
+    padding: 10px 14px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center; }
+
+.left-actions {
+    display: flex;
+    gap: 8px !important; /* 紧凑间距 */
+    align-items: center; }
+
+.action-item {
+    display: flex;
+    align-items: center;
+    gap: 4px !important; /* 图标与数字紧凑 */
+    cursor: pointer; }
+
+.action-count {
+    font-size: 14px;
+    font-weight: 600;
+    color: #262626;
+    min-width: 8px; }
+
+/* --- 底部评论输入区 --- */
+.comments-input-area {
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%;
+    background: #fff;
+    border-top: 0.5px solid #dbdbdb;
+    padding: 10px 16px; 
+    
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 10; }
+
+.input-avatar { width: 32px; height: 32px; border-radius: 50%; }
+
+.input-wrapper {
+    flex: 1;
+    display: flex;
+    border: 1px solid #efefef; 
+    border-radius: 20px;
+    padding: 16px 50px 6px 12px; 
+    
+    align-items: center;
+    background: #f8f8f8; 
+    position: relative; }
+
+#insta-comment-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    background: transparent; 
+    transform: translateY(-4px);  }
+
+.post-comment-btn-icon {
+    width: 60px; 
+    height: 60px;
+    cursor: pointer;
+    position: absolute; 
+    right: 20px;
+    top: 45%;
+    transform: translateY(-50%); 
+    z-index: 2; }
+
+.post-comment-btn-icon:active { 
+    /* 点击时的缩放效果 */
+    transform: translateY(-50%) scale(0.9); }
+
+/* === 1. 评论区标题彻底居中 === */
+.comments-sheet .sheet-header {
+    width: 100%;
+    text-align: center; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
     font-weight: 700;
     font-size: 16px;
-    padding-bottom: 12px;
+    height: 48px;
+    border-bottom: 0.5px solid #dbdbdb; }
+/* === 评论项布局 (头像靠顶) === */
+.comment-item {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 18px;
+    align-items: flex-start; }
+/* =========================================
+   全局标题居中 (修复创建菜单不居中)
+   ========================================= */
+.sheet-header {
+    width: 100%;
+    text-align: center;
+    justify-content: center; 
+    display: flex; 
+    align-items: center; 
+    font-weight: 700;
+    font-size: 16px;
+    padding: 12px 0;
     border-bottom: 0.5px solid #dbdbdb;
-    margin-bottom: 5px;
+    margin-bottom: 0; }
+/* === 私信列表样式 (Direct List) === */
+.insta-dm-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 15px;
+    background: white;
+    transition: background 0.2s;
 }
 
-.sheet-content .menu-item {
-    display: flex;
-    align-items: center; /* 图标文字垂直居中 */
-    padding: 12px 20px;
-    gap: 15px; /* 图标和文字的间距 */
-}
-.sheet-content .menu-item:active {
+.insta-dm-row:active {
     background: #f5f5f5;
 }
 
-.menu-item img {
+.insta-dm-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    margin-right: 12px;
+    border: 1px solid rgba(0,0,0,0.1);
+    object-fit: cover;
+}
+
+.insta-dm-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.insta-dm-username {
+    font-size: 14px;
+    color: #262626;
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+}
+
+.insta-dm-last-msg {
+    font-size: 13px;
+    color: #8e8e8e;
+    display: flex;
+    align-items: center;
+}
+
+/* 蓝色未读点 (可选) */
+.insta-dm-unread-dot {
+    width: 8px;
+    height: 8px;
+    background: #0095f6;
+    border-radius: 50%;
+    margin-left: 10px;
+}
+
+/* === 选择联系人列表样式 === */
+.insta-contact-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+}
+
+.insta-contact-row:active {
+    background: #f5f5f5;
+}
+
+.insta-check-circle {
     width: 24px;
     height: 24px;
-    object-fit: contain;
+    border: 1px solid #dbdbdb;
+    border-radius: 50%;
+    margin-left: auto; /* 靠右 */
 }
-.menu-item span {
-    font-size: 16px;
-    font-weight: 500;
-    color: #000;
-}
-/* --- 发帖流程样式 --- */
-.create-gallery-grid .gallery-item {
-    aspect-ratio: 1 / 1;
-    background: #eee;
-    overflow: hidden;
-    position: relative;
-    cursor: pointer;
-}
-.create-gallery-grid .gallery-item img {
-    width: 100%; height: 100%; object-fit: cover;
-    transition: opacity 0.2s;
-}
-.create-gallery-grid .gallery-item.selected::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(255, 255, 255, 0.5); /* 选中变白遮罩 */
-    border: 2px solid #0095f6; /* 选中蓝框 */
-    box-sizing: border-box;
+.insta-sub-page {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    transition: transform 0.3s ease;
+    z-index: 20000;
 }
 
-/* 滤镜预览小图 */
-.filter-item {
-    display: flex; flex-direction: column; align-items: center; gap: 5px;
-    min-width: 80px; cursor: pointer;
-}
-.filter-preview {
-    width: 60px; height: 60px; background: #eee;
-    border-radius: 4px;
-}
-.filter-item.active span { font-weight: 700; color: #0095f6; }
-
-/* 简单的 CSS 滤镜类 */
-.filter-preview.normal { background-color: #ddd; }
-.filter-preview.grayscale { background-color: #888; }
-.filter-preview.vivid { background-color: #ff5722; }
-.filter-preview.vintage { background-color: #d4a373; }
-.filter-preview.drama { background-color: #333; }
-/* Instagram 发帖流程样式 */
-.header-title { font-weight: 700; font-size: 16px; }
-
-/* 滤镜小方块 */
-.filter-thumb {
-    width: 60px; height: 60px; background: #eee;
-    border-radius: 4px; margin-bottom: 5px;
-}
-.filter-item span { font-size: 12px; color: #999; }
-.filter-item.active span { color: #000; font-weight: 600; }
-
-/* 相册网格 */
-.gallery-grid .gallery-item {
-    aspect-ratio: 1; /* 正方形 */
-    position: relative;
-    cursor: pointer;
-}
-.gallery-grid .gallery-item:active { opacity: 0.8; }
-/* 选中的遮罩效果 */
-.gallery-item.selected::after {
-    content: ''; position: absolute; top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(255,255,255,0.4);
+.insta-sub-page.hidden {
+    transform: translateX(100%); /* 向右滑出隐藏 */
     pointer-events: none;
 }

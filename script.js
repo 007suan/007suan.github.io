@@ -1743,8 +1743,7 @@ function getAvatarStyle(avatarStr) {
         return 'background-color: #f0f0f0;'; 
     }
     
-    // 2. 清理数据：把 url("...") 里的双引号 " 替换成单引号 '
-    // 这一步至关重要！防止破坏 HTML 结构
+    // 2. 清理
     let cleanAvatar = avatarStr.replace(/"/g, "'");
 
     // 3. 确保格式是 url(...)
@@ -1752,7 +1751,6 @@ function getAvatarStyle(avatarStr) {
         return `background-image: ${cleanAvatar};`;
     }
     
-    // 4. 如果只是个链接，手动包一层
     return `background-image: url('${cleanAvatar}');`;
 }
 
@@ -1763,7 +1761,6 @@ function createChatItem(chat) {
     div.id = `chat-item-${chat.id}`;
     const avatarStyle = getAvatarStyle(contact.avatar);
 
-    // ★★★ [修复] 定义显示的名字：优先取 chat.privateAlias ★★★
     const displayName = chat.privateAlias || contact.name;
 
     div.innerHTML = `
@@ -5640,9 +5637,6 @@ window.publishPost = function() {
     localforage.setItem('Wx_Moments_Data', momentsData).then(() => {
         if(window.showSystemAlert) showSystemAlert('发布成功啦～');
 
-        // ========================================================
-        // ★★★ 核心补充：给被艾特的好友“发请柬” (Mist Forest 卡片) ★★★
-        // ========================================================
         if (newPost.mentions && newPost.mentions.length > 0) {
             newPost.mentions.forEach(chatId => {
                 const targetChat = chatsData.find(c => c.id === chatId);
@@ -8329,74 +8323,101 @@ window.processTransferAction = function(msgId, action) {
     saveChatAndRefresh(chat);
 };
 
-// === 丝滑动画版 App 控制器 (支持外部跳转版) ===
-
 window.openApp = function(appId) {
-    // --- 新增 Instagram 的启动入口 ---
-    if (appId === 'instagram') {
-        openInstagram(); // 调用我们上一轮写的那个启动函数
-        return; 
+    // 1. ID 智能处理
+    let targetId = 'app-window-' + appId;
+    if(appId === 'kugou' || appId === 'music') {
+        targetId = 'app-kugou';
     }
-    // --- 新增：真的跳转抖音逻辑 ---
-    if (appId === 'douyin') {
-        window.location.href = 'snssdk1128://feed';
-        // 如果没装 App，2秒后跳网页版，免得没反应
-        setTimeout(() => {
-            if (!document.hidden) window.location.href = 'https://www.douyin.com';
-        }, 2000);
-        return; // 直接结束，不走下面的窗口逻辑
-    }
-    // ----------------------------
 
-    let targetId = (appId === 'music' || appId === 'kugou') ? 'app-kugou' : 'app-window-' + appId;
-    const appWindow = document.getElementById(targetId);
-    
-    if (appWindow) {
-        // 1. 先把架子搭起来 (display: flex)
-        appWindow.style.display = 'flex';
-        
-        // 2. 强行重绘 (保证动画不会被合并)
-        appWindow.offsetHeight; 
-        
-        // 3. 加动画类
-        appWindow.classList.remove('closing'); 
-        appWindow.classList.add('active');
-        
-        // 特殊处理：酷狗小黑条
+    // 2. 关闭其他所有窗口 (互斥)
+    document.querySelectorAll('.app-window, #app-kugou').forEach(el => {
+        if(el.id !== targetId) {
+            el.style.display = 'none';
+            el.classList.remove('active');
+        }
+    });
+
+    // 3. 打开目标应用
+    const app = document.getElementById(targetId);
+    if(app) {
+        app.style.display = 'flex';
+        void app.offsetWidth; // 强制重绘，确保动画流畅
+        app.classList.add('active');
+
+        // --- 特殊应用逻辑 ---
+        if(appId === 'instagram' && window.switchInstaPage) {
+            window.switchInstaPage('insta-feed-page');
+            if(window.initInstaData) window.initInstaData(); 
+        }
+
         const homeBar = document.querySelector('.home-bar');
-        if(homeBar && targetId === 'app-kugou') homeBar.style.backgroundColor = '#fff';
+        if(homeBar) {
+
+            homeBar.style.zIndex = '99999'; 
+
+            if(targetId === 'app-kugou') {
+                homeBar.style.backgroundColor = '#fff'; 
+                // 酷狗界面深色，配白条
+            } else {
+                homeBar.style.backgroundColor = '#000'; 
+                // Ins、设置等亮色界面，配黑条
+            }
+        }
+
     } else {
-        // 既然没有对应的窗口元素，就会报这个可爱的错
-        showSystemAlert(`别急呦${targetId}还没搓出来呢。！`);
+        showSystemAlert(`正在加载 ${appId}...`);
     }
 };
 
 window.closeApp = function(specificId) {
-    const targetId = (specificId === 'kugou' || specificId === 'music') ? 'app-kugou' : 'app-window-' + specificId;
+    // 1. 智能识别 ID (兼容 'kugou' 简写和完整 ID)
+    let targetId;
+    if (!specificId) {
+        targetId = null; // 关闭所有
+    } else if (specificId === 'kugou' || specificId === 'music') {
+        targetId = 'app-kugou';
+    } else if (specificId.startsWith('app-window-') || specificId === 'app-kugou') {
+        targetId = specificId;
+    } else {
+        targetId = 'app-window-' + specificId;
+    }
+
+    // 2. 找到要关闭的窗口
+    const targets = targetId ? [document.getElementById(targetId)] : document.querySelectorAll('.app-window, #app-kugou');
     
-    // 如果没指定ID，就关闭所有
-    const targets = specificId ? [document.getElementById(targetId)] : document.querySelectorAll('.app-window, #app-kugou');
-    
+    // 3. 执行关闭动画
     targets.forEach(el => {
         if(el && el.style.display !== 'none') {
-            // 1. 触发关闭动画
             el.classList.remove('active');
-            el.classList.add('closing'); // 可选：加个专门的关闭缩小效果
+            el.classList.add('closing'); 
             
-            // 2. 等动画播完再彻底隐藏 (400ms 对应 CSS 里的 0.4s)
+            // 恢复动态岛 (如果之前变长了，现在缩回去)
+            const island = document.getElementById('dynamic-island');
+            if(island) {
+                island.classList.remove('expanded');
+                island.style.width = ''; 
+                island.style.height = '';
+                island.style.borderRadius = '';
+                const content = document.getElementById('island-content');
+                if(content) content.style.display = 'none';
+            }
+
+            // 动画结束后隐藏 DOM
             setTimeout(() => {
-                // 双重检查：防止用户手速太快又点开了
                 if(!el.classList.contains('active')) {
                     el.style.display = 'none';
                     el.classList.remove('closing');
                 }
-            }, 350); // 稍微比 CSS 快一点点，感觉更跟手
+            }, 350); 
         }
     });
-    
-    // 恢复小黑条
-    const homeBar = document.querySelector('.home-bar');
-    if(homeBar) homeBar.style.backgroundColor = '#000';
+
+    const allHomeBars = document.querySelectorAll('.home-bar');
+    allHomeBars.forEach(bar => {
+        bar.style.removeProperty('background-color'); // 先清除行内样式
+        bar.style.backgroundColor = '#000'; // 强制设为黑色
+    });
 };
 
 /**
@@ -11177,302 +11198,779 @@ window.openApp = function(appId) {
     }
 };
 /* ==========================================================================
-   INSTAGRAM APP 完整逻辑 (修复版)
+   📸 INSTAGRAM APP 终极交互版 (Final Pro Max)
+   包含：身份同步 | 动态换头像 | 数据库持久化 | 长按删评 | 紧凑UI
    ========================================================================== */
 
-// 1. 系统入口接力
-const _beforeInstaApp = window.openApp;
-window.openApp = function(appId) {
-    if (appId === 'instagram') {
-        const app = document.getElementById('app-window-instagram');
-        if (app) {
-            app.style.display = 'flex'; 
-            setTimeout(() => app.classList.add('active'), 10);
-            switchInstaPage('insta-feed-page'); 
-            return; 
-        }
-    }
-    if (typeof _beforeInstaApp === 'function') _beforeInstaApp(appId);
-};
-
-// 2. 页面切换核心
-window.switchInstaPage = function(pageId) {
-    console.log("切换页面:", pageId);
+(function() {
+    console.log("正在初始化 Instagram (Final Pro Max)...");
+    const DB_KEY_INS = 'ins_user_posts_v3'; 
+    const DB_KEY_AVATAR = 'ins_user_avatar_data'; // 🔥 新增：专门存头像数据的数据库
     
-    // 隐藏所有页面
-    document.querySelectorAll('.insta-page').forEach(p => p.classList.remove('active-page'));
-    
-    // 显示目标页面
-    const target = document.getElementById(pageId);
-    if (target) {
-        target.classList.add('active-page');
-        const scrollCont = target.querySelector('.insta-scroll-container');
-        if(scrollCont) scrollCont.scrollTop = 0;
-    }
+    // 全局变量
+    window.instaLocalData = [];
+    window.currentUserAvatar = ''; // 🔥 新增：全局变量存当前头像
+    window.currentInstaImageBlob = null; 
+    window.currentInstaFilter = ''; 
+    window.currentCommentPostId = null; 
+    window.currentActionPostId = null; 
 
-    // 更新 UI
-    updateInstaUI(pageId);
-};
+    // 长按计时器
+    let longPressTimer = null;
 
-// 3. UI 同步 (底栏图标切换)
-function updateInstaUI(activePageId) {
-    // 更新顶栏
-    document.querySelectorAll('.insta-nav-header').forEach(h => {
-        h.classList.toggle('active', h.getAttribute('data-nav-for') === activePageId);
-    });
-
-    // 更新底栏
-    const navItems = document.querySelectorAll('.insta-nav-item');
-    navItems.forEach(item => {
-        const targetId = item.getAttribute('data-target');
-        const isActive = (targetId === activePageId);
-        item.classList.toggle('active', isActive);
-
-        const iconImg = item.querySelector('.insta-nav-icon');
-        // 只有当图标存在且有 data 属性时才切换
-        if (iconImg && item.hasAttribute('data-selected')) {
-            iconImg.src = isActive ? item.getAttribute('data-selected') : item.getAttribute('data-unselected');
-        }
-    });
+// 核心：时间转换器
+function timeAgo(date) {
+    const timestamp = typeof date === 'string' ? new Date(date).getTime() : date;
+    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+    if (seconds < 60) return '刚刚';
+    if (seconds < 3600) return Math.floor(seconds / 60) + '分钟前';
+    if (seconds < 86400) return Math.floor(seconds / 3600) + '小时前';
+    return new Date(timestamp).toLocaleDateString(); // 超过一天显示具体日期
 }
 
-// 4. 悬浮菜单逻辑 (修复版)
-window.openInstaCreateMenu = function() {
-    console.log("尝试打开悬浮菜单...");
-    const overlay = document.getElementById('insta-create-menu-overlay');
-    
-    if (!overlay) {
-        console.error("找不到菜单遮罩层 ID: insta-create-menu-overlay");
-        return;
+    // ===========================
+    // 0. 核心辅助：身份同步 (动态头像版)
+    // ===========================
+    function getCurrentUser() {
+        // 优先使用用户上传过的头像，如果没有，才用默认图
+        // 这里的默认图你可以换成你喜欢的任何一张图
+        const defaultAvatar = 'https://i.postimg.cc/gkZMz1xW/IMG-7800.jpg'; 
+        
+        let finalAvatar = window.currentUserAvatar || defaultAvatar;
+        let finalName = 'HuanHuan_Official'; // 默认昵称
+
+        // 尝试获取页面上的昵称（如果有的话）
+        const bioNameEl = document.getElementById('insta-bio-name');
+        const topNameEl = document.getElementById('insta-top-username');
+        if (bioNameEl && bioNameEl.innerText.trim()) {
+            finalName = bioNameEl.innerText.trim();
+        } else if (topNameEl && topNameEl.innerText.trim()) {
+            finalName = topNameEl.innerText.trim();
+        }
+
+        return { name: finalName, avatar: finalAvatar };
     }
 
-    overlay.classList.remove('hidden');
-    void overlay.offsetWidth; // 强制重绘
-    overlay.classList.add('active');
-};
+    // ===========================
+    // 🛠️ 1. 数据加载与保存 (含头像)
+    // ===========================
+    async function initInstaData() {
+        try {
+            // 1. 加载帖子数据
+            const savedPosts = await localforage.getItem(DB_KEY_INS);
+            window.instaLocalData = savedPosts || [];
 
-window.closeInstaCreateMenu = function() {
-    const overlay = document.getElementById('insta-create-menu-overlay');
-    if (!overlay) return;
+            // 2. 🔥 加载头像数据 (关键步骤)
+            const savedAvatar = await localforage.getItem(DB_KEY_AVATAR);
+            const avatarEl = document.getElementById('insta-profile-avatar');
+            
+            if (savedAvatar) {
+                window.currentUserAvatar = savedAvatar;
+                // 找到页面上的大头像元素，把存好的图贴上去
+                if (avatarEl) avatarEl.src = savedAvatar;
+            } else {
+                // 如果没存过，就用默认图
+                if (avatarEl && !avatarEl.src) avatarEl.src = 'https://i.postimg.cc/gkZMz1xW/IMG-7800.jpg';
+            }
 
-    overlay.classList.remove('active');
-    setTimeout(() => {
-        overlay.classList.add('hidden');
-    }, 250);
-};
+            window.refreshInstaAll(); // 刷新帖子列表
+        } catch (err) { console.error(err); }
+    }
 
-// 5. 初始化绑定 (只执行一次)
-document.addEventListener('DOMContentLoaded', () => {
-    console.log("Instagram 模块初始化...");
+    async function saveData() {
+        try { await localforage.setItem(DB_KEY_INS, window.instaLocalData); } catch(e){}
+    }
 
-    // A. 绑定底部导航栏
-    const bottomNav = document.getElementById('insta-bottom-nav');
-    if (bottomNav) {
-        bottomNav.addEventListener('click', (e) => {
-            const navItem = e.target.closest('.insta-nav-item');
-            if (navItem) {
-                const targetId = navItem.getAttribute('data-target');
-                if (targetId && !targetId.includes('placeholder')) {
-                    switchInstaPage(targetId);
+    // ===========================
+    // 📸 2. 头像上传处理逻辑 (新功能)
+    // ===========================
+    window.handleProfileAvatarChange = function(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const newAvatarBase64 = e.target.result;
+                
+                // 1. 更新页面上的大头像
+                const avatarEl = document.getElementById('insta-profile-avatar');
+                if (avatarEl) avatarEl.src = newAvatarBase64;
+
+                // 2. 更新全局变量
+                window.currentUserAvatar = newAvatarBase64;
+
+                // 3. 🔥 存进数据库！
+                await localforage.setItem(DB_KEY_AVATAR, newAvatarBase64);
+
+                // 4. 立刻刷新所有帖子和评论的头像
+                window.refreshInstaAll(); 
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    };
+
+    // ===========================
+    // 📸 3. 发帖与删除
+    // ===========================
+    window.openInstaCreateMenu = function() {
+        const el = document.getElementById('insta-create-menu-overlay');
+        if(el) { el.classList.remove('hidden'); setTimeout(()=>el.classList.add('active'), 0); }
+    };
+    window.closeInstaCreateMenu = function() {
+        const el = document.getElementById('insta-create-menu-overlay');
+        if(el) { el.classList.remove('active'); setTimeout(()=>el.classList.add('hidden'), 250); }
+    };
+    window.handleCreateType = function(type) {
+        if (type === 'post') { window.closeInstaCreateMenu(); window.openInstaCreate(); }
+        else { alert("正在开发中: " + type); }
+    };
+
+    window.openInstaCreate = function() {
+        const page = document.getElementById('insta-create-post-page');
+        if(!page) return;
+        const input = document.getElementById('insta-caption-input');
+        if(input) input.value = '';
+        const preview = document.getElementById('insta-preview-img');
+        if(preview) { preview.src = 'https://via.placeholder.com/300'; preview.className = 'f-original'; }
+        document.querySelectorAll('.filter-preview').forEach(el => el.style.backgroundImage = '');
+        const firstChip = document.querySelector('.filter-chip');
+        if(firstChip) window.applyInstaFilter('f-original', firstChip);
+        window.currentInstaImageBlob = null;
+        window.currentInstaFilter = '';
+        const hint = document.getElementById('add-hint-text');
+        if(hint) hint.style.display = 'block';
+        page.classList.remove('hidden');
+    };
+
+    window.closeInstaCreate = function() {
+        const page = document.getElementById('insta-create-post-page');
+        if(page) page.classList.add('hidden');
+    };
+
+    window.triggerInstaFile = function() { document.getElementById('insta-file-upload').click(); };
+
+    window.handleInstaFileSelect = function(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imgResult = e.target.result;
+                const preview = document.getElementById('insta-preview-img');
+                if(preview) preview.src = imgResult;
+                const hint = document.getElementById('add-hint-text');
+                if(hint) hint.style.display = 'none';
+                window.currentInstaImageBlob = imgResult;
+                document.querySelectorAll('.filter-preview').forEach(el => el.style.backgroundImage = `url(${imgResult})`);
+            }
+            reader.readAsDataURL(file);
+        }
+    };
+
+    window.applyInstaFilter = function(filterClass, clickedEl) {
+        window.currentInstaFilter = filterClass;
+        const preview = document.getElementById('insta-preview-img');
+        if(preview) {
+            preview.className = "";
+            if(filterClass) preview.classList.add(filterClass);
+        }
+        document.querySelectorAll('.filter-chip').forEach(el => el.classList.remove('active'));
+        if (clickedEl) clickedEl.classList.add('active');
+    };
+
+    window.publishInstaPost = async function() {
+        const caption = document.getElementById('insta-caption-input')?.value || "";
+        const imgData = window.currentInstaImageBlob;
+        if (!imgData) { alert("请先选择一张图片！"); return; }
+        const user = getCurrentUser(); 
+        const newPost = {
+            id: Date.now(),
+            authorName: user.name,
+            authorAvatar: user.avatar, 
+            image: imgData,
+            content: caption,
+            filter: window.currentInstaFilter || '',
+            likes: 0, isLiked: false, isSaved: false, comments: [],
+            timestamp: new Date().toISOString()
+        };
+        window.instaLocalData.unshift(newPost);
+        await saveData();
+        window.refreshInstaAll();
+        window.closeInstaCreate();
+        setTimeout(() => window.switchInstaPage('insta-feed-page'), 100);
+    };
+
+    window.openPostOptions = function(postId) {
+        window.currentActionPostId = postId;
+        const el = document.getElementById('insta-post-options-overlay');
+        if(el) { el.classList.remove('hidden'); setTimeout(()=>el.classList.add('active'), 0); }
+    };
+
+    window.closePostOptions = function() {
+        const el = document.getElementById('insta-post-options-overlay');
+        if(el) { el.classList.remove('active'); setTimeout(()=>el.classList.add('hidden'), 250); }
+    };
+
+    window.confirmDeletePost = function() {
+        const menu = document.getElementById('insta-post-options-overlay');
+        if(menu) menu.classList.add('hidden'); 
+        window.showConfirmDialog("确定要删除这篇帖子吗？\n此操作无法撤销。", function() {
+            if(!window.currentActionPostId) return;
+            window.instaLocalData = window.instaLocalData.filter(p => p.id !== window.currentActionPostId);
+            saveData();
+            window.refreshInstaAll(); 
+            window.closePostOptions();
+        }, "delete");
+    };
+
+    // ===========================
+    // ❤️ 4. 互动功能
+    // ===========================
+    window.toggleLike = function(postId) {
+        const post = window.instaLocalData.find(p => p.id === postId);
+        if(post) {
+            post.isLiked = !post.isLiked;
+            post.likes = post.isLiked ? (post.likes + 1) : Math.max(0, post.likes - 1);
+            saveData(); updatePostUI(postId);
+        }
+    };
+
+    window.toggleSave = function(postId) {
+        const post = window.instaLocalData.find(p => p.id === postId);
+        if(post) { post.isSaved = !post.isSaved; saveData(); updatePostUI(postId); }
+    };
+
+    window.openComments = function(postId) {
+        window.currentCommentPostId = postId;
+        const post = window.instaLocalData.find(p => p.id === postId);
+        if(!post) return;
+        const user = getCurrentUser();
+        const inputAvatar = document.getElementById('comment-input-avatar');
+        if(inputAvatar) inputAvatar.src = user.avatar;
+        renderCommentList(post);
+        const overlay = document.getElementById('insta-comments-overlay');
+        overlay.classList.remove('hidden');
+        setTimeout(() => overlay.classList.add('active'), 0);
+    };
+
+    function renderCommentList(post) {
+        const listEl = document.getElementById('insta-comments-list');
+        listEl.innerHTML = ''; 
+        const currentUser = getCurrentUser();
+
+        if(!post.comments || post.comments.length === 0) {
+            listEl.innerHTML = `<div class="comment-empty-state">还没有评论<br>抢占沙发吧！</div>`;
+        } else {
+            post.comments.forEach((c, index) => {
+                let commentAvatar = c.avatar;
+                if (c.username === currentUser.name || c.username === 'Myself') {
+                    commentAvatar = currentUser.avatar;
+                }
+                const item = document.createElement('div');
+                item.className = 'comment-item';
+
+                item.innerHTML = `
+                    <img src="${commentAvatar}" class="comment-avatar" style="margin-top: 2px;">
+                    <div class="comment-content" style="display:flex; flex-direction:column; gap:2px;">
+                        <div class="comment-username" style="font-weight:600; font-size:13px;">${c.username}</div>
+                        <div class="comment-text" style="font-size:13px; color:#262626; line-height:1.4;">${c.text}</div>
+                        <div class="comment-meta" style="margin-top:4px; font-size:12px; color:#8e8e8e;">
+                            <span>${timeAgo(c.time)}</span> <span style="margin-left:10px; font-weight:600; cursor:pointer;">回复</span>
+                        </div>
+                    </div>
+                `;
+                bindCommentInteraction(item, index, c.username);
+                listEl.appendChild(item);
+            });
+        }
+    }
+
+    function bindCommentInteraction(element, index, username) {
+        let isLongPress = false; let pressTimer;
+        element.addEventListener('touchstart', () => {
+            isLongPress = false;
+            pressTimer = setTimeout(() => {
+                isLongPress = true;
+                window.showConfirmDialog(`删除 @${username} 的这条评论吗？`, function() {
+                    deleteComment(index);
+                }, "delete");
+            }, 600);
+        });
+        element.addEventListener('touchend', () => clearTimeout(pressTimer));
+        element.addEventListener('touchmove', () => clearTimeout(pressTimer));
+        element.addEventListener('click', () => {
+            if (!isLongPress) {
+                const input = document.getElementById('insta-comment-input');
+                input.value = `@${username} `;
+                input.focus();
+            }
+        });
+    }
+
+    function deleteComment(commentIndex) {
+        const post = window.instaLocalData.find(p => p.id === window.currentCommentPostId);
+        if(post && post.comments) {
+            post.comments.splice(commentIndex, 1);
+            saveData(); renderCommentList(post); updatePostUI(window.currentCommentPostId);
+        }
+    }
+
+    window.closeInstaComments = function() {
+        const overlay = document.getElementById('insta-comments-overlay');
+        overlay.classList.remove('active');
+        setTimeout(() => overlay.classList.add('hidden'), 250);
+        window.currentCommentPostId = null;
+    };
+
+    window.postInstaComment = function() {
+        const input = document.getElementById('insta-comment-input');
+        const text = input.value.trim();
+        if(!text || !window.currentCommentPostId) return;
+        const post = window.instaLocalData.find(p => p.id === window.currentCommentPostId);
+        if(post) {
+            const user = getCurrentUser(); 
+            if(!post.comments) post.comments = [];
+            post.comments.push({ username: user.name, avatar: user.avatar, text: text, time: Date.now() });
+            input.value = '';
+            renderCommentList(post); updatePostUI(window.currentCommentPostId); saveData();
+        }
+    };
+
+    function updatePostUI(postId) {
+        const post = window.instaLocalData.find(p => p.id === postId);
+        if(!post) return;
+        const postEl = document.getElementById(`post-${postId}`);
+        if(!postEl) return;
+        const ICONS = {
+            like_off: 'https://i.postimg.cc/2SLVzb15/wu-biao-ti131-20260214195652.png',
+            like_on: 'https://i.postimg.cc/sDNMd9gj/无标题131_20260214195956.png',
+            save_off: 'https://i.postimg.cc/J42sVcz4/wu-biao-ti131-20260214195817.png',
+            save_on: 'https://i.postimg.cc/9Qr4QbJy/wu-biao-ti131-20260218115210.png'
+        };
+        const likeImg = postEl.querySelector('.action-like-img');
+        if(likeImg) {
+            likeImg.src = post.isLiked ? ICONS.like_on : ICONS.like_off;
+            if(post.isLiked) { likeImg.classList.remove('liked-anim'); void likeImg.offsetWidth; likeImg.classList.add('liked-anim'); }
+        }
+        const likeCount = postEl.querySelector('.action-like-count');
+        if(likeCount) likeCount.innerText = post.likes > 0 ? post.likes : '';
+        const commentCountBtn = postEl.querySelector('.view-comments-btn');
+        if(commentCountBtn) {
+            commentCountBtn.innerText = `查看全部 ${post.comments.length} 条评论`;
+            commentCountBtn.style.display = post.comments.length > 0 ? 'block' : 'none';
+        }
+        const commentNumEl = postEl.querySelector('.action-comment-count');
+        if(commentNumEl) commentNumEl.innerText = post.comments.length > 0 ? post.comments.length : '';
+        const saveImg = postEl.querySelector('.action-save-img');
+        if(saveImg) saveImg.src = post.isSaved ? ICONS.save_on : ICONS.save_off;
+    }
+
+    // ===========================
+    // 🎨 5. 全局渲染 (强制同步版)
+    // ===========================
+    window.refreshInstaAll = function() {
+        const container = document.getElementById('insta-feed-list');
+        const grid = document.getElementById('insta-profile-grid');
+        const countEl = document.getElementById('insta-stat-posts');
+
+        // 🔥 获取当前最新的头像
+        const user = getCurrentUser(); 
+
+        if(countEl) countEl.innerText = window.instaLocalData.length;
+
+        if(container) {
+            container.innerHTML = "";
+            if(window.instaLocalData.length === 0) {
+                container.innerHTML = `<div style="padding:50px; text-align:center; color:#ccc;">暂无帖子</div>`;
+            } else {
+                const ICONS = {
+                    more: 'https://i.postimg.cc/W4kbWkkD/wu-biao-ti130-20260214082642.png',
+                    like_off: 'https://i.postimg.cc/2SLVzb15/wu-biao-ti131-20260214195652.png',
+                    like_on: 'https://i.postimg.cc/sDNMd9gj/无标题131_20260214195956.png',
+                    comment: 'https://i.postimg.cc/nh9CHjXH/wu-biao-ti131-20260214195705.png',
+                    share: 'https://i.postimg.cc/wjR76y7C/wu-biao-ti131-20260214195721.png',
+                    save_off: 'https://i.postimg.cc/J42sVcz4/wu-biao-ti131-20260214195817.png',
+                    save_on: 'https://i.postimg.cc/9Qr4QbJy/wu-biao-ti131-20260218115210.png',
+                    extra: 'https://i.postimg.cc/kgmMNB8k/wu-biao-ti136-20260218155328.png'
+                };
+
+                window.instaLocalData.forEach(post => {
+                    if(!post.comments) post.comments = [];
+                    if(!post.likes) post.likes = 0;
+
+                    let displayAvatar = post.authorAvatar;
+                    if (post.authorName === user.name || post.authorName === 'Myself') {
+                        displayAvatar = user.avatar; 
+                    }
+
+                    const div = document.createElement('div');
+                    div.className = 'insta-post';
+                    div.id = `post-${post.id}`;
+                    div.style.marginBottom = "15px";
+                    const likeIcon = post.isLiked ? ICONS.like_on : ICONS.like_off;
+                    const saveIcon = post.isSaved ? ICONS.save_on : ICONS.save_off;
+
+    div.innerHTML = `
+        <div class="post-header" style="padding: 10px 12px; display:flex; justify-content:space-between; align-items:center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <img src="${displayAvatar}" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
+                <span style="font-weight: 600; font-size: 14px;">${post.authorName}</span>
+            </div>
+            <img src="${ICONS.more}" style="width: 20px; cursor: pointer;" onclick="openPostOptions(${post.id})">
+        </div>
+        
+        <div class="post-image" ondblclick="toggleLike(${post.id})">
+            <img src="${post.image}" class="${post.filter || ''}" style="width: 100%; display: block;">
+        </div>
+        
+        <div class="post-actions" style="padding: 10px 14px 0; display: flex; justify-content: space-between; align-items: center;">
+            <div class="left-actions" style="display: flex; gap: 12px; align-items: center;">
+                <div class="action-item" onclick="toggleLike(${post.id})" style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                    <img src="${likeIcon}" class="action-like-img" style="width: 24px;">
+                    <span class="action-count action-like-count" style="font-size:14px; font-weight:600;">${post.likes>0?post.likes:''}</span>
+                </div>
+                <div class="action-item" onclick="openComments(${post.id})" style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                    <img src="${ICONS.comment}" style="width: 24px;">
+                    <span class="action-count action-comment-count" style="font-size:14px; font-weight:600;">${post.comments.length>0?post.comments.length:''}</span>
+                </div>
+                <img src="${ICONS.share}" style="width: 24px;">
+                <img src="${ICONS.extra}" style="width: 24px;">
+            </div>
+            <img src="${saveIcon}" class="action-save-img" style="width: 24px; cursor:pointer;" onclick="toggleSave(${post.id})">
+        </div>
+        
+        <div class="post-caption" style="padding: 10px 14px; font-size: 14px;">
+            <span style="font-weight: 600;">${post.authorName}</span> ${post.content || ''}
+            <div class="view-comments-btn" style="color:#8e8e8e; margin-top:6px; cursor:pointer; display:${post.comments.length > 0 ? 'block' : 'none'};" onclick="openComments(${post.id})">
+                查看全部 ${post.comments.length} 条评论
+            </div>
+            
+            <div class="post-time" style="color:#8e8e8e; font-size:11px; margin-top:8px; text-transform:uppercase;">
+                ${timeAgo(post.timestamp)}
+            </div>
+        </div>
+    `;
+                    container.appendChild(div);
+                });
+            }
+        }
+        
+        if(grid) {
+            grid.innerHTML = "";
+            window.instaLocalData.forEach(post => {
+                const item = document.createElement('div');
+                item.className = 'grid-item';
+                item.style.cssText = "position:relative; aspect-ratio:1/1; overflow:hidden; background:#eee; border: 0.5px solid white;";
+                item.innerHTML = `<img src="${post.image}" class="${post.filter || ''}" style="width:100%; height:100%; object-fit:cover;">`;
+                grid.appendChild(item);
+            });
+            while(grid.children.length % 3 !== 0) { const empty = document.createElement('div'); grid.appendChild(empty); }
+        }
+    };
+
+    // ===========================
+    // ⚡ 6. 初始化与导航
+    // ===========================
+    window.switchInstaPage = function(pageId) {
+        // 1. 隐藏所有页面
+        document.querySelectorAll('.insta-page').forEach(p => { 
+            p.classList.remove('active-page'); 
+            p.style.display = 'none'; 
+        });
+
+        // 2. 显示目标页面
+        const target = document.getElementById(pageId);
+        if (target) {
+            target.style.display = 'flex'; 
+            setTimeout(() => target.classList.add('active-page'), 10);
+            
+            // 如果不是发布页，重置滚动条
+            if(!pageId.includes('create')) {
+                const scroll = target.querySelector('.insta-scroll-wrapper') || target.querySelector('.insta-scroll-container');
+                if(scroll) scroll.scrollTop = 0;
+            }
+
+            if (pageId === 'insta-page-activity' && window.renderInstaDirectMessages) {
+                window.renderInstaDirectMessages();
+            }
+        }
+
+        const publicHeader = document.getElementById('insta-public-header');
+        const bottomNav = document.getElementById('insta-bottom-nav');
+        const isCreation = pageId.includes('insta-create-');
+
+        if(publicHeader) publicHeader.style.display = isCreation ? 'none' : 'block';
+        if(bottomNav) bottomNav.style.display = isCreation ? 'none' : 'flex';
+
+        if(!isCreation) {
+            const feedHeader = document.getElementById('header-for-feed');
+            const profileHeader = document.getElementById('header-for-profile');
+
+            if(feedHeader) {
+                feedHeader.style.display = (pageId === 'insta-feed-page') ? 'flex' : 'none';
+            }
+            if(profileHeader) {
+                profileHeader.style.display = (pageId === 'insta-profile-page') ? 'flex' : 'none';
+            }
+
+            updateInstaTabState(pageId);
+        }
+    };
+
+    function updateInstaTabState(activePageId) {
+        document.querySelectorAll('.insta-nav-item').forEach(item => {
+            const target = item.getAttribute('data-target');
+            const isActive = (target === activePageId);
+            
+            // 切换 active 类
+            item.classList.toggle('active', isActive);
+            
+            const img = item.querySelector('.insta-nav-icon');
+            if(img) {
+                if (isActive) {
+
+                    if (target === 'insta-page-activity') {
+                        img.src = 'https://i.postimg.cc/rm2yvw1N/wu-biao-ti130-20260214082412.png';
+                    } else {
+
+                        img.src = item.getAttribute('data-selected') || img.src;
+                    }
+                } else {
+
+                    img.src = item.getAttribute('data-unselected') || img.src;
                 }
             }
         });
     }
 
-    // B. 绑定顶部左上角加号 (Header Plus)
-    const headerPlus = document.getElementById('insta-header-plus-btn');
-    if (headerPlus) {
-        // 先移除旧的监听器（虽然无法直接移除匿名函数，但这是一个好习惯的注释）
-        // 使用 onclick 覆盖是最稳妥的防止重复绑定的方式
-        headerPlus.onclick = (e) => {
-            e.stopPropagation(); // 阻止冒泡
-            console.log("点击了顶部加号");
-            window.openInstaCreateMenu();
-        };
-        headerPlus.style.cursor = 'pointer'; // 变成手型
-    } else {
-        console.warn("未找到顶部加号按钮 ID: insta-header-plus-btn");
-    }
+    const _originalOpenApp = window.openApp;
+    window.openApp = function(appId) {
+        if(appId === 'instagram') {
+            const app = document.getElementById('app-window-instagram');
+            if(app) {
+                app.style.display = 'flex';
+                setTimeout(()=>app.classList.add('active'), 10);
+                window.switchInstaPage('insta-feed-page');
+                initInstaData(); 
+            }
+            return;
+        }
+        if(_originalOpenApp) _originalOpenApp(appId);
+    };
 
-    // C. 绑定头像旁边的加号 (Profile Plus) - 如果你需要它也触发
-    const profilePlus = document.getElementById('insta-profile-plus-btn');
-    if (profilePlus) {
-        profilePlus.onclick = (e) => {
-            e.stopPropagation();
-            window.openInstaCreateMenu();
-        };
-    }
-});
-/* ================= 找回丢失的滑动条逻辑 ================= */
+    document.addEventListener('DOMContentLoaded', () => {
+        initInstaData(); 
+        const bottomNav = document.getElementById('insta-bottom-nav');
+        if (bottomNav) {
+            bottomNav.addEventListener('click', (e) => {
+                const item = e.target.closest('.insta-nav-item');
+                if(!item) return;
+                const target = item.getAttribute('data-target');
+                if(target && !target.includes('placeholder')) window.switchInstaPage(target);
+                else window.openInstaCreateMenu();
+            });
+        }
+        const bindClick = (id, fn) => { const el = document.getElementById(id); if(el) el.onclick = fn; };
+        bindClick('insta-header-plus-btn', (e)=>{ e.stopPropagation(); window.openInstaCreateMenu(); });
+        bindClick('insta-profile-plus-btn', (e)=>{ e.stopPropagation(); window.openInstaCreateMenu(); });
+        
+        // 🔥 绑定上传
+        const avatarInput = document.getElementById('file-input-avatar');
+        if(avatarInput) {
+            avatarInput.addEventListener('change', function() {
+                window.handleProfileAvatarChange(this);
+            });
+        }
+    });
 
-// 1. 移动黑条 + 切换图标
-// 必须挂载到 window 对象上，因为 HTML 里的 onclick 用的是全局函数
+})();
+
 window.moveTabIndicator = function(index) {
-    console.log("正在切换 Tab:", index);
-
-    // A. 移动黑条 (找 id="tab-sliding-line")
     const line = document.getElementById('tab-sliding-line');
-    if (line) {
-        // 使用 CSS 变量或者直接 transform
-        line.style.transform = `translateX(${index * 100}%)`;
-    } else {
-        console.error("找不到黑条元素: tab-sliding-line");
-    }
-
-    // B. 切换图标高亮 (找 class="tab-item")
+    if (line) line.style.transform = `translateX(${index * 100}%)`;
     const tabs = document.querySelectorAll('.profile-tabs .tab-item');
     tabs.forEach((tab, idx) => {
         const img = tab.querySelector('.tab-icon');
-        
         if (idx === index) {
-            // 选中状态
             tab.classList.add('active');
-            if (img && img.hasAttribute('data-selected')) {
-                img.src = img.getAttribute('data-selected');
-            }
+            if (img && img.hasAttribute('data-selected')) img.src = img.getAttribute('data-selected');
         } else {
-            // 未选中状态
             tab.classList.remove('active');
-            if (img && img.hasAttribute('data-unselected')) {
-                img.src = img.getAttribute('data-unselected');
-            }
+            if (img && img.hasAttribute('data-unselected')) img.src = img.getAttribute('data-unselected');
         }
     });
 };
-/* ================= 发帖流程逻辑 (陈淮之重构版) ================= */
+// ==========================================================
+// Instagram 私信系统 - 严格同步修复版
+// ==========================================================
 
-// 临时草稿箱 (存当前正在编辑的帖子数据)
-let currentDraft = {
-    image: "",
-    filter: "",
-    caption: ""
-};
+// 辅助工具：清洗头像链接 (防止 url('...') 导致 img 标签挂掉)
+function getCleanAvatarUrl(avatarStr) {
+    if (!avatarStr) return 'https://i.postimg.cc/k4kM9S4h/default-cover.png';
+    return avatarStr.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '');
+}
 
-// 1. 开始发帖 (入口)
-window.handleCreateType = function(type) {
-    window.closeInstaCreateMenu(); // 关菜单
+// 1. 打开“新建聊天”选择器 (读取真实 alias)
+window.openNewChatSelector = function() {
+    const overlay = document.getElementById('insta-new-chat-overlay');
+    const list = document.getElementById('insta-contact-selector-list');
+    
+    if (!overlay || !list) return;
 
-    if (type === 'post') {
-        setTimeout(() => {
-            initGallery(); // 初始化相册
-            window.switchInstaPage('insta-create-select'); // 这里的 ID 对应 HTML 里的第一步
-        }, 300);
-    } else {
-        alert("宝宝，这个功能还在开发中哦~");
+    // 🔥 第一步：清空列表
+    list.innerHTML = '';
+
+    // 🔥 第二步：检查有没有真实联系人
+    if (!contactsData || contactsData.length === 0) {
+        list.innerHTML = `
+            <div style="padding: 20px; text-align: center; color: #999; font-size: 14px;">
+                暂无联系人<br>请先去通讯录添加
+            </div>
+        `;
+        overlay.classList.remove('hidden');
+        return;
     }
-};
 
-// 2. 初始化相册 (加载虚拟照片 + 真实上传入口)
-function initGallery() {
-    const grid = document.getElementById('insta-gallery-grid');
-    if (!grid) return;
-    grid.innerHTML = ""; // 清空
-
-    // A. 添加一个“上传”按钮 (伪装成第一张图)
-    const uploadBtn = document.createElement('div');
-    uploadBtn.className = 'gallery-item';
-    uploadBtn.style.background = '#f0f0f0';
-    uploadBtn.style.display = 'flex';
-    uploadBtn.style.alignItems = 'center';
-    uploadBtn.style.justifyContent = 'center';
-    uploadBtn.innerHTML = '<i class="fa-solid fa-plus" style="font-size:20px; color:#999;"></i>';
-    uploadBtn.onclick = () => document.getElementById('real-file-input').click();
-    grid.appendChild(uploadBtn);
-
-    // B. 虚拟相册数据 (默认给你的图)
-    const demoPhotos = [
-        "https://i.postimg.cc/gkZMz1xW/IMG-7800.jpg",
-        "https://i.postimg.cc/W4kbWkkD/wu-biao-ti130-20260214082642.png", 
-        "https://i.postimg.cc/Hk8Vpcrw/wu-biao-ti131-20260214195445.png",
-        "https://i.postimg.cc/CMjJz22r/Snipaste-2025-02-12-23-30-49.png",
-        "https://i.postimg.cc/6QsTTWZ8/wu-biao-ti131-20260214195502.png"
-    ];
-
-    demoPhotos.forEach(src => {
+    // 🔥 第三步：动态生成列表 (修正 alias 字段)
+    contactsData.forEach(contact => {
         const item = document.createElement('div');
-        item.className = 'gallery-item';
-        item.innerHTML = `<img src="${src}" style="width:100%; height:100%; object-fit:cover; pointer-events:none;">`;
-        item.onclick = () => selectDraftImage(src, item);
-        grid.appendChild(item);
+        item.style.cssText = "display: flex; align-items: center; padding: 10px 15px; cursor: pointer;";
+        
+        // 点击选择
+        item.onclick = () => {
+            // 如果你有 createOrEnterChat 函数就调用它，没有就直接打印提示
+            if(window.createOrEnterChat) window.createOrEnterChat(contact.id);
+            else console.log('请确保 createOrEnterChat 函数存在');
+        };
+
+        // ★★★ 核心修复：读取 alias (备注) ★★★
+        // 逻辑：如果有备注就显示备注，没有就显示原名
+        const finalName = contact.alias || contact.name;
+        const cleanAvatar = getCleanAvatarUrl(contact.avatar);
+
+        item.innerHTML = `
+            <img src="${cleanAvatar}" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; margin-right: 12px; border: 1px solid #eee;">
+            
+            <div style="flex: 1;">
+                <div style="font-weight: 600; font-size: 14px; color: #262626;">
+                    ${finalName}
+                </div>
+                <div style="font-size: 12px; color: #8e8e8e;">
+                    ${contact.name} </div>
+            </div>
+            
+            <div style="width: 24px; height: 24px; border: 2px solid #dbdbdb; border-radius: 50%;"></div>
+        `;
+        list.appendChild(item);
     });
 
-    // 默认选中第一张图
-    if(demoPhotos.length > 0) {
-        selectDraftImage(demoPhotos[0]);
-    }
-}
-
-// 3. 处理真实文件上传
-window.handleRealFileUpload = function(input) {
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            selectDraftImage(e.target.result); // 选中上传的图
-        };
-        reader.readAsDataURL(input.files[0]);
-    }
+    overlay.classList.remove('hidden');
 };
 
-// 4. 选中图片逻辑
-function selectDraftImage(src, element) {
-    currentDraft.image = src;
+// 2. 渲染私信列表 (首页) - 列表同步修正
+window.renderInstaDirectMessages = function() {
+    const listContainer = document.getElementById('insta-dm-list-container');
+    if (!listContainer) return;
+
+    listContainer.innerHTML = '';
+
+    if (!chatsData || chatsData.length === 0) {
+        listContainer.innerHTML = `
+            <div style="text-align: center; margin-top: 50px; color: #8e8e8e;">
+                <p style="font-size: 18px; font-weight: 600; margin-bottom: 10px;">Direct</p>
+                <p style="font-size: 14px;">点击右上角发消息</p>
+            </div>
+        `;
+        return;
+    }
+
+    // 按时间倒序
+    const sortedChats = [...chatsData].sort((a, b) => b.lastTime - a.lastTime);
+
+    sortedChats.forEach(chat => {
+        // ★★★ 关键：实时去 contactsData 找人，不信 chat 里的旧数据 ★★★
+        const contact = contactsData.find(c => c.id === chat.contactId);
+        if (!contact) return; 
+
+        // ★★★ 修复：优先取私有备注(privateAlias) > 通讯录备注(alias) > 原名(name) ★★★
+        const finalName = chat.privateAlias || contact.alias || contact.name;
+        const cleanAvatar = getCleanAvatarUrl(contact.avatar);
+        
+        // 消息预览
+        let preview = "开始聊天吧";
+        let timeStr = "Now";
+        if (chat.messages && chat.messages.length > 0) {
+            const lastMsg = chat.messages[chat.messages.length - 1];
+            preview = lastMsg.type === 'image' ? '[图片]' : (lastMsg.text || '');
+            // 简单的时间显示逻辑
+            const diff = Date.now() - lastMsg.timestamp;
+            if(diff < 60000) timeStr = '刚刚';
+            else if(diff < 3600000) timeStr = Math.floor(diff/60000) + 'm';
+            else if(diff < 86400000) timeStr = Math.floor(diff/3600000) + 'h';
+            else timeStr = Math.floor(diff/86400000) + 'd';
+        }
+
+        const div = document.createElement('div');
+        div.className = 'insta-dm-item';
+        div.style.cssText = "display: flex; align-items: center; padding: 12px 15px; background: white; cursor: pointer;";
+        div.onclick = () => window.openInstaChat(chat.id);
+
+        div.innerHTML = `
+            <img src="${cleanAvatar}" style="width: 56px; height: 56px; border-radius: 50%; object-fit: cover; margin-right: 15px; border: 1px solid #efefef;">
+            
+            <div style="flex: 1; display: flex; flex-direction: column;">
+                <div style="font-size: 14px; color: #262626; font-weight: 400;">
+                    ${finalName}
+                </div>
+                <div style="font-size: 13px; color: #8e8e8e; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;">
+                    ${preview} · ${timeStr}
+                </div>
+            </div>
+            
+            <i class="far fa-camera" style="font-size: 22px; color: #8e8e8e;"></i>
+        `;
+        listContainer.appendChild(div);
+    });
+};
+
+// 3. 打开聊天窗口 (头部严格同步) - 你之前缺的就是这个！
+window.openInstaChat = function(chatId) {
+    currentChatId = chatId; // 锁定当前聊天
+    const chat = chatsData.find(c => c.id === chatId);
+    if (!chat) return;
+
+    // ★★★ 必须重新找人，确保同步最新头像/备注 ★★★
+    const contact = contactsData.find(c => c.id === chat.contactId);
     
-    // 更新预览大图
-    const preview = document.getElementById('insta-crop-preview');
-    if(preview) preview.src = src;
+    // 准备数据
+    const displayName = chat.privateAlias || (contact ? (contact.alias || contact.name) : chat.name);
+    const cleanAvatar = getCleanAvatarUrl(contact ? contact.avatar : '');
 
-    // 更新选中样式
-    document.querySelectorAll('.gallery-item').forEach(el => el.classList.remove('selected'));
-    if(element) element.classList.add('selected');
-}
-
-// 5. 下一步：去滤镜页
-window.goToFilterPage = function() {
-    if(!currentDraft.image) return;
+    // 更新 Header DOM (假设你的 HTML 结构里有这些 ID)
+    const headerName = document.getElementById('insta-header-name');
+    const headerAvatar = document.getElementById('insta-header-avatar');
     
-    const filterPreview = document.getElementById('insta-filter-preview');
-    if(filterPreview) {
-        filterPreview.src = currentDraft.image;
-        filterPreview.style.filter = ""; // 重置滤镜
-    }
-    window.switchInstaPage('insta-create-filter');
-};
-
-// 6. 应用滤镜
-window.applyInstaFilter = function(filterCss) {
-    currentDraft.filter = filterCss;
-    document.getElementById('insta-filter-preview').style.filter = filterCss;
-};
-
-// 7. 下一步：去分享页 (填文案)
-window.goToSharePage = function() {
-    const thumb = document.getElementById('insta-final-thumb');
-    if(thumb) {
-        thumb.src = currentDraft.image;
-        thumb.style.filter = currentDraft.filter;
-    }
-    // 清空以前的输入
-    document.getElementById('insta-caption-input').value = "";
-    window.switchInstaPage('insta-create-share');
-};
-
-// 8. 最终发布！
-window.finalizePost = function() {
-    const caption = document.getElementById('insta-caption-input').value;
+    if (headerName) headerName.innerText = displayName;
     
-    // 调用之前写好的数据中心 (InstaSystem)
-    if (window.InstaSystem) {
-        window.InstaSystem.createPost(currentDraft.image, caption);
-    } else {
-        console.error("InstaSystem 未找到，无法保存数据");
+    // 智能处理头像：如果是 img 标签改 src，如果是 div 改 background
+    if (headerAvatar) {
+        if (headerAvatar.tagName === 'IMG') {
+            headerAvatar.src = cleanAvatar;
+        } else {
+            headerAvatar.style.backgroundImage = `url('${cleanAvatar}')`;
+        }
     }
 
-    // 重置并回首页
-    closePostFlow();
-};
+    // 显示聊天页
+    const chatView = document.getElementById('insta-chat-view');
+    if (chatView) {
+        chatView.classList.remove('hidden');
+        // 加上进场动画 (可选)
+        chatView.style.animation = 'slideInRight 0.3s ease';
+    }
 
-// 9. 关闭流程 (回到首页)
-window.closePostFlow = function() {
-    currentDraft = { image: "", filter: "", caption: "" }; // 清空草稿
-    window.switchInstaPage('insta-feed-page');
+    // 渲染消息 (调用你已有的通用渲染函数)
+    if (window.renderInstaMessages) {
+        window.renderInstaMessages(chatId);
+    } else if (window.renderMessages) {
+        // 如果没有专用的 ins 渲染函数，就借用微信的
+        window.renderMessages(chatId); 
+    }
 };
