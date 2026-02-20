@@ -1366,17 +1366,40 @@
     </div>
     <div id="inner-voice-toggle-dot" style="width: 10px; height: 10px; border-radius: 50%; background: #ccc;"></div>
 </div>
-        <div class="ins-menu-item" onclick="requestDeleteChat(currentChatId); closeChatControl();">
-            <div class="ins-menu-left">
-                <div class="ins-point" style="color: #ff3b30;">✖</div>
-                <div class="ins-menu-text">
-                    <div class="title" style="color: #ff3b30;">删除好友 & 记录</div>
-                    <div class="desc">Delete this contact</div>
-                </div>
-            </div>
+
+<div style="margin: 10px 15px 20px 15px; background: #ffffff; border-radius: 20px; padding: 18px; box-shadow: 0 4px 24px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.04);">
+    
+    <div style="display: flex; align-items: center; margin-bottom: 14px;">
+        <div style="font-size: 18px; margin-right: 10px;">★</div>
+        <div>
+            <div style="font-size: 15px; font-weight: 600; color: #111;">自定义css美化框</div>
+            <div style="font-size: 11px; color: #999; margin-top: 3px;">☆*:.｡. o(≧▽≦)o .｡.:*☆</div>
         </div>
-        <div style="height: 50px;"></div>
     </div>
+    
+    <textarea id="cc-custom-css" placeholder="/* 在这里写下 自定义CSS ... */&#10;/* 例如：让聊天背景变透明 */&#10;body { background: transparent !important; }" 
+        style="width: 100%; height: 120px; border-radius: 14px; border: 1px solid #f0f0f0; padding: 14px; font-family: 'SF Mono', Consolas, monospace; font-size: 12px; background: #fafafa; outline: none; resize: none; box-sizing: border-box; color: #333; line-height: 1.5;"></textarea>
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; gap: 8px;">
+        
+        <select id="cc-css-presets" style="flex: 1; height: 36px; border-radius: 10px; border: 1px solid #f0f0f0; background: #fafafa; outline: none; font-size: 12px; padding: 0 10px; color: #555;"></select>
+        
+        <button onclick="applySelectedPreset()" style="height: 36px; padding: 0 14px; border-radius: 10px; background: #f5f7fa; border: none; font-weight: 600; color: #007AFF; font-size: 12px; cursor: pointer;">使用</button>
+        <button onclick="deleteSelectedPreset()" style="height: 36px; padding: 0 14px; border-radius: 10px; background: #fff0f0; border: none; font-weight: 600; color: #ff3b30; font-size: 12px; cursor: pointer;">删除</button>
+        <button onclick="openCssPresetModal()" style="height: 36px; padding: 0 14px; border-radius: 10px; background: #007AFF; border: none; font-weight: 600; color: #fff; font-size: 12px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,122,255,0.2);">保存</button>
+    </div>
+</div>
+<div class="ins-menu-item" onclick="requestDeleteChat(currentChatId); closeChatControl();">
+    <div class="ins-menu-left">
+        <div class="ins-point" style="color: #ff3b30;">✖</div>
+        <div class="ins-menu-text">
+            <div class="title" style="color: #ff3b30;">删除好友 & 记录</div>
+            <div class="desc">Delete this contact</div>
+        </div>
+    </div>
+</div>
+<div style="height: 50px;"></div>
+</div>
 </div>
 
 <div id="sub-page-summary" class="sub-page">

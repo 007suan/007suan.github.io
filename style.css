@@ -18,6 +18,13 @@
     --soda-dark: #121212;
     
     font-family: var(--font-family);
+
+    --z-dock: 50;
+    --z-header: 100;
+    --z-app-window: 999;
+    --z-sub-page: 2000;
+    --z-overlay: 10000;
+    --z-toast: 99999;
 } 
 
 * {
@@ -267,7 +274,7 @@ html {
 .app-icon {
     width: var(--app-icon-size);
     height: var(--app-icon-size);
-    border-radius: 14px; */
+    border-radius: 14px; 
     object-fit: cover;
     box-shadow: 
         0 4px 10px rgba(0, 0, 0, 0.03), 
@@ -2319,8 +2326,8 @@ body.offline-active #chat-msg-area {
 /* 正在输入 */
 .typing-row { display: flex; align-items: flex-end; margin-bottom: 10px; padding-left: 4px; animation: slideUpFade 0.3s ease-out; }
 .typing-bubble { background-color: #F1F1F1; padding: 4px 12px; border-radius: 20px; display: flex; align-items: center; gap: 5px; height: 40px; width: fit-content; position: relative; margin-left: 20px; border-bottom-left-radius: 20px; }
-.typing-bubble::before { content: ""; position: absolute; z-index: 0; bottom: 1px; left: -4px; width: 16px; height: 16px; border-radius: 50%; background-color: #F1F1F1; }
-.typing-bubble::after { content: ""; position: absolute; z-index: 0; bottom: -3px; left: -15px; width: 6px; height: 6px; border-radius: 50%; background-color: #F1F1F1; }
+.typing-bubble::before { content: ""; position: absolute; z-index: 0; bottom: 1px; left: -3px; width: 16px; height: 16px; border-radius: 50%; background-color: #F1F1F1; }
+.typing-bubble::after { content: ""; position: absolute; z-index: 0; bottom: -2px; left: -13px; width: 6px; height: 6px; border-radius: 50%; background-color: #F1F1F1; }
 .typing-dot { width: 9px; height: 9px; background-color: #8e8e93; border-radius: 50%; opacity: 0.6; animation: typingBounce 1.4s infinite ease-in-out both; }
 .typing-dot:nth-child(1) { animation-delay: -0.32s; }
 .typing-dot:nth-child(2) { animation-delay: -0.16s; }
