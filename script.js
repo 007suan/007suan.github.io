@@ -11562,147 +11562,6 @@ function timeAgo(date) {
     }
 
     // ===========================
-    // 🎨 5. 全局渲染 (强制同步版)
-    // ===========================
-window.refreshInstaAll = function() {
-    const container = document.getElementById('insta-feed-list');
-    const grid = document.getElementById('insta-profile-grid');
-    const countEl = document.getElementById('insta-stat-posts');
-
-    // 获取当前用户
-    const user = getCurrentUser ? getCurrentUser() : { name: 'Myself', avatar: '' }; 
-    // 安全获取数据长度
-    const dataLen = (window.instaLocalData && window.instaLocalData.length) || 0;
-
-    // 更新帖子数量
-    if(countEl) countEl.innerText = dataLen;
-
-    // ===========================================
-    // 1. 渲染首页 Feed 流
-    // ===========================================
-    if(container) {
-        container.innerHTML = "";
-        if(dataLen === 0) {
-            container.innerHTML = `<div style="padding:50px; text-align:center; color:#ccc;">暂无帖子</div>`;
-        } else {
-            const ICONS = {
-                more: 'https://i.postimg.cc/W4kbWkkD/wu-biao-ti130-20260214082642.png',
-                like_off: 'https://i.postimg.cc/2SLVzb15/wu-biao-ti131-20260214195652.png',
-                like_on: 'https://i.postimg.cc/sDNMd9gj/无标题131_20260214195956.png',
-                comment: 'https://i.postimg.cc/nh9CHjXH/wu-biao-ti131-20260214195705.png',
-                share: 'https://i.postimg.cc/wjR76y7C/wu-biao-ti131-20260214195721.png',
-                save_off: 'https://i.postimg.cc/J42sVcz4/wu-biao-ti131-20260214195817.png',
-                save_on: 'https://i.postimg.cc/9Qr4QbJy/wu-biao-ti131-20260218115210.png',
-                extra: 'https://i.postimg.cc/kgmMNB8k/wu-biao-ti136-20260218155328.png'
-            };
-
-            window.instaLocalData.forEach(post => {
-                if(!post.comments) post.comments = [];
-                if(!post.likes) post.likes = 0;
-
-                let displayAvatar = post.authorAvatar;
-                if (post.authorName === user.name || post.authorName === 'Myself') {
-                    displayAvatar = user.avatar; 
-                }
-                const likeIcon = post.isLiked ? ICONS.like_on : ICONS.like_off;
-                const saveIcon = post.isSaved ? ICONS.save_on : ICONS.save_off;
-
-                const div = document.createElement('div');
-                div.className = 'insta-post';
-                div.id = `post-${post.id}`;
-                div.style.marginBottom = "15px";
-
-                div.innerHTML = `
-                    <div class="post-header" style="padding: 10px 12px; display:flex; justify-content:space-between; align-items:center;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="${displayAvatar}" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
-                            <span style="font-weight: 600; font-size: 14px;">${post.authorName}</span>
-                        </div>
-                        <img src="${ICONS.more}" style="width: 20px; cursor: pointer;" onclick="openPostOptions(${post.id})">
-                    </div>
-                    
-                    <div class="post-image" ondblclick="toggleLike(${post.id})">
-                        <img src="${post.image}" class="${post.filter || ''}" style="width: 100%; display: block;">
-                    </div>
-                    
-                    <div class="post-actions" style="padding: 10px 14px 0; display: flex; justify-content: space-between; align-items: center;">
-                        <div class="left-actions" style="display: flex; gap: 12px; align-items: center;">
-                            <div class="action-item" onclick="toggleLike(${post.id})" style="display:flex; align-items:center; gap:6px; cursor:pointer;">
-                                <img src="${likeIcon}" class="action-like-img" style="width: 24px;">
-                                <span class="action-count action-like-count" style="font-size:14px; font-weight:600;">${post.likes>0?post.likes:''}</span>
-                            </div>
-                            <div class="action-item" onclick="openComments(${post.id})" style="display:flex; align-items:center; gap:6px; cursor:pointer;">
-                                <img src="${ICONS.comment}" style="width: 24px;">
-                                <span class="action-count action-comment-count" style="font-size:14px; font-weight:600;">${post.comments.length>0?post.comments.length:''}</span>
-                            </div>
-                            <img src="${ICONS.share}" style="width: 24px;">
-                        </div>
-                        <img src="${saveIcon}" class="action-save-img" style="width: 24px; cursor:pointer;" onclick="toggleSave(${post.id})">
-                    </div>
-                    
-                    <div class="post-caption" style="padding: 10px 14px; font-size: 14px;">
-                        <span style="font-weight: 600;">${post.authorName}</span> ${post.content || ''}
-                        <div class="view-comments-btn" style="color:#8e8e8e; margin-top:6px; cursor:pointer; display:${post.comments.length > 0 ? 'block' : 'none'};" onclick="openComments(${post.id})">
-                            查看全部 ${post.comments.length} 条评论
-                        </div>
-                        <div class="post-time" style="color:#8e8e8e; font-size:11px; margin-top:8px; text-transform:uppercase;">
-                            ${timeAgo ? timeAgo(post.timestamp) : '刚刚'}
-                        </div>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        }
-    }
-    
-    // ===========================================
-    // 2. 渲染个人主页 Grid (终极修复版)
-    // ===========================================
-    if(grid) {
-        grid.innerHTML = "";
-
-        // 🔥🔥🔥 关键逻辑：切断 Grid 样式源头 🔥🔥🔥
-        if (dataLen === 0) {
-            // 1. 移除原来的 Grid 类，加上我们刚写的 Flex 类
-            grid.className = 'profile-flex-center'; 
-            
-            // 2. 写入空状态内容
-            grid.innerHTML = `
-                <div style="width: 64px; height: 64px; border: 2px solid #262626; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
-                    <i class="fas fa-camera" style="font-size: 32px; color: #262626;"></i>
-                </div>
-                <div style="font-size: 22px; font-weight: 700; color: #000; margin-bottom: 6px;">还没有帖子</div>
-                <div style="font-size: 14px; color: #737373; text-align: center;">你发布的照片和视频会显示在这里</div>
-                <div style="margin-top: 20px; color: #0095f6; font-weight: 600; font-size: 14px; cursor: pointer;" onclick="window.openInstaCreateMenu()">
-                    发布第一条动态
-                </div>
-            `;
-        } else {
-            // 🔥 有数据时，把类名改回去，恢复九宫格
-            grid.className = 'profile-grid';
-            
-            // 渲染格子
-            window.instaLocalData.forEach(post => {
-                const item = document.createElement('div');
-                item.className = 'grid-item';
-                item.style.cssText = "position:relative; aspect-ratio:1/1; overflow:hidden; background:#efefef; cursor: pointer;";
-                item.innerHTML = `<img src="${post.image}" class="${post.filter || ''}" style="width:100%; height:100%; object-fit:cover;">`;
-                // 点击查看大图逻辑(可选)
-                item.onclick = () => { if(window.openPostDetail) window.openPostDetail(post.id); };
-                grid.appendChild(item);
-            });
-
-            // 补齐空格子
-            while(grid.children.length % 3 !== 0) { 
-                const empty = document.createElement('div'); 
-                empty.style.background = '#fff'; 
-                grid.appendChild(empty); 
-            }
-        }
-    }
-};
-
-    // ===========================
     // ⚡ 6. 初始化与导航
     // ===========================
     window.switchInstaPage = function(pageId) {
@@ -12603,41 +12462,121 @@ window.closeCustomPrompt = async function(confirm) {
 };
 
 // ----------------------------------------------------------
-// 7. 个人主页 帖子渲染 (★ 修复：空状态居中)
+// 7. 终极全能渲染 (恢复点赞/收藏/时间逻辑 + 修复九宫格布局)
 // ----------------------------------------------------------
-
 window.refreshInstaAll = function() {
-    const grid = document.getElementById('insta-profile-grid');
-    if (!grid) return;
-    const dataLen = window.instaLocalData.length;
-    document.getElementById('insta-stat-posts').innerText = dataLen;
+    const container = document.getElementById('insta-feed-list'); // 首页列表
+    const grid = document.getElementById('insta-profile-grid');   // 个人页网格
+    const countEl = document.getElementById('insta-stat-posts');  // 帖子数
 
-    if (dataLen === 0) {
-        // ★ 核心修复：强制 Flex 居中布局
-        grid.style.display = 'flex';
-        grid.style.flexDirection = 'column';
-        grid.style.alignItems = 'center';
-        grid.style.justifyContent = 'center';
-        grid.style.minHeight = '350px'; // 保证有足够的垂直空间来居中
-        grid.style.padding = '40px 20px';
-        grid.innerHTML = `
-            <div style="width: 64px; height: 64px; border: 2px solid #262626; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-            </div>
-            <div style="font-size: 22px; font-weight: 700; color: #000; margin-bottom: 6px;">还没有帖子</div>
-            <div style="font-size: 14px; color: #737373; text-align: center; max-width: 250px;">你发布的照片和视频会显示在这里</div>
-            <div style="margin-top: 20px; color: #0095f6; font-weight: 600; cursor: pointer;" onclick="window.openInstaCreateMenu()">发布第一条动态</div>
-        `;
-    } else {
-        // 恢复九宫格布局
-        grid.style.display = 'grid';
-        grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
-        grid.style.gap = '2px';
-        grid.style.minHeight = 'auto';
-        grid.innerHTML = window.instaLocalData.map(post => `
-            <div class="grid-item" style="aspect-ratio: 1/1; background: #eee;">
-                <img src="${post.image}" style="width:100%; height:100%; object-fit:cover;">
-            </div>
-        `).join('');
+    const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : { name: 'HuanHuan_Official' };
+    const dataLen = (window.instaLocalData && window.instaLocalData.length) || 0;
+
+    if(countEl) countEl.innerText = dataLen;
+
+    // --- A. 渲染首页 Feed 流 (恢复丢失的点赞、收藏、评论数逻辑) ---
+    if(container) {
+        container.innerHTML = "";
+        if(dataLen === 0) {
+            container.innerHTML = `<div style="padding:100px 0; text-align:center; color:#8e8e8e; font-size:14px;">还没有帖子</div>`;
+        } else {
+            const ICONS = {
+                more: 'https://i.postimg.cc/W4kbWkkD/wu-biao-ti130-20260214082642.png',
+                like_off: 'https://i.postimg.cc/2SLVzb15/wu-biao-ti131-20260214195652.png',
+                like_on: 'https://i.postimg.cc/sDNMd9gj/无标题131_20260214195956.png',
+                comment: 'https://i.postimg.cc/nh9CHjXH/wu-biao-ti131-20260214195705.png',
+                share: 'https://i.postimg.cc/wjR76y7C/wu-biao-ti131-20260214195721.png',
+                save_off: 'https://i.postimg.cc/J42sVcz4/wu-biao-ti131-20260214195817.png',
+                save_on: 'https://i.postimg.cc/9Qr4QbJy/wu-biao-ti131-20260218115210.png',
+                extra: 'https://i.postimg.cc/kgmMNB8k/wu-biao-ti136-20260218155328.png'
+            };
+
+            window.instaLocalData.forEach(post => {
+                // 强制同步头像逻辑
+                let displayAvatar = post.authorAvatar;
+                if (post.authorName === user.name || post.authorName === 'HuanHuan_Official' || post.authorName === 'Myself') {
+                    displayAvatar = window.getLatestProfileAvatar(); 
+                }
+
+                const div = document.createElement('div');
+                div.className = 'insta-post';
+                div.id = `post-${post.id}`;
+                div.style.marginBottom = "15px";
+
+                // 恢复你之前的 HTML 结构，包含 .action-item 容器和点赞数显示
+                div.innerHTML = `
+                    <div class="post-header" style="padding: 10px 12px; display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="${displayAvatar}" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
+                            <span style="font-weight: 600; font-size: 14px;">${post.authorName}</span>
+                        </div>
+                        <img src="${ICONS.more}" style="width: 20px; cursor: pointer;" onclick="openPostOptions(${post.id})">
+                    </div>
+                    
+                    <div class="post-image" ondblclick="toggleLike(${post.id})">
+                        <img src="${post.image}" class="${post.filter || ''}" style="width: 100%; display: block;">
+                    </div>
+                    
+                    <div class="post-actions" style="padding: 10px 14px 0; display: flex; justify-content: space-between; align-items: center;">
+                        <div class="left-actions" style="display: flex; gap: 12px; align-items: center;">
+                            <div class="action-item" onclick="toggleLike(${post.id})" style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                                <img src="${post.isLiked ? ICONS.like_on : ICONS.like_off}" class="action-like-img" style="width: 24px;">
+                                <span class="action-count action-like-count" style="font-size:14px; font-weight:600;">${post.likes > 0 ? post.likes : ''}</span>
+                            </div>
+                            <div class="action-item" onclick="openComments(${post.id})" style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                                <img src="${ICONS.comment}" style="width: 24px;">
+                                <span class="action-count action-comment-count" style="font-size:14px; font-weight:600;">${post.comments && post.comments.length > 0 ? post.comments.length : ''}</span>
+                            </div>
+                            <img src="${ICONS.share}" style="width: 24px;">
+                            <img src="${ICONS.extra}" style="width: 24px;">
+                        </div>
+                        <img src="${post.isSaved ? ICONS.save_on : ICONS.save_off}" class="action-save-img" style="width: 24px; cursor:pointer;" onclick="toggleSave(${post.id})">
+                    </div>
+                    
+                    <div class="post-caption" style="padding: 10px 14px; font-size: 14px;">
+                        <span style="font-weight: 600;">${post.authorName}</span> ${post.content || ''}
+                        <div class="view-comments-btn" style="color:#8e8e8e; margin-top:6px; cursor:pointer; display:${post.comments && post.comments.length > 0 ? 'block' : 'none'};" onclick="openComments(${post.id})">
+                            查看全部 ${post.comments ? post.comments.length : 0} 条评论
+                        </div>
+                        <div class="post-time" style="color:#8e8e8e; font-size:11px; margin-top:8px; text-transform:uppercase;">
+                            ${window.getRealTimeAgo ? window.getRealTimeAgo(post.timestamp || post.id) : '刚刚'}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+    }
+
+    // --- B. 个人主页网格 (修复 1/3 布局及边框) ---
+    if(grid) {
+        grid.innerHTML = "";
+        if (dataLen === 0) {
+            grid.style.display = "flex";
+            grid.style.flexDirection = "column";
+            grid.style.alignItems = "center";
+            grid.style.justifyContent = "center";
+            grid.style.minHeight = "300px";
+            grid.innerHTML = `<div style="font-weight:700; font-size:22px; color:#262626;">还没有帖子</div>`;
+        } else {
+            grid.style.display = "grid";
+            grid.style.gridTemplateColumns = "repeat(3, 1fr)";
+            grid.style.gap = "2px";
+            grid.style.padding = "0";
+
+            window.instaLocalData.forEach(post => {
+                const item = document.createElement('div');
+                item.className = 'grid-item';
+                item.style.cssText = "position:relative; aspect-ratio:1/1; overflow:hidden; background:#eee; width:100%; border: 0.5px solid white;";
+                item.innerHTML = `<img src="${post.image}" class="${post.filter || ''}" style="width:100%; height:100%; object-fit:cover; display:block;">`;
+                grid.appendChild(item);
+            });
+            // 补齐空格子，保持 3 列对齐
+            while(grid.children.length % 3 !== 0) {
+                const empty = document.createElement('div');
+                empty.style.background = 'transparent';
+                grid.appendChild(empty);
+            }
+        }
     }
 };
