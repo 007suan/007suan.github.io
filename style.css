@@ -2374,46 +2374,67 @@ body.offline-active #chat-msg-area {
 .msg-row.new-msg {
     animation: msgSlideUp 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
     transform-origin: bottom center; }
-/* 基础圆圈修复 */
+/* --- 1. 基础圆圈：保持你原来的隐藏逻辑 --- */
 .msg-check-circle {
-    display: none; 
-    width: 22px;
+    display: none; /* 严格遵守：默认隐藏 */
+    width: 22px;   /* 稍微加大到22，iOS标准尺寸 */
     height: 22px;
-    border-radius: 50%;
     border: 1.5px solid #d1d1d6; 
-    background: #fff;
+    border-radius: 50%;
     position: absolute;
     top: 50%;
+    /* ★ 核心修复：初始状态就要锁定垂直居中，这样动画才不会跳 */
     transform: translateY(-50%) scale(1); 
+    background: #fff;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 10;
-    display: flex;
+    box-sizing: border-box;
+}
+
+/* --- 2. 多选开启时才显示：这里改成 flex 才能让对勾完美居中 --- */
+.msg-multi-select-active .msg-check-circle { 
+    display: flex; 
     align-items: center;
     justify-content: center;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-sizing: border-box; 
-    overflow: hidden; }
+}
+
+/* --- 3. 选中状态：变蓝 + 执行平滑回弹动画 --- */
 .msg-row.selected .msg-check-circle {
-    background: #007aff;
+    background-color: #007aff;
     border-color: #007aff;
-    display: flex; 
-    animation: ios-pop-fixed 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    /* 引用修复后的动画 */
+    animation: ios-pop-fixed 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* --- 4. 对勾样式：改用你喜欢的那个粗体字符，且防变形 --- */
 .msg-row.selected .msg-check-circle::after {
     content: '✓';
     color: #fff;
     font-size: 14px;
     font-weight: 900;
-    line-height: 1;
-    margin-top: -1px;
-    display: inline-block;
-    transform: scaleX(1.1);
-    -webkit-font-smoothing: antialiased; }
+    line-height: 1;   /* 强制行高，防止被拉扁 */
+    display: block;
+    margin-top: -1px; /* 视觉微调，让对勾看起来在圆心 */
+    -webkit-font-smoothing: antialiased;
+}
+
+/* --- 5. 修复变形的动画：全程带上 translateY(-50%) --- */
 @keyframes ios-pop-fixed {
     0% { transform: translateY(-50%) scale(0.8); }
     70% { transform: translateY(-50%) scale(1.1); }
     100% { transform: translateY(-50%) scale(1); }
 }
-.msg-multi-select-active .msg-check-circle {
-    display: flex;  }
+
+/* --- 6. 布局偏移保持不变 --- */
+.msg-row.me .msg-check-circle { left: -32px; }
+.msg-row.other .msg-check-circle { right: -32px; }
+
+.msg-multi-select-active .msg-container-col { 
+    position: relative; 
+    margin-left: 48px !important; 
+    margin-right: 48px !important; 
+    transition: margin 0.3s ease; 
+}
 
 /* 底部操作栏 */
 .msg-multi-bar {
