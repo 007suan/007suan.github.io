@@ -4676,6 +4676,14 @@ window.openChatControl = function() {
     if (cssInput) cssInput.value = chat.customCSS || '';
     renderCssPresets(); // 渲染下拉菜单
 
+    // ✨ 新增：同步预览区域的头像
+    const otherPreviewAvatar = document.getElementById('cc-preview-avatar-other');
+    const mePreviewAvatar = document.getElementById('cc-preview-avatar-me');
+    
+    // 使用你代码里现成的 getAvatarStyle 函数，保证样式（圆角、大小、背景图）完全统一
+    if (otherPreviewAvatar) otherPreviewAvatar.style.cssText = getAvatarStyle(contact.avatar);
+    if (mePreviewAvatar) mePreviewAvatar.style.cssText = getAvatarStyle(persona.avatar);
+
     // 显示面板
     const panel = document.getElementById('chat-control-overlay');
     panel.style.display = 'flex';
@@ -4775,7 +4783,6 @@ window.toggleInnerVoice = function() {
     const ivDot = document.getElementById('inner-voice-toggle-dot');
     if (!ivDot) return;
 
-    // 只改变 dataset 暂存状态，绝不触碰 chat 对象和数据库！
     let isIV = ivDot.dataset.active === "true";
     isIV = !isIV; // 反转
     ivDot.dataset.active = isIV ? "true" : "false";
@@ -4819,11 +4826,34 @@ function finishCreatorAction(tabToRefresh) {
         window._isReturningToControl = false; 
     }
 }
-// ==========================================
-// 🎨 自定义美化 (终极防漏防掉版)
-// ==========================================
+window.syncPreviewAvatars = function() {
+    // 1. 获取预览框里的头像元素
+    const otherAvatar = document.getElementById('cc-preview-avatar-other');
+    const meAvatar = document.getElementById('cc-preview-avatar-me');
+    
+    if (!otherAvatar || !meAvatar) return;
 
-// 1. 核心渲染：把 CSS 挂到页面上
+    // 2. 找到当前聊天的信息
+    const chat = chatsData.find(c => c.id === currentChatId);
+    if (!chat) return;
+
+    // 3. 获取对方 (Contact) 和 我 (Persona) 的数据
+    const contact = contactsData.find(c => c.id === chat.contactId);
+    const persona = personasData.find(p => p.id === chat.personaId);
+
+    // 4. 注入头像
+    if (contact && contact.avatar) {
+        otherAvatar.style.backgroundImage = `url('${contact.avatar}')`;
+        otherAvatar.style.backgroundSize = 'cover';
+    }
+    if (persona && persona.avatar) {
+        meAvatar.style.backgroundImage = `url('${persona.avatar}')`;
+        meAvatar.style.backgroundSize = 'cover';
+    }
+};
+// ==========================================
+// 自定义美化 
+// ==========================================
 window.applyChatCustomCSS = function(cssText) {
     let styleTag = document.getElementById('dynamic-chat-css');
     if (!styleTag) {
@@ -4831,15 +4861,78 @@ window.applyChatCustomCSS = function(cssText) {
         styleTag.id = 'dynamic-chat-css';
         document.head.appendChild(styleTag); 
     }
+    // 强制清除再注入，防止污染
     styleTag.innerHTML = ''; 
-    if (cssText) styleTag.innerHTML = cssText;
+    
+    if (cssText) {
+        styleTag.innerHTML = cssText;
+        localStorage.setItem('huanhuan_active_css', cssText);
+    } else {
+        localStorage.removeItem('huanhuan_active_css');
+    }
 };
+// 给输入框绑定实时监听
+const cssInput = document.getElementById('cc-custom-css');
+if (cssInput) {
+    cssInput.addEventListener('input', (e) => {
+        const currentCss = e.target.value;
+        window.applyChatCustomCSS(currentCss);
+    });
+}
+// ==========================================
+// 实时预览功能：创建一个模拟聊天小样
+// ==========================================
+window.initChatPreview = function() {
+    const container = document.getElementById('css-editor-container'); // 假设这是你的设置外层容器
+    if (!container) return;
 
-// 2. 刷新预设列表
+    // 如果已经有了就不重复创建
+    if (document.getElementById('cc-preview-window')) return;
+
+    const previewHtml = `
+        <div id="cc-preview-window" style="width:100%; background:#f0f0f2; border-radius:12px; margin-bottom:15px; overflow:hidden; border:1px solid #ddd; box-shadow:inset 0 0 10px rgba(0,0,0,0.05);">
+            <div style="background:#f9f9f9; padding:8px; text-align:center; font-size:12px; color:#888; border-bottom:1px solid #eee;">✨ 实时美化预览</div>
+            
+            <div class="chat-main-container" style="padding:15px; height:200px; overflow-y:auto; pointer-events:none;">
+                <div class="chat-msg-row msg-left" style="display:flex; margin-bottom:15px;">
+                    <div class="chat-avatar" style="width:35px; height:35px; background:#ccc; border-radius:50%; margin-right:8px;"></div>
+                    <div class="chat-msg-content">
+                        <div class="chat-msg-text" style="background:#fff; padding:8px 12px; border-radius:15px; font-size:14px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
+                            这是对方发来的消息预览哦~ (๑＞＜)☆
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-msg-row msg-right" style="display:flex; flex-direction:row-reverse; margin-bottom:15px;">
+                    <div class="chat-avatar" style="width:35px; height:35px; background:#007AFF; border-radius:50%; margin-left:8px;"></div>
+                    <div class="chat-msg-content">
+                        <div class="chat-msg-text" style="background:#007AFF; color:#fff; padding:8px 12px; border-radius:15px; font-size:14px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
+                            我改了 CSS，看我变漂亮了没？
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // 将预览框插入到 CSS 输入框（cc-custom-css）的前面
+    const cssInput = document.getElementById('cc-custom-css');
+    if (cssInput) {
+        cssInput.insertAdjacentHTML('beforebegin', previewHtml);
+    }
+};
+// ==========================================
+// 1. 渲染预设菜单 (修复版：加上了自动触发器！)
+// ==========================================
 window.renderCssPresets = function() {
     let presets = JSON.parse(localStorage.getItem('huanhuan_css_presets') || '[]');
     const select = document.getElementById('cc-css-presets');
     if (!select) return;
+
+    select.onchange = function() {
+        window.applySelectedPreset();
+    };
+
     select.innerHTML = '<option value="">-- 选择预设 --</option>';
     presets.forEach((p, i) => {
         const opt = document.createElement('option');
@@ -4849,40 +4942,32 @@ window.renderCssPresets = function() {
     });
 };
 
-// 3. 【重点修复】提取并应用：一键穿衣 + 自动存入数据库
+// ==========================================
+// 提取并应用
+// ==========================================
 window.applySelectedPreset = function() {
     const select = document.getElementById('cc-css-presets');
-    if (!select || select.value === "") return showSystemAlert('请先选择一个预设');
+    const cssInput = document.getElementById('cc-custom-css');
+
+    if (!select || select.value === "") {
+        if (cssInput) cssInput.value = '';
+        return; 
+    }
     
     let presets = JSON.parse(localStorage.getItem('huanhuan_css_presets') || '[]');
     const preset = presets[select.value];
     
     if (preset && preset.css) {
-        // 🌟 暴力赋值：给所有叫这个 ID 的框都填上，防止 ID 重复导致的灵异现象
-        const textareas = document.querySelectorAll('#cc-custom-css');
-        textareas.forEach(t => t.value = preset.css);
-        
-        // 🌟 核心：立刻在当前页面生效
-        window.applyChatCustomCSS(preset.css);
-        
-        // 🌟 核心：强制保存到当前好友的专属配置里 (持久化)
-        if (typeof currentChatId !== 'undefined' && currentChatId) {
-            const chat = chatsData.find(c => c.id === currentChatId);
-            if (chat) {
-                chat.customCSS = preset.css;
-                // 存入 localforage 或 localStorage 确保刷新还在
-                if (typeof localforage !== 'undefined') {
-                    localforage.setItem('Wx_Chats_Data', chatsData); 
-                }
-            }
+
+        cssInput.value = preset.css;
+
+        if (typeof applyChatCustomCSS === 'function') {
+            applyChatCustomCSS(preset.css);
         }
-        showSystemAlert('✨ 皮肤已生效并自动保存', 'success');
-    } else {
-        showSystemAlert('⚠️ 这个预设是空的，请重新保存一个吧！');
+        
+        showSystemAlert(`成功换上 ${preset.name} 啦`, 'success');
     }
 };
-
-// 4. 删除预设
 window.deleteSelectedPreset = function() {
     const select = document.getElementById('cc-css-presets');
     if (!select || select.value === "") return showSystemAlert('请先选择要删除的预设');
@@ -4890,15 +4975,12 @@ window.deleteSelectedPreset = function() {
     presets.splice(select.value, 1);
     localStorage.setItem('huanhuan_css_presets', JSON.stringify(presets));
     renderCssPresets();
-    showSystemAlert('🗑️ 已删除该预设');
+    showSystemAlert('已删除该预设～');
 };
 
-// 5. 打开保存弹窗
+// 精致版 Ins 小弹窗
 window.openCssPresetModal = function() {
-    // 🌟 永远抓取当前页面最后一个文本框的值（最新粘贴的那个）
-    const textareas = document.querySelectorAll('#cc-custom-css');
-    const cssValue = textareas.length > 0 ? textareas[textareas.length - 1].value.trim() : '';
-    
+    const cssValue = document.getElementById('cc-custom-css').value.trim();
     if (!cssValue) return showSystemAlert('文本框是空的，先写点CSS吧！');
     
     let modal = document.getElementById('ins-css-modal');
@@ -4907,15 +4989,15 @@ window.openCssPresetModal = function() {
         modal.id = 'ins-css-modal';
         modal.innerHTML = `
             <div class="ins-modal-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); backdrop-filter:blur(5px); z-index:9999999; display:flex; justify-content:center; align-items:center; opacity:0; transition:0.25s ease-out;">
-                <div class="ins-modal-box" style="background:rgba(255,255,255,0.9); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); width:280px; border-radius:18px; display:flex; flex-direction:column; overflow:hidden; transform:scale(0.9); transition:0.25s cubic-bezier(0.2, 0.8, 0.2, 1); box-shadow: 0 10px 40px rgba(0,0,0,0.1); border:1px solid rgba(255,255,255,0.5);">
-                    <div style="padding:24px 20px 20px; text-align:center;">
-                        <div style="font-weight:700; font-size:17px; margin-bottom:6px; color:#000;">保存为预设</div>
-                        <div style="font-size:12px; color:#888; margin-bottom:20px;">给这款专属皮肤命名</div>
-                        <input type="text" id="ins-css-name" placeholder="例如：Ins淡淡风" style="width:100%; padding:12px; border-radius:12px; border:none; background:rgba(0,0,0,0.05); outline:none; text-align:center; font-size:14px; color:#000;">
+                <div class="ins-modal-box" style="background:rgba(255,255,255,0.85); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); width:260px; border-radius:14px; display:flex; flex-direction:column; overflow:hidden; transform:scale(0.95); transition:0.25s cubic-bezier(0.2, 0.8, 0.2, 1); box-shadow: 0 10px 30px rgba(0,0,0,0.15); border:0.5px solid rgba(255,255,255,0.5);">
+                    <div style="padding:20px 16px 16px; text-align:center;">
+                        <div style="font-weight:600; font-size:16px; margin-bottom:4px; color:#000;">保存为预设</div>
+                        <div style="font-size:12px; color:#666; margin-bottom:16px;">为你的预设命名</div>
+                        <input type="text" id="ins-css-name" placeholder="e.g. ios风" style="width:100%; padding:10px; border-radius:8px; border:none; background:rgba(0,0,0,0.06); outline:none; text-align:center; font-size:14px; color:#000;">
                     </div>
-                    <div style="display:flex; border-top:0.5px solid rgba(0,0,0,0.08);">
-                        <div onclick="closeCssPresetModal()" style="flex:1; padding:15px; text-align:center; color:#888; font-size:15px; cursor:pointer; border-right:0.5px solid rgba(0,0,0,0.08);">取消</div>
-                        <div onclick="confirmSaveCssPreset()" style="flex:1; padding:15px; text-align:center; color:#007AFF; font-weight:700; font-size:15px; cursor:pointer;">保存</div>
+                    <div style="display:flex; border-top:0.5px solid rgba(0,0,0,0.1);">
+                        <div onclick="closeCssPresetModal()" style="flex:1; padding:14px; text-align:center; color:#007AFF; font-size:15px; cursor:pointer; border-right:0.5px solid rgba(0,0,0,0.1);">取消</div>
+                        <div onclick="confirmSaveCssPreset()" style="flex:1; padding:14px; text-align:center; color:#007AFF; font-weight:600; font-size:15px; cursor:pointer;">保存</div>
                     </div>
                 </div>
             </div>`;
@@ -4924,6 +5006,7 @@ window.openCssPresetModal = function() {
     
     document.getElementById('ins-css-name').value = '';
     modal.style.display = 'flex';
+    // 强制回流以触发动画
     modal.offsetHeight; 
     modal.querySelector('.ins-modal-overlay').style.opacity = '1';
     modal.querySelector('.ins-modal-box').style.transform = 'scale(1)';
@@ -4933,21 +5016,17 @@ window.closeCssPresetModal = function() {
     const modal = document.getElementById('ins-css-modal');
     if (!modal) return;
     modal.querySelector('.ins-modal-overlay').style.opacity = '0';
-    modal.querySelector('.ins-modal-box').style.transform = 'scale(0.9)';
+    modal.querySelector('.ins-modal-box').style.transform = 'scale(0.95)';
     setTimeout(() => { modal.style.display = 'none'; }, 250);
 };
 
-// 6. 【重点修复】确认保存预设：防止抓错对象
 window.confirmSaveCssPreset = function() {
-    const nameInput = document.getElementById('ins-css-name');
-    const name = nameInput ? nameInput.value.trim() : '';
+    const name = document.getElementById('ins-css-name').value.trim();
 
-    // 🌟 再次强调：抓取最新的那个文本框的值
-    const textareas = document.querySelectorAll('#cc-custom-css');
-    const css = textareas.length > 0 ? textareas[textareas.length - 1].value.trim() : ''; 
+    const css = document.getElementById('cc-custom-css').value.trim(); 
     
     if (!name) return showSystemAlert('名字不能为空哦！');
-    if (!css) return showSystemAlert('⚠️ 没抓到CSS内容，请确保框里有代码');
+    if (!css) return showSystemAlert('CSS内容怎么空了？');
     
     let presets = JSON.parse(localStorage.getItem('huanhuan_css_presets') || '[]');
     presets.push({ name: name, css: css });
@@ -4955,7 +5034,7 @@ window.confirmSaveCssPreset = function() {
     
     closeCssPresetModal();
     renderCssPresets();
-    showSystemAlert('✅ 美化预设保存成功', 'success');
+    showSystemAlert('美化预设保存成功啦～', 'success');
 };
 // ====================
 // [18] 聊天背景上传 (Wallpaper Upload)
@@ -12574,3 +12653,23 @@ window.refreshInstaAll = function() {
         }
     }
 };
+// ★ 新增：每次刷新页面时自动执行的恢复逻辑
+window.addEventListener('DOMContentLoaded', () => {
+    // 1. 恢复下拉菜单里的预设列表
+    if (typeof renderCssPresets === 'function') {
+        renderCssPresets();
+    }
+    
+    // 2. 找到上次关掉页面前正在用的 CSS，帮它穿回身上！
+    const savedActiveCss = localStorage.getItem('huanhuan_active_css');
+    if (savedActiveCss) {
+        // 自动恢复页面样式
+        window.applyChatCustomCSS(savedActiveCss);
+        
+        // 把输入框也填满，这样你一打开面板就不会觉得“怎么空了”！
+        const cssInput = document.getElementById('cc-custom-css');
+        if (cssInput) {
+            cssInput.value = savedActiveCss;
+        }
+    }
+});

@@ -1367,7 +1367,7 @@
     <div id="inner-voice-toggle-dot" style="width: 10px; height: 10px; border-radius: 50%; background: #ccc;"></div>
 </div>
 
-<div style="margin: 10px 15px 20px 15px; background: #ffffff; border-radius: 20px; padding: 18px; box-shadow: 0 4px 24px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.04);">
+<div id="css-editor-container" style="margin: 10px 15px 20px 15px; background: #ffffff; border-radius: 20px; padding: 18px; box-shadow: 0 4px 24px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.04);">
     
     <div style="display: flex; align-items: center; margin-bottom: 14px;">
         <div style="font-size: 18px; margin-right: 10px;">★</div>
@@ -1376,16 +1376,43 @@
             <div style="font-size: 11px; color: #999; margin-top: 3px;">☆*:.｡. o(≧▽≦)o .｡.:*☆</div>
         </div>
     </div>
+
+    <div id="chat-msg-area" class="preview-mode" style="width: 100%; height: 200px; border-radius: 14px; margin-bottom: 15px; overflow-y: auto; overflow-x: hidden; border: 1px solid #eee; position: relative; padding: 0;">
+        
+        <div style="background: rgba(0,0,0,0.03); padding: 6px; text-align: center; font-size: 10px; color: #999; letter-spacing: 1px; position: sticky; top: 0; z-index: 10; backdrop-filter: blur(4px);">PREVIEW / 效果预览</div>
+
+        <div style="padding: 10px;">
+            <div class="msg-row other has-tail" style="margin-top: 15px;">
+                <div class="msg-avatar-col">
+                    <div id="cc-preview-avatar-other" class="msg-avatar" style="background-color: #ddd;"></div>
+                    <div class="msg-avatar-time">12:00</div>
+                </div>
+                <div class="msg-container-col">
+                    <div class="msg-content">这是对方的消息，看看尾巴对了吗？(๑＞＜)</div>
+                </div>
+            </div>
+
+            <div class="msg-row me has-tail" style="margin-top: 25px;">
+                <div class="msg-avatar-col">
+                    <div id="cc-preview-avatar-me" class="msg-avatar" style="background-color: #007AFF;"></div>
+                    <div class="msg-avatar-time">12:01</div>
+                </div>
+                <div class="msg-container-col">
+                    <div class="msg-content">我的消息在这里！改改颜色试试~</div>
+                </div>
+            </div>
+        </div>
+    </div>
     
-    <textarea id="cc-custom-css" placeholder="/* 在这里写下 自定义CSS ... */&#10;/* 例如：让聊天背景变透明 */&#10;body { background: transparent !important; }" 
+    <textarea id="cc-custom-css" 
+        oninput="window.applyChatCustomCSS(this.value)"
+        placeholder="/* 在这里写下 自定义CSS ... */" 
         style="width: 100%; height: 120px; border-radius: 14px; border: 1px solid #f0f0f0; padding: 14px; font-family: 'SF Mono', Consolas, monospace; font-size: 12px; background: #fafafa; outline: none; resize: none; box-sizing: border-box; color: #333; line-height: 1.5;"></textarea>
     
     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; gap: 8px;">
-        
         <select id="cc-css-presets" style="flex: 1; height: 36px; border-radius: 10px; border: 1px solid #f0f0f0; background: #fafafa; outline: none; font-size: 12px; padding: 0 10px; color: #555;"></select>
-        
-        <button onclick="applySelectedPreset()" style="height: 36px; padding: 0 14px; border-radius: 10px; background: #f5f7fa; border: none; font-weight: 600; color: #007AFF; font-size: 12px; cursor: pointer;">使用</button>
-        <button onclick="deleteSelectedPreset()" style="height: 36px; padding: 0 14px; border-radius: 10px; background: #fff0f0; border: none; font-weight: 600; color: #ff3b30; font-size: 12px; cursor: pointer;">删除</button>
+        <button onclick="applySelectedPreset()" style="height: 36px; padding: 0 14px; border-radius: 10px; background: #666; border: none; font-weight: 600; color: #fff; font-size: 12px; cursor: pointer;">使用</button>
+        <button onclick="deleteSelectedPreset()" style="height: 36px; padding: 0 14px; border-radius: 10px; background: #ff3b30; border: none; font-weight: 600; color: #fff; font-size: 12px; cursor: pointer;">删除</button>
         <button onclick="openCssPresetModal()" style="height: 36px; padding: 0 14px; border-radius: 10px; background: #007AFF; border: none; font-weight: 600; color: #fff; font-size: 12px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,122,255,0.2);">保存</button>
     </div>
 </div>
