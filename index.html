@@ -4,23 +4,20 @@
     <meta charset="UTF-8">
     <title>kkk...</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<!-- 为苹果设备设置主屏幕图标 -->
-    <link rel="apple-touch-icon" href="https://i.postimg.cc/gkZMz1xW/IMG-7800.jpg">
-    <link rel="apple-touch-icon" sizes="152x152" href="https://i.postimg.cc/gkZMz1xW/IMG-7800.jpg">
-    <link rel="apple-touch-icon" sizes="180x180" href="https://i.postimg.cc/gkZMz1xW/IMG-7800.jpg">
-<link rel="apple-touch-icon" sizes="167x167" href="https://i.postimg.cc/gkZMz1xW/IMG-7800.jpg">
-
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-<!-- 标准浏览器页签图标 -->
-    <link rel="icon" type="image/png" href="https://i.postimg.cc/gkZMz1xW/IMG-7800.jpg">
-    <meta name="mobile-web-app-capable" content="yes">
-
     <meta name="format-detection" content="telephone=no">
     <meta name="theme-color" content="#f2f2f7">
     <meta name="referrer" content="no-referrer">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://i.postimg.cc/gkZMz1xW/IMG-7800.jpg">
+    <link rel="apple-touch-icon" sizes="152x152" href="https://i.postimg.cc/gkZMz1xW/IMG-7800.jpg">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://i.postimg.cc/gkZMz1xW/IMG-7800.jpg">
+    <link rel="apple-touch-icon" sizes="167x167" href="https://i.postimg.cc/gkZMz1xW/IMG-7800.jpg">
+
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="icon" type="image/png" href="https://i.postimg.cc/gkZMz1xW/IMG-7800.jpg">
+
     <link rel="stylesheet" href="style.css">
 </head>
 <div id="activation-gate">
@@ -1046,7 +1043,7 @@
         </div>
 
         <div style="margin-top: 30px; text-align: center;">
-            <div style="font-size: 12px; color: #ccc;">* 导入会覆盖现有数据，请谨慎操作哦 (＞人＜；) </div>
+            <div style="font-size: 12px; color: #ccc;">* 导入会覆盖现有数据，请谨慎操作哦！</div>
             <div style="font-size: 10px; color: #eee; margin-top: 50px;">DESIGNED FOR MY BABY</div>
         </div>  
     </div>
@@ -1103,9 +1100,6 @@
             <div class="chl-text-info">
                 <div style="display: flex; align-items: center; gap: 6px;">
                     <div class="chl-name" id="chat_layer_name">Name</div>
-                    <div class="chl-status-pill">
-                         <span style="color:#555">★</span> <span id="chat-mood-text">i luv u <3…🩶</span>
-                    </div>
                 </div>
                 <div class="chl-status edit-text">˚❅𝓦𝓲𝓷𝓽𝓮𝓻 𝓲𝓼 𝓬𝓸𝓶𝓲𝓷𝓰✲*</div>
             </div>
@@ -1229,10 +1223,10 @@
                     <div class="heart-icon">❤</div>
                 </div>
 
-                <div class="ins-head-col" onclick="jumpToEditor('user')">
-                    <div class="ins-big-circle sync-avatar-target" id="cc-user-avatar-big"></div>
-                    <div class="ins-big-name" id="cc-user-name-big">Me</div>
-                    <div class="ins-role-tag">ME</div>
+<div class="ins-head-col" id="cc-user-avatar-btn">
+    <div class="ins-big-circle sync-avatar-target" id="cc-user-avatar-big"></div>
+    <div class="ins-big-name" id="cc-user-name-big">Me</div>
+    <div class="ins-role-tag">ME</div>
                 </div>
             </div>
             
@@ -1425,6 +1419,17 @@
         </div>
     </div>
 </div>
+
+<div class="ins-menu-item" onclick="requestClearChatHistory(); closeChatControl();">
+    <div class="ins-menu-left">
+        <div class="ins-point" style="color: #ff9500;">⟳</div> 
+        <div class="ins-menu-text">
+            <div class="title" style="color: #ff9500;">清空聊天记录</div>
+            <div class="desc">Clear all messages</div>
+        </div>
+    </div>
+</div>
+
 <div style="height: 50px;"></div>
 </div>
 </div>
@@ -1843,7 +1848,16 @@
                 </div>
             </div>
         </div>
-
+<div id="clear-chat-overlay" class="custom-alert-overlay" style="display: none;">
+    <div class="custom-alert-box">
+        <div class="alert-title" style="color: #ff9500;">Clear History?</div>
+        <div class="alert-msg">确定要清空聊天记录嘛？<br>好友还在，但你们的对话将归零哦！</div>
+        <div class="alert-btn-group">
+            <div class="alert-btn cancel" onclick="closeClearChatAlert()">Cancel</div>
+            <div class="alert-btn confirm" onclick="confirmClearChatAction()" style="background: #ff9500;">Clear</div>
+        </div>
+    </div>
+</div>
         <div id="custom-alert-overlay" class="custom-alert-overlay" style="display: none;">
             <div class="custom-alert-box">
                 <div class="alert-title">Wait!</div>

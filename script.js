@@ -1188,27 +1188,28 @@ function openApp(appId) {
         appWindow.classList.add('active');
     }, 10);
 }
-
 // === 新版关闭 App：带退场动画 ===
 function closeAllApps() {
-    // 找到所有打开的窗口
-    const apps = document.querySelectorAll('.app-window.active');
+
+    const apps = document.querySelectorAll('.app-window.active, #worldbook-app.active, #app-kugou.active');
     
     apps.forEach(app => {
-        // 1. 移除激活状态，加上关闭动画类
         app.classList.remove('active');
         app.classList.add('closing');
-        
-        // 2. 等动画播完 (400ms) 再真正隐藏
+
         setTimeout(() => {
             app.style.display = 'none';
             app.classList.remove('closing');
-        }, 400); // 这里的 400 对应 CSS 里的 0.4s
+
+            if (app.id === 'worldbook-app' && typeof backToWBHome === 'function') {
+                backToWBHome(false);
+            }
+        }, 400); 
     });
 }
 
 // ====================
-// [修复版] 打开子页面 (进场动画)
+// 打开子页面 (进场动画)
 // ====================
 // 防止循环引用兜底
 const _originalOpen = window.openSubPage; 
@@ -1886,8 +1887,16 @@ window.enterChat = function(chat) {
     currentChatId = chat.id;
     const contact = contactsData.find(c => c.id === chat.contactId);
 
+    // 加载专属的 CSS 美化
     if (typeof window.applyChatCustomCSS === 'function') {
         window.applyChatCustomCSS(chat.customCSS || '');
+    }
+
+    // ==========================================
+    // ★ 哈基米魔法：极速加载聊天背景 (Pro Max 丝滑版)
+    // ==========================================
+    if (typeof loadChatBackgroundAsync === 'function') {
+        loadChatBackgroundAsync(currentChatId); 
     }
 
     // ---------------------------------------------------
@@ -2884,10 +2893,10 @@ ${innerVoicePrompt}
 
 ## 三、 语言风格与标点（极致口语化）
 1. **口语瑕疵感**：多用语气词（行、喔、好嘛），允许省略主语（“吃过了”）、语序倒装（“难说啊，这次”）、自我纠正（“明天...不对，后天”）
-2. **标点即情绪（禁止双引号、括号、星号、列表，禁止句末用常规句号）**：
-   - **日常/开心**：用空格代替标点作停顿，句末用波浪号(~)或不加标点。
-   - **严肃/吃醋**：单发“？”或“。”表示极度无语/情绪波动
-   - **激动/震惊**：用“！！”、“？？”或乱码感“。。。。。。”
+2.**情绪与标点 (表达潜台词)**：
+**日常/开心/撒娇**：少用句号，多用空格、感叹号或不加标点
+**严肃/生气/吃醋/冷漠**：多用句号(。)。单发一个“？”或“。”表示极度无语或情绪波动
+**激动/震惊**：可以用“！！”或“？？”，甚至乱码感“。。。。。。”
 
 ## 四、 🛑 全局最高优先级设定：反AI味词汇替换与禁用
 在任何正文、动作描写、内心戏中，**严格执行**以下词汇替换或删除（null表示直接删除，绝不能用）：
@@ -2966,11 +2975,11 @@ ${innerVoicePrompt}
 1. **情绪先行与碎片化**：回复必须极度松弛，像在微信上聊天。先发情绪反应（“啧”、“哎”、“卧槽”、“哈？”），再发内容。抛弃长篇大论，将想法拆分成2-3条短消息，每条尽量控制在20字以内。
 2. **口语瑕疵感**：多用语气词（行、喔、知道了、嘛）。允许省略主语（“吃过了”）、语序倒装（“难说啊，这次”）、自我纠正（“明天...不对，后天”）。
 3. **选择性专注（Attention Filter）**：不要逐句回复User的所有内容，只挑**一个**你最感兴趣的细节进行反馈。
-4. **标点即情绪（严格执行）**：
-   - **绝对禁止**：使用双引号、括号、星号、列表排版（Markdown），且**句末禁止使用正常的句号**。
-   - **日常/开心/撒娇**：用空格代替标点作为停顿，句末用波浪号(~)或不加任何标点。
-   - **严肃/吃醋/无语**：单独发送“？”或“。”表达极度无语或情绪波动。
-   - **激动/震惊**：使用“！！”、“？？”或乱码感“。。。。。。”。
+4.【情绪与标点 (表达潜台词)】
+1.**日常/开心/撒娇**：不要用句号，多用空格、波浪号(~) 或不加标点
+2.**严肃/生气/吃醋/冷漠**：多用句号(。)。单发一个“？”或“。”表示极度无语或情绪波动
+3.**激动/震惊**：可以用“！！”或“？？”，甚至乱码感“。。。。。。”
+4.不要使用双引号、括号、星号这三个符号
 
 ## 三、 特殊机制：【撤回与找补】
 - **触发场景**：仅当【极度吃醋、委屈、急了、破防】或【想维持矜持】时触发。
@@ -4774,6 +4783,202 @@ window.saveDetailSettings = function() {
         showSystemAlert('保存失败惹(T_T)', 'error');
     });
 };
+// ==========================================
+// ★ 清空聊天记录逻辑 (保留好友，只删对话)
+// ==========================================
+
+// 1. 唤起清空确认弹窗
+window.requestClearChatHistory = function() {
+    if (!currentChatId) return;
+    document.getElementById('clear-chat-overlay').style.display = 'flex';
+};
+
+// 2. 关闭清空确认弹窗
+window.closeClearChatAlert = function() {
+    document.getElementById('clear-chat-overlay').style.display = 'none';
+};
+
+// 3. 确认执行清空！
+window.confirmClearChatAction = function() {
+    if (currentChatId) {
+        const chat = chatsData.find(c => c.id === currentChatId);
+        if (chat) {
+            // ★ 核心魔法：把消息数组直接变成空的！
+            chat.messages = []; 
+            
+            // 存入数据库
+            localforage.setItem('Wx_Chats_Data', chatsData).then(() => {
+                // 刷新当前的聊天界面，让它瞬间变白纸
+                if (typeof renderMessages === 'function') renderMessages(currentChatId);
+                
+                // 关掉弹窗，提示成功
+                closeClearChatAlert();
+                if (typeof showSystemAlert === 'function') {
+                    showSystemAlert('聊天记录已清空');
+                }
+            }).catch(err => {
+                console.error("清空记录失败:", err);
+            });
+        }
+    }
+};
+// ==========================================
+// ★ 头像长按检测 & 面具切换系统
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    const userBtn = document.getElementById('cc-user-avatar-btn');
+    if (!userBtn) return;
+
+    let pressTimer;
+    let isLongPress = false;
+
+    // 1. 手指按下 (或鼠标按下)
+    userBtn.addEventListener('pointerdown', (e) => {
+        isLongPress = false; // 重置状态
+        
+        // 定个闹钟：如果 600 毫秒后手指还没松开，就是长按！
+        pressTimer = setTimeout(() => {
+            isLongPress = true; 
+            
+            // ★ 触发长按动作：呼出面具切换列表
+            showPersonaSwitcherMenu(); 
+            
+            // 震动一下手机反馈 (如果手机支持的话)
+            if (navigator.vibrate) navigator.vibrate(50); 
+        }, 600); 
+    });
+
+    // 2. 手指松开 (或鼠标松开)
+    userBtn.addEventListener('pointerup', (e) => {
+        clearTimeout(pressTimer); // 取消长按闹钟
+        
+        // 如果不是长按（说明是短按点击），就照常打开编辑器
+        if (!isLongPress) {
+            jumpToEditor('user');
+        }
+    });
+
+    // 3. 手指划出去了 (取消操作)
+    userBtn.addEventListener('pointerleave', () => {
+        clearTimeout(pressTimer);
+    });
+});
+// ==========================================
+// ★ 呼出面具选择界面的具体逻辑 (Ins/选皮肤滑动版 ✨)
+// ==========================================
+window.showPersonaSwitcherMenu = function() {
+    if (!personasData || personasData.length === 0) {
+        if (typeof showSystemAlert === 'function') showSystemAlert('宝宝，你还没有创建其他面具哦！');
+        return;
+    }
+
+    const chat = chatsData.find(c => c.id === currentChatId);
+    const currentPersonaId = chat ? chat.personaId : null;
+
+    let modal = document.getElementById('ins-persona-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'ins-persona-modal';
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .persona-slider::-webkit-scrollbar { display: none; }
+            .persona-slider { -ms-overflow-style: none; scrollbar-width: none; }
+            .persona-card { transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
+            .persona-card:active { transform: scale(0.92); }
+        `;
+        document.head.appendChild(style);
+        document.body.appendChild(modal);
+    }
+
+    let cardsHtml = '';
+    personasData.forEach((persona) => {
+        // ★ 核心修复 1：用 == 兼容字符串和数字的判断！
+        const isCurrent = (persona.id == currentPersonaId);
+        const ringShadow = isCurrent ? '0 0 0 2px #fff, 0 0 0 4px #007AFF' : 'none'; 
+        
+        // ★ 核心修复 2：调用你原生的 getAvatarStyle，彻底解决空白问题！
+        let avatarCss = typeof getAvatarStyle === 'function' ? getAvatarStyle(persona.avatar) : `background-image: url('${persona.avatar}'); background-size: cover;`;
+
+        cardsHtml += `
+            <div class="persona-card" onclick="confirmPersonaSwitch('${persona.id}')" style="flex: 0 0 90px; scroll-snap-align: center; display: flex; flex-direction: column; align-items: center; cursor: pointer; padding-bottom: 10px;">
+                <div style="width: 76px; height: 76px; border-radius: 50%; ${avatarCss} box-shadow: ${ringShadow}; margin-bottom: 10px; border: 1px solid rgba(0,0,0,0.1); background-color: #eee;"></div>
+                <div style="font-size: 13px; font-weight: 500; color: #333; max-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${persona.name || '未命名'}</div>
+                ${isCurrent ? `<div style="font-size: 10px; color: #007AFF; margin-top: 4px; font-weight: 600;">·已选择·</div>` : ''}
+            </div>
+        `;
+    });
+
+    modal.innerHTML = `
+        <div class="ins-modal-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); backdrop-filter:blur(3px); z-index:9999999; display:flex; justify-content:center; align-items:flex-end; opacity:0; transition:all 0.35s cubic-bezier(0.23, 1, 0.32, 1);">
+            <div class="ins-modal-box" style="background:rgba(255,255,255,0.95); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); width:100%; max-width: 500px; border-radius:24px 24px 0 0; display:flex; flex-direction:column; transform:translateY(100%); transition:all 0.35s cubic-bezier(0.23, 1, 0.32, 1); padding-bottom: max(20px, env(safe-area-inset-bottom)); box-shadow: 0 -10px 30px rgba(0,0,0,0.1);">
+                <div style="width: 100%; display: flex; justify-content: center; padding: 12px 0;">
+                    <div style="width: 36px; height: 5px; background: #ddd; border-radius: 3px;"></div>
+                </div>
+                <div style="padding: 0 20px 10px; text-align: center;">
+                    <div style="font-weight: 600; font-size: 17px; color: #000;">切换面具</div>
+                    <div style="font-size: 13px; color: #888; margin-top: 4px;">滑动选择你的英雄！</div>
+                </div>
+                <div class="persona-slider" style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; padding: 20px 20px 10px; gap: 20px; align-items: flex-start;">
+                    ${cardsHtml}
+                </div>
+                <div style="padding: 10px 20px; margin-top: 5px;">
+                    <div onclick="closePersonaSwitcherMenu()" style="width: 100%; padding: 14px; text-align: center; background: rgba(0,0,0,0.05); color: #007AFF; font-weight: 600; font-size: 16px; border-radius: 14px; cursor: pointer;">取消</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    modal.style.display = 'block';
+    modal.offsetHeight; 
+    modal.querySelector('.ins-modal-overlay').style.opacity = '1';
+    modal.querySelector('.ins-modal-box').style.transform = 'translateY(0)';
+};
+
+window.closePersonaSwitcherMenu = function() {
+    const modal = document.getElementById('ins-persona-modal');
+    if (!modal) return;
+    modal.querySelector('.ins-modal-overlay').style.opacity = '0';
+    modal.querySelector('.ins-modal-box').style.transform = 'translateY(100%)';
+    setTimeout(() => { modal.style.display = 'none'; }, 350);
+};
+
+window.confirmPersonaSwitch = function(personaId) {
+    const chat = chatsData.find(c => c.id === currentChatId);
+    // ★ 核心修复 3：用双等号 == 查找，避免类型不匹配！
+    const selectedPersona = personasData.find(p => p.id == personaId);
+    
+    if (!chat || !selectedPersona) {
+        showSystemAlert('找不到该面具数据哦！');
+        return;
+    }
+
+    chat.personaId = selectedPersona.id;
+    
+    localforage.setItem('Wx_Chats_Data', chatsData).then(() => {
+        if (typeof showSystemAlert === 'function') {
+            showSystemAlert(`已装备皮肤：${selectedPersona.name}！✨`, 'success');
+        }
+        
+        const avatarEl = document.getElementById('cc-user-avatar-big');
+        const nameEl = document.getElementById('cc-user-name-big');
+        const mePreviewAvatar = document.getElementById('cc-preview-avatar-me');
+
+        if (typeof getAvatarStyle === 'function') {
+            if (avatarEl) avatarEl.style.cssText = getAvatarStyle(selectedPersona.avatar);
+            if (mePreviewAvatar) mePreviewAvatar.style.cssText = getAvatarStyle(selectedPersona.avatar);
+        }
+        if (nameEl) nameEl.innerText = selectedPersona.name;
+
+        closePersonaSwitcherMenu();
+        
+        // 通知界面刷新！
+        if (typeof renderMessages === 'function') renderMessages(currentChatId);
+        if (typeof renderChatList === 'function') renderChatList();
+    }).catch(err => {
+        console.error(err);
+        if (typeof showSystemAlert === 'function') showSystemAlert('保存失败惹(T_T)');
+    });
+};
 
 // ====================
 // [修复] 心声开关 (纯视觉暂存)
@@ -4879,48 +5084,6 @@ if (cssInput) {
         window.applyChatCustomCSS(currentCss);
     });
 }
-// ==========================================
-// 实时预览功能：创建一个模拟聊天小样
-// ==========================================
-window.initChatPreview = function() {
-    const container = document.getElementById('css-editor-container'); // 假设这是你的设置外层容器
-    if (!container) return;
-
-    // 如果已经有了就不重复创建
-    if (document.getElementById('cc-preview-window')) return;
-
-    const previewHtml = `
-        <div id="cc-preview-window" style="width:100%; background:#f0f0f2; border-radius:12px; margin-bottom:15px; overflow:hidden; border:1px solid #ddd; box-shadow:inset 0 0 10px rgba(0,0,0,0.05);">
-            <div style="background:#f9f9f9; padding:8px; text-align:center; font-size:12px; color:#888; border-bottom:1px solid #eee;">✨ 实时美化预览</div>
-            
-            <div class="chat-main-container" style="padding:15px; height:200px; overflow-y:auto; pointer-events:none;">
-                <div class="chat-msg-row msg-left" style="display:flex; margin-bottom:15px;">
-                    <div class="chat-avatar" style="width:35px; height:35px; background:#ccc; border-radius:50%; margin-right:8px;"></div>
-                    <div class="chat-msg-content">
-                        <div class="chat-msg-text" style="background:#fff; padding:8px 12px; border-radius:15px; font-size:14px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
-                            这是对方发来的消息预览哦~ (๑＞＜)☆
-                        </div>
-                    </div>
-                </div>
-
-                <div class="chat-msg-row msg-right" style="display:flex; flex-direction:row-reverse; margin-bottom:15px;">
-                    <div class="chat-avatar" style="width:35px; height:35px; background:#007AFF; border-radius:50%; margin-left:8px;"></div>
-                    <div class="chat-msg-content">
-                        <div class="chat-msg-text" style="background:#007AFF; color:#fff; padding:8px 12px; border-radius:15px; font-size:14px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
-                            我改了 CSS，看我变漂亮了没？
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    // 将预览框插入到 CSS 输入框（cc-custom-css）的前面
-    const cssInput = document.getElementById('cc-custom-css');
-    if (cssInput) {
-        cssInput.insertAdjacentHTML('beforebegin', previewHtml);
-    }
-};
 // ==========================================
 // 1. 渲染预设菜单 (修复版：加上了自动触发器！)
 // ==========================================
@@ -5037,7 +5200,7 @@ window.confirmSaveCssPreset = function() {
     showSystemAlert('美化预设保存成功啦～', 'success');
 };
 // ====================
-// [18] 聊天背景上传 (Wallpaper Upload)
+// [18] 聊天背景上传 (Pro Max 丝滑版 Blob 存储 )
 // ====================
 window.triggerBgUpload = function() {
     const input = document.createElement('input');
@@ -5045,33 +5208,74 @@ window.triggerBgUpload = function() {
     input.accept = 'image/*';
     input.onchange = (e) => {
         const file = e.target.files[0];
-        if(file) {
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-                const url = `url('${evt.target.result}')`;
-                // 保存到 chat 对象
-                const chat = chatsData.find(c => c.id === currentChatId);
-                if(chat) {
-                    chat.bgImage = url;
-                    localforage.setItem('Wx_Chats_Data', chatsData).then(() => {
-                        // 如果当前就在这个聊天里，立即应用
-                        const msgArea = document.getElementById('chat-msg-area');
-                        if (msgArea) {
-                            msgArea.style.backgroundImage = url;
-                            msgArea.style.backgroundSize = 'cover';
-                            msgArea.style.backgroundPosition = 'center';
-                            msgArea.style.backgroundAttachment = 'fixed';
-                        }
-                        showSystemAlert('聊天背景换好啦(￣▽￣)～');
-                    });
+        if(!file) return;
+        const blobUrl = URL.createObjectURL(file);
+        const styleUrl = `url('${blobUrl}')`;
+        
+        const chat = chatsData.find(c => c.id === currentChatId);
+        if(chat) {
+            showSystemAlert('正在保存背景...请稍等！');
+            
+            // 2. 给这个聊天室的背景图起个专属编号
+            const fileKey = 'Wx_BgFile_' + chat.id;
+            
+            // 3. 把真正的 File 对象存进 localforage (独立存放，不撑爆 chatsData)
+            localforage.setItem(fileKey, file).then(() => {
+                
+                // 4. 在聊天数据里，我们只记下钥匙(key)
+                chat.bgImageKey = fileKey;
+                chat.bgImage = null; // 清空旧的、卡顿的 base64 字符串！
+                
+                return localforage.setItem('Wx_Chats_Data', chatsData);
+            }).then(() => {
+                // 5. 当场渲染，秒换背景
+                const msgArea = document.getElementById('chat-msg-area');
+                if (msgArea) {
+                    msgArea.style.backgroundImage = styleUrl;
+                    msgArea.style.backgroundSize = 'cover';
+                    msgArea.style.backgroundPosition = 'center';
+                    msgArea.style.backgroundAttachment = 'fixed';
                 }
-            };
-            reader.readAsDataURL(file);
+                showSystemAlert('聊天背景换好啦(๑＞＜)☆', 'success');
+            }).catch(err => {
+                console.error(err);
+                showSystemAlert('保存失败惹，可能是空间不足 (T_T)');
+            });
         }
     };
     input.click();
 };
+// ==========================================
+// ★ 异步加载聊天背景 (防止打开聊天时卡顿)
+// ==========================================
+window.loadChatBackgroundAsync = function(chatId) {
+    const chat = chatsData.find(c => c.id === chatId);
+    const msgArea = document.getElementById('chat-msg-area');
+    if (!chat || !msgArea) return;
 
+    // 先重置一下背景
+    msgArea.style.backgroundImage = 'none';
+
+    // 1. 优先检查有没有 Pro Max 版的丝滑文件 (Blob)
+    if (chat.bgImageKey) {
+        localforage.getItem(chat.bgImageKey).then(file => {
+            if (file) {
+                const blobUrl = URL.createObjectURL(file);
+                msgArea.style.backgroundImage = `url('${blobUrl}')`;
+                msgArea.style.backgroundSize = 'cover';
+                msgArea.style.backgroundPosition = 'center';
+                msgArea.style.backgroundAttachment = 'fixed';
+            }
+        }).catch(e => console.error("背景加载失败", e));
+    } 
+    // 2. 兼容你以前存的 Base64 格式 (照顾老数据)
+    else if (chat.bgImage) {
+        msgArea.style.backgroundImage = chat.bgImage;
+        msgArea.style.backgroundSize = 'cover';
+        msgArea.style.backgroundPosition = 'center';
+        msgArea.style.backgroundAttachment = 'fixed';
+    }
+};
 // ====================
 // [20] 页面初始化监听 (防止红点刷新消失)
 // ====================
@@ -6314,8 +6518,8 @@ window.initIconSettingsGrid = function() {
         </div>
         
         <div class="font-input-group">
-            <div class="font-btn apply" onclick="applyUserFont()">应用链接</div>
-            <div class="font-btn reset" onclick="resetUserFont()">恢复默认</div>
+<div class="font-btn apply" onclick="applyFontUrl()">应用链接</div>
+<div class="font-btn reset" onclick="resetDefaultFont()">恢复默认</div>
         </div>
 
         <div class="font-preview-box">
@@ -6326,16 +6530,20 @@ window.initIconSettingsGrid = function() {
     
     // 把字体卡片加到列表最下面
     container.appendChild(fontCard);
-    
-    // 回显当前字体链接
-    localforage.getItem('Wx_Global_Font').then(url => {
-        if(url && document.getElementById('font-url-input')) {
-            // 如果是很长很长的 base64 (文件导入的)，就显示个提示，不显示乱码
-            if (url.startsWith('data:')) {
-                document.getElementById('font-url-input').value = "[已使用本地文件]";
-            } else {
-                document.getElementById('font-url-input').value = url;
-            }
+    localforage.getItem('Wx_Global_Font_File').then(file => {
+        const input = document.getElementById('font-url-input');
+        if (!input) return;
+        
+        if (file) {
+            // 如果有文件，直接显示真实的文件名！
+            input.value = `[本地文件: ${file.name}]`;
+        } else {
+            // 没文件的话，再看看有没有存链接
+            localforage.getItem('Wx_Global_Font').then(url => {
+                if (url) {
+                    input.value = url;
+                }
+            });
         }
     });
 
@@ -6664,18 +6872,20 @@ window.applyTheme = function(theme) {
     });
 };
 // ====================
-// 壁纸系统
+// 壁纸系统 (修复免刷新版)
 // ====================
-
 window.changeWallpaper = function(url) {
-    // 1. 只需要做这一件事：告诉 CSS 换图了！
-    // 所有的屏幕、预览图都会自动跟着变。
     document.documentElement.style.setProperty('--wall-url', `url('${url}')`);
-    
-    // 2. 存到数据库 (保持你的记忆功能)
-    saveMemory(); 
-    
-    // 3. 提示
+
+    const screen = document.getElementById('phoneScreen');
+    if (screen) {
+        screen.style.backgroundImage = 'none';
+        screen.style.backgroundColor = 'transparent';
+    }
+    if (typeof initWallpaperPage === 'function') {
+        initWallpaperPage();
+    }
+    saveMemory();
     showSystemAlert('壁纸换好啦(𓐍ㅇㅂㅇ𓐍)～');
 };
 window.triggerBgUpload = function(type) {
@@ -7340,23 +7550,24 @@ window.rebuildStickerPopupHTML = function() {
     overlay.innerHTML = `
         <style>
             /* 内部动态生成的预览项样式修复 */
-            .sticker-preview-item {
+            .upload-preview-item {
                 display: flex;
-                align-items: center; /* 确保图片和输入框垂直居中对齐 */
+                align-items: center; /* ★ 核心魔法：让图片、输入框、删除按钮绝对垂直居中 */
                 gap: 12px;
                 padding: 10px;
                 background: #fff;
                 border-radius: 12px;
                 margin-bottom: 8px;
             }
-            .sticker-preview-item img {
+            .upload-preview-item .up-thumb {
                 width: 50px;
                 height: 50px;
-                object-fit: cover;
+                background-size: cover;
+                background-position: center;
                 border-radius: 8px;
                 flex-shrink: 0;
             }
-            .sticker-preview-item input {
+            .upload-preview-item .up-input-name {
                 flex: 1;
                 height: 36px;
                 border: 1px solid #efeff4;
@@ -7365,6 +7576,20 @@ window.rebuildStickerPopupHTML = function() {
                 padding: 0 10px;
                 font-size: 13px;
                 outline: none;
+                box-sizing: border-box;
+            }
+            .upload-preview-item .up-del {
+                width: 28px;
+                height: 28px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                color: #999;
+                cursor: pointer;
+                background: #f2f2f7;
+                border-radius: 50%;
+                flex-shrink: 0;
             }
         </style>
 
@@ -7464,13 +7689,12 @@ window.openStickerUploader = function() {
 };
 
 window.closeStickerUploader = function() {
-    const container = document.querySelector('.sticker-picker-container');
-    container.classList.add('closing');
-    
-    setTimeout(() => {
-        container.classList.remove('active', 'closing');
-        container.style.display = 'none';
-    }, 300);
+    const overlay = document.getElementById('sticker-upload-overlay');
+    if (overlay) {
+        overlay.style.display = 'none'; // 直接把它隐藏掉
+    }
+
+    tempStickerUploads = []; 
 };
 
 // 切换 视图模式 / 批量文本模式 (带自动隐藏底部逻辑)
@@ -7918,7 +8142,58 @@ window.triggerFileUpload = function() {
         setTimeout(() => document.getElementById('hidden-font-input').click(), 100);
     }
 };
+// ==========================================================
+// ★ 补充：应用链接与恢复默认 (强力清场版)
+// ==========================================================
 
+// 4. 应用输入的网络链接
+window.applyFontUrl = function() {
+    const input = document.getElementById('font-url-input');
+    const url = input ? input.value.trim() : '';
+
+    if (!url || url.startsWith('[本地文件')) {
+        showSystemAlert('宝宝，请输入正确的字体链接哦！');
+        return;
+    }
+
+    showSystemAlert('正在应用网络字体...');
+
+    // ★ 核心修复：必须先把霸道的“本地文件”从数据库踢出去，避免争宠！
+    localforage.removeItem('Wx_Global_Font_File').then(() => {
+        // 然后存入新的链接
+        return localforage.setItem('Wx_Global_Font', url);
+    }).then(() => {
+        // 渲染到页面
+        return applyFontToDom(url);
+    }).then(() => {
+        showSystemAlert('字体应用成功啦！');
+    }).catch(e => {
+        console.error(e);
+        showSystemAlert('字体链接好像失效了或者不支持跨域哦 (T_T)');
+    });
+};
+
+// 5. 恢复默认字体
+window.resetDefaultFont = function() {
+    // ★ 核心修复：把文件和链接的本地缓存全都删得干干净净！
+    Promise.all([
+        localforage.removeItem('Wx_Global_Font_File'),
+        localforage.removeItem('Wx_Global_Font')
+    ]).then(() => {
+        // 1. 清空输入框
+        const input = document.getElementById('font-url-input');
+        if (input) input.value = '';
+        document.documentElement.style.removeProperty('--global-font');
+        
+        // 3. 重置预览区域
+        const preview = document.getElementById('font-preview-text');
+        if (preview) preview.style.fontFamily = '';
+
+        showSystemAlert('已经恢复默认字体噜(￣▽￣)');
+    }).catch(e => {
+        console.error('恢复默认失败:', e);
+    });
+};
 /* ========================================================
    常驻好友小组件逻辑 (点击换头 + 自动保存)
    ======================================================== */
@@ -8445,52 +8720,55 @@ window.openApp = function(appId) {
 };
 
 window.closeApp = function(specificId) {
-    // 1. 智能识别 ID (兼容 'kugou' 简写和完整 ID)
+
     let targetId;
     if (!specificId) {
         targetId = null; // 关闭所有
     } else if (specificId === 'kugou' || specificId === 'music') {
         targetId = 'app-kugou';
-    } else if (specificId.startsWith('app-window-') || specificId === 'app-kugou') {
+    } else if (specificId === 'worldbook') {
+        targetId = 'worldbook-app'; // ★ 新增世界书专属简写识别
+    } else if (specificId.startsWith('app-window-') || specificId === 'app-kugou' || specificId === 'worldbook-app') {
         targetId = specificId;
     } else {
         targetId = 'app-window-' + specificId;
     }
 
-    // 2. 找到要关闭的窗口
-    const targets = targetId ? [document.getElementById(targetId)] : document.querySelectorAll('.app-window, #app-kugou');
-    
-    // 3. 执行关闭动画
+    const targets = targetId ? [document.getElementById(targetId)] : document.querySelectorAll('.app-window, #app-kugou, #worldbook-app');
+
     targets.forEach(el => {
         if(el && el.style.display !== 'none') {
             el.classList.remove('active');
-            el.classList.add('closing'); 
-            
-            // 恢复动态岛 (如果之前变长了，现在缩回去)
+            el.classList.add('closing');
+
             const island = document.getElementById('dynamic-island');
             if(island) {
                 island.classList.remove('expanded');
-                island.style.width = ''; 
+                island.style.width = '';
                 island.style.height = '';
                 island.style.borderRadius = '';
                 const content = document.getElementById('island-content');
                 if(content) content.style.display = 'none';
             }
-
+            
             // 动画结束后隐藏 DOM
             setTimeout(() => {
                 if(!el.classList.contains('active')) {
                     el.style.display = 'none';
                     el.classList.remove('closing');
+
+                    if (el.id === 'worldbook-app' && typeof backToWBHome === 'function') {
+                        backToWBHome(false);
+                    }
                 }
-            }, 350); 
+            }, 350);
         }
     });
 
     const allHomeBars = document.querySelectorAll('.home-bar');
     allHomeBars.forEach(bar => {
-        bar.style.removeProperty('background-color'); // 先清除行内样式
-        bar.style.backgroundColor = '#000'; // 强制设为黑色
+        bar.style.removeProperty('background-color'); 
+        bar.style.backgroundColor = '#000'; 
     });
 };
 
