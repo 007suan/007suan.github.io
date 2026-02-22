@@ -12951,3 +12951,33 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+// ==========================================
+// ★ 检查更新与强制刷新缓存逻辑
+// ==========================================
+window.checkForUpdates = function() {
+    // 1. 先给用户一个心理预期
+    if (typeof showSystemAlert === 'function') {
+        showSystemAlert('正在检查并同步最新版本...(๑＞＜)☆');
+    }
+
+    // 2. 延迟 1.5 秒，让提示飞一会儿，然后执行“强行刷新”魔法
+    setTimeout(() => {
+        // 如果你的 Web 变成了桌面 App (PWA)，可能会用到 Service Worker，这里尝试强制更新它
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.update(); 
+                }
+            });
+        }
+
+        // ★ 核心魔法：在网址后面偷偷加一个时间戳，骗过浏览器！
+        // 浏览器一旦看到网址变了，就会乖乖去服务器重新下载最新的代码，不再用旧缓存！
+        const currentUrl = window.location.href.split('?')[0]; // 去掉旧的参数
+        const timeStamp = new Date().getTime(); // 获取当前时间的毫秒数
+        
+        // 执行强制跳转并刷新
+        window.location.replace(`${currentUrl}?v=${timeStamp}`);
+        
+    }, 1500);
+};
