@@ -46,10 +46,7 @@ input, textarea, [contenteditable="true"] {
 }
 
 html {
-    -webkit-text-size-adjust: 100%;
-    overflow: hidden;
-    overscroll-behavior-y: none;
-}
+    -webkit-text-size-adjust: 100%; }
 
 body {
     margin: 0;
