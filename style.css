@@ -20,43 +20,31 @@
     font-family: var(--font-family);
 } 
 
-/* ========================================== */
-/* ★ 全局重置与原生 APP 级体验 (究极融合版) ★ */
-/* ========================================== */
-
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    /* 禁止双击缩放和点击闪烁 */
+    /* 禁止双击缩放 */
     -webkit-tap-highlight-color: transparent;
-    /* 禁止长按选中文字 (像原生APP一样) */
+    /* 禁止长按选中文字 */
     -webkit-user-select: none;
     user-select: none;
-    
-    /* ★ 补充魔法：让苹果手机上的字体更清晰平滑 */
-    -webkit-font-smoothing: antialiased; 
-    -moz-osx-font-smoothing: grayscale;
 }
 
-/* ★ 补充魔法：隐藏所有丑陋的原生滚动条，保持页面清爽 */
-::-webkit-scrollbar {
-    width: 0px;
-    height: 0px;
-    background: transparent;
-}
-
-/* 允许输入框被选中，并去除 iOS 默认奇葩样式 */
+/* 允许输入框被选中 */
 input, textarea, [contenteditable="true"] {
     -webkit-user-select: text;
     user-select: text;
-    /* ★ 补充魔法：干掉 iOS 原生输入框自带的阴影和凸起 */
+    /* 【新增】干掉 iOS 默认的表单内阴影和圆角样式 */
     -webkit-appearance: none;
     appearance: none;
 }
 
 html {
     -webkit-text-size-adjust: 100%;
+    /* 【新增】兼容老版本浏览器的 fallback */
+    height: 100vh; 
+    height: 100dvh; 
 }
 
 body {
@@ -64,26 +52,17 @@ body {
     font-family: 'bulangni', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     font-weight: normal;
     background-color: #f0f2f5;
-    
-    /* ★ 核心修改：把 100dvh 放到 body 里，并加上 100vw */
-    height: 100dvh; 
-    width: 100vw;
+    height: 100%; 
     overflow: hidden; 
+    /* 【新增】禁止 iOS/安卓 边缘的“橡皮筋”回弹效果，更像原生APP */
+    overscroll-behavior: none; 
     
-    /* ★ 核心魔法 1：彻底禁止 iOS 的上下拉大白边回弹（橡皮筋效应） */
-    overscroll-behavior-y: none; 
-
-    /* ★★★ 核心魔法 2：安全区域适配 (刘海屏/黑条终结者) ★★★ */
-    /* 浏览器会自动计算你的手机刘海有多大，然后把页面往下推！ */
-    padding-top: env(safe-area-inset-top);       
-    padding-bottom: env(safe-area-inset-bottom); 
-    padding-left: env(safe-area-inset-left);     
-    padding-right: env(safe-area-inset-right);   
+    /* 【新增】适配刘海屏、灵动岛和底部小黑条，防止内容被遮挡 */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
 }
-
-/* ========================================== */
-/* 下面的输入框样式保持你的原样！ */
-/* ========================================== */
 
 /* iOS风输入框样式 */
 [contenteditable="true"] {
@@ -94,7 +73,9 @@ body {
     min-width: 20px;
     cursor: text;
     transition: background-color 0.2s;
+    font-size: 16px; 
 }
+
 [contenteditable="true"]:focus {
     background-color: rgba(225, 225, 230, 0.9);
     outline: none;
