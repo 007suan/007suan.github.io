@@ -1,0 +1,23 @@
+{
+  "name": "kkk...",
+  "short_name": "kkk",
+  "description": "神秘小手机！",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f2f2f7",
+  "theme_color": "#f2f2f7",
+  "icons": [
+    {
+      "src": "https://i.postimg.cc/gkZMz1xW/IMG-7800.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://i.postimg.cc/gkZMz1xW/IMG-7800.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

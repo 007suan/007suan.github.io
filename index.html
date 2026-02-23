@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>kkk...</title>
+    <meta name="apple-mobile-web-app-title" content="kkk..."> 
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="format-detection" content="telephone=no">
-    <meta name="theme-color" content="#f2f2f7">
+    
+    <link rel="manifest" href="manifest.json">
+
+    <meta name="format-detection" content="telephone=no, email=no, date=no, address=no"> <meta name="theme-color" content="#f2f2f7">
     <meta name="referrer" content="no-referrer">
 
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,7 +20,7 @@
     <link rel="apple-touch-icon" sizes="167x167" href="https://i.postimg.cc/gkZMz1xW/IMG-7800.jpg">
 
     <meta name="mobile-web-app-capable" content="yes">
-    <link rel="icon" type="image/png" href="https://i.postimg.cc/gkZMz1xW/IMG-7800.jpg">
+    <link rel="icon" type="image/jpeg" href="https://i.postimg.cc/gkZMz1xW/IMG-7800.jpg">
 
     <link rel="stylesheet" href="style.css">
 </head>
@@ -61,29 +65,36 @@
 
 <div class="desktop-wrapper" onscroll="updateDesktopDots(this)">
     
-    <div class="desktop-page" id="page-1">
-        <div style="height: 5px;"></div> 
+<div class="desktop-page" id="page-1">
+    <div style="height: 5px;"></div> 
+    
+    <div class="desktop-row-split">
+        <div class="big-photo-widget upload-img" style="flex: 1; border-radius: 20px; position: relative;">
+            <div class="photo-tag edit-text" style="bottom: 12px; left: 12px; font-size: 11px;">Keep happiness</div>
+            <div class="tw-bottom-label">iScreen</div>
+        </div>
         
-        <div class="calendar-widget">
-            <div class="cal-header">
-                <div class="cal-date-area">
-                    <div class="cal-date-big" id="widget_date_num">01/01</div>
-                    <div class="cal-day-text" id="widget_day_text">星期五</div>
-                </div>
-                <div class="cal-text-area">
-                    <div class="edit-text cal-sub-text" style="text-align:right;" id="widget_text">幸福的秘诀是拥有苹果时只在意苹果。<br>(๑＞＜)☆</div>
-                    <div class="edit-text cal-main-text" style="margin-top:4px; text-align:right;" id="widget_text-2">𝗪𝗶𝗻𝘁𝗲𝗿.🌨</div>
-                </div>
+        <div class="p3-app-grid" style="flex: 1; margin: 0; padding: 0;">
+            <div class="app-item" onclick="openApp('Safari')">
+                <div id="app-icon-Safari-p1" class="app-icon" style="background-image: url('https://i.postimg.cc/sDHRFw7Y/无标题119_20260117103533.png');"></div>
+                <div class="app-name">Safari浏览器</div>
             </div>
-            <div class="cal-photo-grid">
-                <div class="cal-photo-item upload-img" id="cal_p_1"><div class="wave-box"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div></div>
-                <div class="cal-photo-item upload-img" id="cal_p_2"><div class="wave-box"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div></div>
-                <div class="cal-photo-item upload-img" id="cal_p_3"><div class="wave-box"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div></div>
-                <div class="cal-photo-item upload-img" id="cal_p_4"><div class="wave-box"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div></div>
+            <div class="app-item" onclick="openApp('kugou')">
+                <div id="app-icon-kugou-p1" class="app-icon" style="background-color: #fff; background-image: url('https://i.postimg.cc/J4YWwPZb/无标题119_20260117103559.png');"></div>
+                <div class="app-name">酷狗音乐</div>
+            </div>
+            <div class="app-item" onclick="openApp('memo')">
+                <div id="app-icon-memo-p1" class="app-icon" style="background-image: url('https://i.postimg.cc/YqQc9gbz/wu-biao-ti124-20260209110952.png');"></div>
+                <div class="app-name">备忘录</div>
+            </div>
+            <div class="app-item" onclick="openApp('xiaohongshu')">
+                <div id="app-icon-xhs-p1" class="app-icon" style="background-image: url('https://i.postimg.cc/yY0qd9vr/wu-biao-ti124-20260209111026.png');"></div>
+                <div class="app-name">小红书</div>
             </div>
         </div>
-<div class="simple-widget-wrapper" style="margin-top: 20px;">
-    <div class="outer-glass-wrapper">
+    </div>
+
+    <div class="simple-widget-wrapper" style="margin-top: 25px; width: 100%;">
         <div class="social-card-mini" id="widget_large">
             <div class="card-header">
                 <div class="stars edit-text" id="widget_large_text">★★★</div>
@@ -100,7 +111,7 @@
                 </div>
                 <div class="text-section">
                     <div class="edit-text content-bubble" id="widget_large_text-2">
-我只是想要一个拥抱 这很难做到吗( ˘•ω•˘ )那行吧…我不计较了
+                        我只是想要一个拥抱 这很难做到吗( ˘•ω•˘ )那行吧…我不计较了
                     </div>
                 </div>
             </div>
@@ -117,27 +128,36 @@
                 </div>
             </div>
         </div>
+<div class="tw-bottom-label" style="position: relative; left: 0; transform: none; width: 100%; text-align: center; margin-top: 10px; bottom: auto;">Top Widgets⁺</div>
     </div>
-</div>
-        <div class="app-grid">
-<div class="app-item" onclick="openAlipay()">
-                    <div id="app-icon-Alipay-p1" class="app-icon" style="background-image: url('https://i.postimg.cc/Kv8ysdkp/wu-biao-ti119-20260117103413.png');"></div>
-    <div class="app-name">Alipay</div>
-</div>
-<div class="app-item" onclick="openApp('instagram')">
-    <div id="app-icon-ins-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/xT53YS6L/wu-biao-ti136-20260218150946.png');"></div>
-    <div class="app-name">Instagram</div>
-</div>
-                <div class="app-item" onclick="openApp('Memo')">
-                    <div id="app-icon-Memo-p1" class="app-icon" style="background-image: url('https://i.postimg.cc/YqQc9gbz/wu-biao-ti124-20260209110952.png');"></div>
-                    <div class="app-name">备忘录</div>
-</div>
-                <div class="app-item" onclick="openApp('xiaohongshu')">
-                    <div id="app-icon-xiaohongshu-p1" class="app-icon" style="background-image: url('https://i.postimg.cc/yY0qd9vr/wu-biao-ti124-20260209111026.png');"></div>
-                    <div class="app-name">小红书</div>
-</div>
+
+    <div class="desktop-row-split" style="margin-top: 15px;">
+        <div class="p3-app-grid" style="flex: 1; margin: 0; padding: 0;">
+            <div class="app-item" onclick="openAlipay()">
+                <div id="app-icon-Alipay-p1" class="app-icon" style="background-image: url('https://i.postimg.cc/Kv8ysdkp/wu-biao-ti119-20260117103413.png');"></div>
+                <div class="app-name">Alipay</div>
+            </div>
+            <div class="app-item" onclick="openApp('instagram')">
+                <div id="app-icon-ins-p2" class="app-icon" style="background-image: url('https://i.postimg.cc/xT53YS6L/wu-biao-ti136-20260218150946.png');"></div>
+                <div class="app-name">Instagram</div>
+            </div>
+            <div class="app-item" onclick="openApp('Find My')">
+                <div id="app-icon-Find My-p1" class="app-icon" style="background-image: url('https://i.postimg.cc/FsY1KCpF/无标题119_20260117234051.png');"></div>
+                <div class="app-name">查找</div>
+            </div>
+            <div class="app-item" onclick="openApp('family')">
+                <div id="app-icon-family-p1" class="app-icon" style="background-image: url('https://i.postimg.cc/28wQ4QFJ/无标题124_20260209131952.png');"></div>
+                <div class="app-name">家庭</div>
+            </div>
+        </div>
+
+        <div class="big-photo-widget upload-img" style="flex: 1; border-radius: 20px; position: relative;">
+            <div class="photo-tag edit-text" style="bottom: 12px; left: 12px; font-size: 11px;">Focus</div>
+            <div class="tw-bottom-label">iScreen</div>
         </div>
     </div>
+
+</div>
 <div class="desktop-page" id="page-2" style="overflow-y: auto; padding-top: 60px; padding-bottom: 80px;">
     <div style="height: 10px;"></div>
 
@@ -295,12 +315,12 @@
             </div>
         </div>
 
-        <div style="width: 340px; height: 160px; margin: 0 auto; position: relative; margin-top: 20px;">
+<div style="width: 98%; max-width: 340px; height: 160px; margin: 0 auto; position: relative; margin-top: 20px;">
             
             <div class="doris-music-card">
                 <div class="dm-profile-area">
                     <div class="dm-avatar-box">
-                        <img src="" class="dm-avatar upload-img">
+<div class="dm-avatar upload-img"></div>
                         <div class="dm-note-bubble">🎵</div>
                     </div>
                     <div class="dm-user-info">
@@ -807,10 +827,17 @@
     <div class="sub-content" style="padding: 0;">
         
         <div class="theme-preset-area">
-            <div class="theme-header-row">
+            <div class="theme-header-row" style="display: flex; justify-content: space-between; align-items: center;">
                 <div class="theme-title">My Themes</div>
-                <div class="theme-add-btn" onclick="saveCurrentTheme()">
-                    <span>+</span> Save As Preset
+                
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div class="theme-add-btn" style="background: #e5e5ea; color: #666; padding: 6px 14px;" onclick="resetDefaultIcons()">
+                        <span style="font-size: 14px;">↺</span> 恢复默认
+                    </div>
+                    
+                    <div class="theme-add-btn" onclick="saveCurrentTheme()">
+                        <span>+</span> Save As Preset
+                    </div>
                 </div>
             </div>
             <div id="theme-preset-list" class="preset-scroll-view">
@@ -853,59 +880,91 @@
     </div>
 </div>
 
-<div id="sub-wallpaper" class="sub-page">
-    <div class="sub-header" style="background:#FAFAFA; border:none;">
-        <div class="back-btn" onclick="closeSubPage('sub-wallpaper')">‹</div>
-        <span style="color:#333; font-weight:800;">Wallpaper</span>
+<div id="sub-wallpaper" class="sub-page ios-wallpaper-page">
+    <div class="ios-wp-header">
+        <div class="ios-wp-back" onclick="closeSubPage('sub-wallpaper')">
+            <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+            <span>设置</span>
+        </div>
+        <div class="ios-wp-title">墙纸</div>
+        <div style="width: 60px;"></div>
     </div>
     
-    <div class="sub-content" style="padding: 20px;">
-        <div class="wall-preview-card" id="wall-current-preview">
-            <div class="wall-tag">Current</div>
-        </div>
-
-        <div style="margin-top: 30px; font-size: 13px; color: #999; font-weight: 600; margin-bottom: 15px;">GALLERY</div>
-<div class="blur-control-card">
-    <div class="bcc-header">
-        <span>💧 壁纸特效 (Effects)</span>
-        <div class="bcc-reset" onclick="resetWallpaperEffects()">重置</div>
-    </div>
-
-    <div class="bcc-row">
-        <div class="bcc-label">
-            <span>模糊 (Blur)</span>
-            <span id="val-blur" class="bcc-num">0%</span>
-        </div>
-        <input type="range" class="ios-slider-range" min="0" max="20" step="0.5" value="0" 
-               oninput="updateBgBlur(this.value)">
-    </div>
-
-    <div class="bcc-row">
-        <div class="bcc-label">
-            <span>边缘 (Edge)</span>
-            <span id="val-edge" class="bcc-num">0%</span>
-        </div>
-        <input type="range" class="ios-slider-range" min="0" max="0.8" step="0.05" value="0" 
-               oninput="updateBgEdge(this.value)">
-    </div>
-
-    <div class="bcc-row">
-        <div class="bcc-label">
-            <span>亮度 (Dim)</span>
-            <span id="val-dim" class="bcc-num">100%</span>
-        </div>
-        <input type="range" class="ios-slider-range" min="50" max="100" step="1" value="100" 
-               oninput="updateBgDim(this.value)">
-    </div>
-</div>
-
-<div style="height: 20px;"></div>
-        <div class="wall-grid">
-            <div class="wall-item add-btn" onclick="triggerBgUpload('desktop')">
-                <div class="wall-plus">+</div>
-                <span>Upload</span>
-            </div>
+    <div class="ios-wp-content">
+        <div class="ios-wp-main-card">
+            <div class="ios-wp-current-label">当前</div>
             
+            <div class="ios-wp-preview-section">
+                <div class="ios-mockup-phone" id="wall-lock-preview">
+                    <div class="mock-ui-layer">
+                        <div class="mock-ls-date">1月9日周二 · 丙戌年冬月廿一</div>
+                        <div class="mock-ls-time">09:41</div>
+                    </div>
+                    <div class="ios-customize-btn">自定义</div>
+                </div>
+
+                <div class="ios-mockup-phone" id="wall-current-preview">
+                    <div class="mock-ui-layer" style="justify-content: space-between;">
+                        <div style="display:flex; justify-content:space-between; gap:8%;">
+                            <div class="mock-placeholder" style="width: 46%; aspect-ratio:1;"></div>
+                            <div style="width: 46%; aspect-ratio:1; display:grid; grid-template-columns:1fr 1fr; gap:12%;">
+                                <div class="mock-placeholder"></div><div class="mock-placeholder"></div>
+                                <div class="mock-placeholder"></div><div class="mock-placeholder"></div>
+                            </div>
+                        </div>
+                        <div class="mock-placeholder" style="width:100%; aspect-ratio:2.1; margin-top:8%;"></div>
+                        <div style="display:flex; justify-content:space-between; margin-top:8%;">
+                            <div class="mock-placeholder" style="width: 18%; aspect-ratio:1; border-radius:6px;"></div>
+                            <div class="mock-placeholder" style="width: 18%; aspect-ratio:1; border-radius:6px;"></div>
+                            <div class="mock-placeholder" style="width: 18%; aspect-ratio:1; border-radius:6px;"></div>
+                            <div class="mock-placeholder" style="width: 18%; aspect-ratio:1; border-radius:6px;"></div>
+                        </div>
+                        
+                        <div style="margin-top:auto; height:15%; background:rgba(255,255,255,0.3); backdrop-filter:blur(10px); border-radius:12px; display:flex; justify-content:space-evenly; align-items:center;">
+                            <div class="mock-placeholder" style="width: 18%; aspect-ratio:1; border-radius:6px;"></div>
+                            <div class="mock-placeholder" style="width: 18%; aspect-ratio:1; border-radius:6px;"></div>
+                            <div class="mock-placeholder" style="width: 18%; aspect-ratio:1; border-radius:6px;"></div>
+                            <div class="mock-placeholder" style="width: 18%; aspect-ratio:1; border-radius:6px;"></div>
+                        </div>
+                    </div>
+                    <div class="ios-customize-btn">自定义</div>
+                </div>
+            </div>
+
+            <div class="ios-add-wp-btn" onclick="triggerBgUpload('desktop')">
+                <span style="font-size: 16px; line-height: 1;">+</span> 添加新墙纸
+            </div>
+        </div>
+
+        <div class="ios-wp-hint-card">
+            <div class="ios-wp-hint-text">
+                <div class="ios-wp-hint-title">从锁定屏幕更改墙纸</div>
+                <div class="ios-wp-hint-sub">按住锁定屏幕添加、编辑墙纸和小组件，或在不同墙纸和小组件之间切换。</div>
+            </div>
+            <div class="ios-wp-hint-icon">
+                <div style="position:absolute; top:20%; left:50%; transform:translateX(-50%); font-size:6px; color:#fff;">9:41</div>
+            </div>
+        </div>
+
+        <div class="ios-effects-group">
+            <div class="ios-effect-row">
+                <div class="ios-effect-label">模糊</div>
+                <input type="range" class="ios-effect-slider" min="0" max="20" step="0.5" value="0" oninput="updateBgBlur(this.value)">
+                <div id="val-blur" class="ios-effect-val">0</div>
+            </div>
+            <div class="ios-effect-row">
+                <div class="ios-effect-label">边缘</div>
+                <input type="range" class="ios-effect-slider" min="0" max="0.8" step="0.05" value="0" oninput="updateBgEdge(this.value)">
+                <div id="val-edge" class="ios-effect-val">0</div>
+            </div>
+            <div class="ios-effect-row">
+                <div class="ios-effect-label">亮度</div>
+                <input type="range" class="ios-effect-slider" min="50" max="100" step="1" value="100" oninput="updateBgDim(this.value)">
+                <div id="val-dim" class="ios-effect-val">100</div>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 15px;">
+            <span style="color: #007aff; font-size: 14px; cursor: pointer;" onclick="resetWallpaperEffects()">重置壁纸特效</span>
         </div>
     </div>
 </div>
@@ -1161,7 +1220,7 @@
 
 <div id="chat-plus-menu" class="chat-plus-menu">
     
-    <div class="plus-item" onclick="handleImageUpload(this)">
+    <div class="plus-item" onclick="triggerSendImage()">
         <img src="https://i.postimg.cc/xCZd1nbx/wu-biao-ti119-20260117101708.png" class="plus-icon-img">
         <div class="plus-label">相册</div>
     </div>
@@ -1199,6 +1258,11 @@
     <div class="plus-item" onclick="toggleOfflineMode()">
         <img src="https://i.postimg.cc/kggxw2Tx/wu-biao-ti124-20260209131822.png" class="plus-icon-img">
         <div class="plus-label" id="offline-mode-label">线下</div>
+    </div>
+    
+    <div class="plus-item" onclick="regenerateLastAIResponse()">
+        <img src="https://i.postimg.cc/FsY1KCpF/无标题119_20260117234051.png" class="plus-icon-img">
+        <div class="plus-label">重回</div>
     </div>
         </div>
         
@@ -1420,6 +1484,26 @@
         <button onclick="deleteSelectedPreset()" style="height: 36px; padding: 0 14px; border-radius: 10px; background: #ff3b30; border: none; font-weight: 600; color: #fff; font-size: 12px; cursor: pointer;">删除</button>
         <button onclick="openCssPresetModal()" style="height: 36px; padding: 0 14px; border-radius: 10px; background: #007AFF; border: none; font-weight: 600; color: #fff; font-size: 12px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,122,255,0.2);">保存</button>
     </div>
+    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px dashed rgba(0,0,0,0.06); display: flex; flex-direction: column; gap: 12px;">
+        <div style="font-size: 11px; color: #999; font-weight: 600; letter-spacing: 0.5px;">DISPLAY SETTINGS / 显示偏好</div>
+        
+        <div style="display: flex; gap: 12px;">
+            <div id="cc-avatar-group" data-value="first" style="flex: 1; background: #f4f5f7; border-radius: 10px; padding: 4px; display: flex;">
+                <button class="ins-toggle-btn active" data-val="first" onclick="switchDisplayMode('avatar', 'first', this)" style="flex: 1; border: none; background: #fff;border-radius: 8px; font-size: 12px; color: #111; padding: 6px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); cursor: pointer; font-weight: 600; transition: all 0.2s;">只首条头像</button>
+                <button class="ins-toggle-btn" data-val="all" onclick="switchDisplayMode('avatar', 'all', this)" style="flex: 1; border: none; background: transparent; border-radius: 8px; font-size: 12px; color: #888; padding: 6px 0; cursor: pointer; font-weight: 600; transition: all 0.2s;">头像全显</button>
+            </div>
+            
+            <div id="cc-tail-group" data-value="last" style="flex: 1; background: #f4f5f7; border-radius: 10px; padding: 4px; display: flex;">
+                <button class="ins-toggle-btn active" data-val="last" onclick="switchDisplayMode('tail', 'last', this)" style="flex: 1; border: none; background: #fff; border-radius: 8px; font-size: 12px; color: #111; padding: 6px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); cursor: pointer; font-weight: 600; transition: all 0.2s;">只末条尾巴</button>
+                <button class="ins-toggle-btn" data-val="all" onclick="switchDisplayMode('tail', 'all', this)" style="flex: 1; border: none; background: transparent; border-radius: 8px; font-size: 12px; color: #888; padding: 6px 0; cursor: pointer; font-weight: 600; transition: all 0.2s;">尾巴全显</button>
+            </div>
+        </div>
+
+        <div id="cc-spacing-group" data-value="normal" style="background: #f4f5f7; border-radius: 10px; padding: 4px; display: flex;">
+            <button class="ins-toggle-btn active" data-val="normal" onclick="switchDisplayMode('spacing', 'normal', this)" style="flex: 1; border: none; background: #fff; border-radius: 8px; font-size: 12px; color: #111; padding: 6px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); cursor: pointer; font-weight: 600; transition: all 0.2s;">默认间距</button>
+            <button class="ins-toggle-btn" data-val="loose" onclick="switchDisplayMode('spacing', 'loose', this)" style="flex: 1; border: none; background: transparent; border-radius: 8px; font-size: 12px; color: #888; padding: 6px 0; cursor: pointer; font-weight: 600; transition: all 0.2s;">宽松间距</button>
+        </div>
+    </div>
 </div>
 <div class="ins-menu-item" onclick="requestDeleteChat(currentChatId); closeChatControl();">
     <div class="ins-menu-left">
@@ -1473,74 +1557,110 @@
             </div>
 
   </div>  </div>  </div> </div>
-<div id="app-window-alipay" class="app-window" style="background: #f5f7fa; display: none;">
-    
-    <div class="ali-ins-header">
-        <div class="ali-header-left">
-<div class="ali-avatar-small" 
-     style="background-image: url('你的默认头像URL')" 
-     onclick="changeAlipayUserAvatar()"> </div>
-
-            <div class="ali-user-info">
-                <div class="ali-greetings">Good Evening</div>
-                <div class="ali-username">My Wallet</div>
-            </div>
+<div id="app-window-alipay" class="app-window ins-wallet-light">
+    <div class="ins-wal-header-light">
+        <div class="ins-wal-header-left" onclick="closeApp('alipay')">
+            <svg style="width: 22px; height: 22px; fill: #111;" viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
         </div>
-        <div class="ali-header-right">
-            <svg viewBox="0 0 24 24" class="ali-icon"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+        <div class="ins-wal-title-light">↖(^ω^)↗</div>
+        <div style="width: 22px;"></div> </div>
+
+    <div class="ins-wal-balance-area">
+        <div class="ins-wal-balance-label">Total Balance</div>
+        <div class="ins-wal-balance-value">
+            <span class="ins-wal-balance-symbol">¥</span>
+            <span id="ali-total-balance">0.00</span>
+        </div>
+        <div class="ins-wal-action-group">
+            <div class="ins-wal-action-btn" onclick="showSystemAlert('充值服务准备中...')">Deposit</div>
+            <div class="ins-wal-action-btn" onclick="showSystemAlert('提现服务准备中...')">Withdraw</div>
         </div>
     </div>
 
-    <div class="ali-scroll-content">
-        
-        <div class="ali-main-card">
-            <div class="ali-card-top">
-                <span style="opacity:0.8; font-size:13px; font-weight:500;">Total Assets (CNY)</span>
-                <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:white;opacity:0.8"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-            </div>
-            <div class="ali-balance-num">¥ <span id="ali-total-balance">0.00</span></div>
-            <div class="ali-card-bottom">
-                <div class="ali-card-tag">+2.4% Income</div>
-                <div class="ali-card-tag" style="background:rgba(255,255,255,0.15)">Analysis ></div>
-            </div>
+    <div class="ins-wal-section-title-light">Quick Transfer</div>
+    <div class="ins-wal-qt-scroll" id="ali-quick-transfer-list">
         </div>
 
-        <div class="ali-grid-menu">
-            <div class="ali-menu-item" onclick="showSystemAlert('扫码功能开发中...')">
-                <div class="ali-icon-box blue"><svg viewBox="0 0 24 24"><path d="M3 5v4h2V5h4V3H5c-1.1 0-2 .9-2 2zm2 10H3v4c0 1.1.9 2 2 2h4v-2H5v-4zm14 4h-4v2h4c1.1 0 2-.9 2-2v-4h-2v4zm0-16h-4v2h4v4h2V5c0-1.1-.9-2-2-2z"/></svg></div>
-                <span>Scan</span>
-            </div>
-            <div class="ali-menu-item" onclick="showSystemAlert('收付款码已准备好')">
-                <div class="ali-icon-box blue"><svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg></div>
-                <span>Pay/Receive</span>
-            </div>
-            <div class="ali-menu-item" onclick="showSystemAlert('卡包空空如也qwq')">
-                <div class="ali-icon-box orange"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-9H4V6h16v3z"/></svg></div>
-                <span>Pocket</span>
-            </div>
-            <div class="ali-menu-item" onclick="showSystemAlert('更多服务敬请期待')">
-                <div class="ali-icon-box purple"><svg viewBox="0 0 24 24"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/></svg></div>
-                <span>More</span>
-            </div>
-        </div>
-
-        <div class="ali-section-title">Quick Transfer</div>
-<div class="ali-quick-transfer-scroll" id="ali-quick-transfer-list"> <div class="ali-qt-item" onclick="startTransferFlow()">
-        <div class="ali-qt-avatar add">+</div>
-        <span>Add</span>
+    <div class="ins-wal-section-title-light" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>Recent</span>
+        <span style="font-size: 12px; color: #999; font-weight: 500; cursor: pointer;">All...</span>
     </div>
+    <div id="ali-bill-list" class="ins-wal-bill-list-light">
+        </div>
 </div>
 
-        <div class="ali-section-title" style="margin-top:20px; display:flex; justify-content:space-between;">
-            <span>Recent Transactions</span>
-            <span style="font-size:12px; color:#007aff; font-weight:400;">All ></span>
+<div id="transfer-receive-page" class="transfer-page-anim" style="background: #ffffff; display: none; flex-direction: column; height: 100vh; position: fixed; top: 0; left: 0; width: 100vw; z-index: 20000;">
+    <div style="padding: 50px 20px 20px; display: flex; align-items: center;">
+        <div onclick="closeTransferReceivePage()" style="padding: 10px; margin-left: -10px; cursor: pointer;">
+            <svg style="width: 24px; height: 24px; fill:#000;" viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+        </div>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; padding-top: 40px;">
+        <div style="width: 56px; height: 56px; background: #FF9800; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-bottom: 20px;">
+            <svg style="width: 32px; height: 32px; fill: white;" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/><path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+        </div>
+        <div style="font-size: 16px; color: #333; margin-bottom: 20px; font-weight: 500;">待确认收款</div>
+        <div style="font-size: 50px; font-weight: 600; color: #000; margin-bottom: 50px; display: flex; align-items: baseline; font-family: -apple-system, sans-serif;">
+            <span style="font-size: 30px; margin-right: 5px; font-weight: 500;">¥</span>
+            <span id="tr-amount-display">0.00</span>
         </div>
         
-        <div id="ali-bill-list" class="ali-ins-list">
+        <div style="width: 100%; padding: 0 40px; box-sizing: border-box; margin-bottom: auto;">
+            <div style="display: flex; justify-content: space-between; border-top: 1px solid #f0f0f0; padding-top: 20px; font-size: 14px; color: #888;">
+                <span>转账时间</span>
+                <span id="tr-time-display">--</span>
             </div>
-
-        <div style="height: 40px;"></div>
+        </div>
+        
+        <div style="width: 100%; padding: 0 40px 60px; box-sizing: border-box; text-align: center;">
+            <div id="tr-accept-btn" style="background: #07C160; color: white; padding: 14px; border-radius: 6px; font-size: 16px; font-weight: 600; margin-bottom: 20px; cursor: pointer; letter-spacing: 1px;">确认收款</div>
+            <div style="font-size: 12px; color: #b2b2b2;">
+                1天内未收款，将退款给对方。<span id="tr-refund-btn" style="color: #576B95; cursor: pointer;">立即退还</span>
+            </div>
+        </div>
     </div>
+</div>
+<div id="receipt-overlay" style="display: none;" onclick="closeTransactionReceipt()">
+    <div class="receipt-paper" onclick="event.stopPropagation()">
+        <div class="receipt-header">
+            <div class="rcpt-cute-text">~ Today is a nice day ~</div>
+            <div class="rcpt-title">RECEIPT</div>
+            <div class="rcpt-subtitle">Transaction Record</div>
+        </div>
+        
+        <div class="rcpt-divider"></div>
+        
+        <table class="rcpt-table">
+            <tr>
+                <th style="text-align: left;">ITEM</th>
+                <th style="text-align: right;">AMOUNT</th>
+            </tr>
+            <tr>
+                <td id="rcpt-item-name" style="padding-top: 10px;">Transfer</td>
+                <td id="rcpt-item-amt" style="text-align: right; padding-top: 10px;">10.00¥</td>
+            </tr>
+            <tr>
+                <td style="font-size: 10px; color: #666; padding-top: 4px;">Status</td>
+                <td style="font-size: 10px; color: #666; text-align: right; padding-top: 4px;">Completed</td>
+            </tr>
+        </table>
+        
+        <div class="rcpt-divider"></div>
+        
+        <div class="rcpt-total-area">
+            <span>TOTAL:</span>
+            <span id="rcpt-total-val">10.00¥</span>
+        </div>
+        
+        <div class="rcpt-barcode"></div>
+        
+        <div class="rcpt-footer">
+            <div style="font-size: 18px; margin-bottom: 5px;">^>⸝⸝⸝⸝<^</div>
+            <div id="rcpt-date-str">2026.02.23 MONDAY</div>
+            <div class="rcpt-close-btn" onclick="closeTransactionReceipt()">[ CLOSE ]</div>
+        </div>
+    </div>
+</div>
 </div> </div> </div>
 
         <div id="sub-page-creator" class="exp-theme-root" style="display: none;">
@@ -1664,19 +1784,19 @@
                 <svg viewBox="0 0 24 24" width="30" height="30" fill="#ccc"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
             </div>
         </div>
+<div class="wx-options-list">
+    <div class="wx-opt-item" onclick="changeLocation()">
+        <img src="https://i.postimg.cc/yWCzHdyK/wu-biao-ti117-20260110141805.png" class="wx-opt-icon" style="width: 24px; height: 24px;">
+        <div class="wx-opt-text">Location</div>
+        <div class="wx-opt-right">
+            <span id="post-location-label" style="color:#999; font-size:14px;">Moon</span>
+            <svg class="wx-opt-arrow-v2" viewBox="0 0 24 24" style="width:18px; height:18px; fill:#c7c7cc; margin-left:4px;">
+                <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+            </svg>
+        </div>
+    </div>
+</div>
 
-        <div class="wx-options-list">
-            <div class="wx-opt-item" onclick="showSystemAlert('定位中...（假的，谢谢！）')">
-                <img src="https://i.postimg.cc/yWCzHdyK/wu-biao-ti117-20260110141805.png" class="wx-opt-icon" style="width: 24px; height: 24px;">
-                <div class="wx-opt-text">Location</div>
-                <div class="wx-opt-right">
-                    <span style="color:#999; font-size:14px;">Moon</span>
-                    <svg class="wx-opt-arrow-v2" viewBox="0 0 24 24" style="width:18px; height:18px; fill:#c7c7cc; margin-left:4px;">
-                        <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
-                    </svg>
-                </div>
-            </div>
-            
             <div class="wx-opt-item" onclick="toggleMentionSelector()">
                 <img src="https://i.postimg.cc/PNnkjxQn/wu-biao-ti117-20260110141818.png" class="wx-opt-icon" style="width: 24px; height: 24px;">
                 <div class="wx-opt-text">Mention</div>
