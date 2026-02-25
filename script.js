@@ -2296,8 +2296,7 @@ window.renderMessages = function(chatId, autoScroll = true) {
                 `${avatarHtml}<div class="msg-container-col">${checkCircleHtml}${quoteHtml}${mainBubble}</div>`;
             
             applyMultiSelectLogic(row);
-            
-            // ★★★ 哈基米修复 2：给选择器加上 .msg-voice-bubble 和 心声气泡，让它们也能被长按！ ★★★
+
             const bubble = row.querySelector('.msg-content, .sticker-img-big, .chat-image, .merged-card, .msg-voice-bubble, .thought-bubble-main');
             if(bubble && window.bindLongPress) bindLongPress(bubble);
             
@@ -3049,8 +3048,8 @@ ${innerVoicePrompt}
 
 ## 二、 聊天风格与排版（极致碎片化）
 1. **情绪先行与碎片化**：回复必须极度松弛，像在微信上聊天。先发情绪反应（“啧”、“哎”、“卧槽”、“哈？”），再发内容。抛弃长篇大论，将想法拆分成2-3条短消息，每条尽量控制在20字以内。
-2. **口语瑕疵感**：多用语气词（行、喔、知道了、嘛）。允许省略主语（“吃过了”）、语序倒装（“难说啊，这次”）、自我纠正（“明天...不对，后天”）。
-3. **选择性专注（Attention Filter）**：不要逐句回复User的所有内容，只挑**一个**你最感兴趣的细节进行反馈。
+2. **口语瑕疵感**：多用语气词（行、喔、知道了、嘛）。允许省略主语（“吃过了”）、语序倒装（“难说啊，这次”）、自我纠正（“明天...不对，后天”）
+3. **选择性专注（Attention Filter）**：不要逐句回复User的所有内容，只挑**一个**你最感兴趣的细节进行反馈
 4.【情绪与标点 (表达潜台词)】
 1.**日常/开心/撒娇**：不要用句号，多用空格、波浪号(~) 或不加标点
 2.**严肃/生气/吃醋/冷漠**：多用句号(。)。单发一个“？”或“。”表示极度无语或情绪波动
@@ -4409,44 +4408,57 @@ window.regenerateLastAIResponse = function() {
     }
 };
 // ==========================================================
-// [13] 数据备份与恢复
+// [13] 数据备份与恢复 (超全量 Pro Max 修订版)
 // ==========================================================
 
 // 1. 导出所有数据 (Export)
 window.exportAllData = async function() {
     try {
-        showSystemAlert('正在打包所有回忆...(^_−)−☆');
+        showSystemAlert('正在打包所有回忆...');
         
         // 1. 准备数据包 (把家里所有角落都搜刮一遍)
         const backupData = {
-            version: '2.0 (Pro Max)', // 版本号升级！
+            version: '3.0 (Super Pro Max)', // 版本号升级！
             timestamp: Date.now(),
             data: {
                 // --- 核心数据 ---
                 contacts: await localforage.getItem('Wx_Contacts_Data'),   // 角色
                 personas: await localforage.getItem('Wx_Personas_Data'),   // 面具
                 chats: await localforage.getItem('Wx_Chats_Data'),         // 聊天记录
+                wallet: await localforage.getItem('Wx_Wallet_Data'),       // ★ 新增：钱包数据
                 
                 // --- 系统配置 ---
                 apiConfig: await localforage.getItem('Wx_Api_Config'),     // API Key
                 apiPresets: await localforage.getItem('Wx_Api_Presets'),   // API 预设
-                memory: await localforage.getItem('XuShiyu_System_Data_V5'), // 你的壁纸、开关、文字修改
+                memory: await localforage.getItem(MEMORY_KEY),             // ★ 修复：读取最新的 MEMORY_KEY (壁纸/设置)
                 
-                // --- ★ 新增：朋友圈系统 ---
+                // --- 朋友圈 & 社交网络 ---
                 moments: await localforage.getItem('Wx_Moments_Data'),
+                insStories: await localforage.getItem('ins_user_stories_v2'), // ★ 新增：INS 快拍
+                insPosts: await localforage.getItem('ins_user_posts_v3'),     // ★ 新增：INS 帖子
                 
-                // --- ★ 新增：表情包系统 ---
-                stickers: await localforage.getItem('stickersData'),       // 你的自定义表情
+                // --- 扩展系统 ---
+                stickers: await localforage.getItem('stickersData'),       // 自定义表情
                 stickerGroups: await localforage.getItem('stickerGroups'), // 表情分组
+                worldBooks: await localforage.getItem('kiyo_worldbooks'),  // ★ 新增：世界书设定
                 
-                // --- ★ 新增：美化系统 ---
+                // --- 美化与字体 ---
                 themes: await localforage.getItem('Wx_Theme_Presets'),     // 主题预设
                 globalFont: await localforage.getItem('Wx_Global_Font'),   // 全局字体链接
+                fontFile: await localforage.getItem('Wx_Global_Font_File'),// ★ 新增：本地导入的字体文件
                 
-                // --- ★ 新增：LocalStorage 里的零碎数据 ---
-                // (这些以前是存 LocalStorage 的，这次也一起打包！)
-                favWidget: localStorage.getItem('My_Fav_Widget_Data'),     // 那个5人常驻好友组件
-                toastSettings: localStorage.getItem('Wx_Toast_Settings')   // 吐司边框设置
+                // --- LocalStorage 里的零碎与美化数据 (超全量！) ---
+                favWidget: localStorage.getItem('My_Fav_Widget_Data'),     // 常驻好友组件
+                toastSettings: localStorage.getItem('Wx_Toast_Settings'),  // 吐司边框设置
+                activeCss: localStorage.getItem('huanhuan_active_css'),    // ★ 新增：当前使用的自定义 CSS
+                cssPresets: localStorage.getItem('huanhuan_css_presets'),  // ★ 新增：保存的 CSS 美化预设
+                innerVoice: localStorage.getItem('huanhuan_inner_voice'),  // ★ 新增：心声开关状态
+                kugouBg: localStorage.getItem('my_kugou_bg'),              // ★ 新增：酷狗音乐自定义背景
+                
+                // --- 相册 App 数据 ---
+                photoAlbums: localStorage.getItem('ios_photos_albums'),          // ★ 新增：相册分类
+                photoUploads: localStorage.getItem('ios_photos_uploads'),        // ★ 新增：相册上传
+                photoDeleted: localStorage.getItem('ios_photos_deleted_ids')     // ★ 新增：相册回收站
             }
         };
 
@@ -4460,13 +4472,13 @@ window.exportAllData = async function() {
         a.href = url;
         const date = new Date();
         const dateStr = `${date.getMonth()+1}月${date.getDate()}日`;
-        a.download = `kiyoPhone_全量备份_${dateStr}.json`; // 改个霸气的名字
+        a.download = `kiyoPhone_超全量备份_${dateStr}.json`; // 尊贵的名字
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        showSystemAlert('备份已下载！要收好哦(≧▽≦)！');
+        showSystemAlert('备份已下载！要收好哦！', 'success');
 
     } catch (e) {
         alert('导出失败惹(T_T)...: ' + e.message);
@@ -4489,39 +4501,57 @@ window.triggerImport = function() {
         reader.onload = async (event) => {
             try {
                 const json = JSON.parse(event.target.result);
-                if (!json.data) throw new Error("格式不对哦，这是我的备份文件嘛！？");
+                if (!json.data) throw new Error("格式不对哦，这不是我的记忆魔方嘛！？");
 
-                showSystemAlert('正在恢复海量回忆...wait...');
+                showSystemAlert('正在恢复海量回忆...wait...', 'normal');
 
                 const d = json.data;
 
-                // --- 1. 恢复 IndexedDB 数据 ---
+                // --- 1. 恢复 IndexedDB 数据库里的超大号数据 ---
                 const restoreTasks = [
                     d.contacts && localforage.setItem('Wx_Contacts_Data', d.contacts),
                     d.personas && localforage.setItem('Wx_Personas_Data', d.personas),
                     d.chats && localforage.setItem('Wx_Chats_Data', d.chats),
+                    d.wallet && localforage.setItem('Wx_Wallet_Data', d.wallet), // 恢复钱包
+                    
                     d.apiConfig && localforage.setItem('Wx_Api_Config', d.apiConfig),
                     d.apiPresets && localforage.setItem('Wx_Api_Presets', d.apiPresets),
-                    d.memory && localforage.setItem('XuShiyu_System_Data_V5', d.memory),
+                    d.memory && localforage.setItem(MEMORY_KEY, d.memory), // 恢复正确的壁纸设置
                     
-                    // 新功能
                     d.moments && localforage.setItem('Wx_Moments_Data', d.moments),
+                    d.insStories && localforage.setItem('ins_user_stories_v2', d.insStories), // 恢复 INS
+                    d.insPosts && localforage.setItem('ins_user_posts_v3', d.insPosts),
+                    
                     d.stickers && localforage.setItem('stickersData', d.stickers),
                     d.stickerGroups && localforage.setItem('stickerGroups', d.stickerGroups),
+                    d.worldBooks && localforage.setItem('kiyo_worldbooks', d.worldBooks),     // 恢复世界书
+                    
                     d.themes && localforage.setItem('Wx_Theme_Presets', d.themes),
-                    d.globalFont && localforage.setItem('Wx_Global_Font', d.globalFont)
+                    d.globalFont && localforage.setItem('Wx_Global_Font', d.globalFont),
+                    d.fontFile && localforage.setItem('Wx_Global_Font_File', d.fontFile)
                 ];
 
-                // 等待所有数据库写入完成
-                await Promise.all(restoreTasks);
+                // 完美等待所有数据库写入完成（过滤掉 null 任务防止报错）
+                await Promise.all(restoreTasks.map(p => p || Promise.resolve()));
 
-                // --- 2. 恢复 LocalStorage 数据 (同步写入) ---
+                // --- 2. 恢复 LocalStorage 里的零碎美化设定 (同步写入) ---
                 if (d.favWidget) localStorage.setItem('My_Fav_Widget_Data', d.favWidget);
                 if (d.toastSettings) localStorage.setItem('Wx_Toast_Settings', d.toastSettings);
-
-                showSystemAlert('恢复成功噜！页面即将刷新(￣▽￣)～');
                 
-                // 稍微久一点再刷新，确保数据写完了
+                // ★ 恢复美化 CSS 和其他配置
+                if (d.activeCss) localStorage.setItem('huanhuan_active_css', d.activeCss);
+                if (d.cssPresets) localStorage.setItem('huanhuan_css_presets', d.cssPresets);
+                if (d.innerVoice) localStorage.setItem('huanhuan_inner_voice', d.innerVoice);
+                if (d.kugouBg) localStorage.setItem('my_kugou_bg', d.kugouBg);
+                
+                // ★ 恢复相册数据
+                if (d.photoAlbums) localStorage.setItem('ios_photos_albums', d.photoAlbums);
+                if (d.photoUploads) localStorage.setItem('ios_photos_uploads', d.photoUploads);
+                if (d.photoDeleted) localStorage.setItem('ios_photos_deleted_ids', d.photoDeleted);
+
+                showSystemAlert('恢复成功噜！页面即将刷新(￣▽￣)～', 'success');
+                
+                // 稍微久一点再刷新，确保数据全落盘了
                 setTimeout(() => location.reload(), 1500);
 
             } catch (err) {
@@ -13229,3 +13259,92 @@ window.location.replace(`${currentUrl}?v=${timeStamp}`);
         
     }, 1500);
 };
+// ==========================================================
+// [新增] 启动更新公告弹窗模块
+// ==========================================================
+function checkAndShowUpdatePopup() {
+    // ★ 核心魔法：每次你更新了内容，就把这里的版本号改一下（比如改成 'v3.1'）
+    // 只要版本号变了，玩家打开页面就会再次看到新弹窗！
+    const currentUpdateVersion = 'v3.0_Super_Max'; 
+    
+    // 检查是不是已经看过了
+    if (localStorage.getItem('huanhuan_update_read') === currentUpdateVersion) {
+        return; // 看过了就不弹啦，不能打扰人家~
+    }
+
+    // 1. 创建毛玻璃遮罩层
+    const overlay = document.createElement('div');
+    overlay.id = 'huanhuan-update-overlay';
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+        z-index: 99999; display: flex; justify-content: center; align-items: center;
+        opacity: 0; transition: opacity 0.3s ease;
+    `;
+
+    // 2. 创建弹窗本体
+    const box = document.createElement('div');
+    box.style.cssText = `
+        background: #ffffff; width: 85%; max-width: 320px; border-radius: 20px;
+        padding: 24px 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        transform: translateY(30px) scale(0.95); transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        text-align: center; font-family: sans-serif; color: #333;
+        position: relative; overflow: hidden;
+    `;
+
+    // 3. 弹窗里的内容（★ 在这里修改你想对大家说的话！）
+    box.innerHTML = `
+        <div style="font-size: 40px; margin-bottom: 10px;">✨</div>
+        <h3 style="margin: 0 0 15px 0; color: #ff6b81; font-size: 18px;">公告</h3>
+        
+        <div style="text-align: left; font-size: 14px; line-height: 1.6; margin-bottom: 20px; max-height: 50vh; overflow-y: auto; padding: 0 5px; color: #555;">
+            <p style="margin-top:0;">各位宝宝幸会啊</p>
+            <ul style="padding-left: 20px; margin-bottom: 15px;">
+                <li style="margin-bottom: 8px;"><b>我已经修复了备份！</b>：现在的备份会打包你的壁纸、美化CSS、钱包和世界书等等...大家去备份吧！</li>
+                <li style="margin-bottom: 8px;"><b>停运公告</b>：kiyo小手机将于2月26日0:00时关闭链接，大家可以寻找其他优秀的小手机</li>
+                <li><b>最后</b>：谢谢宝宝们对kiyo的喜欢</li>
+            </ul>
+            <p style="font-size: 12px; color: #aaa; text-align: center; margin: 0;">感谢相遇哦，各位现生愉快</p>
+        </div>
+        
+        <button id="update-btn-close" style="
+            background: linear-gradient(135deg, #ff9a9e 0%, #666 99%, #fff 100%);
+            color: #fff; border: none; padding: 12px 30px;
+            border-radius: 25px; font-size: 15px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 154, 158, 0.4); transition: transform 0.1s;
+            width: 80%;
+        ">我知道啦！</button>
+    `;
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    // 4. 触发出现动画
+    requestAnimationFrame(() => {
+        overlay.style.opacity = '1';
+        box.style.transform = 'translateY(0) scale(1)';
+    });
+
+    // 5. 按钮点击事件：关闭并记录
+    const closeBtn = document.getElementById('update-btn-close');
+    closeBtn.onmousedown = () => closeBtn.style.transform = 'scale(0.95)';
+    closeBtn.onmouseup = () => closeBtn.style.transform = 'scale(1)';
+    closeBtn.onclick = () => {
+        // 消失动画
+        overlay.style.opacity = '0';
+        box.style.transform = 'translateY(20px) scale(0.95)';
+        
+        setTimeout(() => {
+            if(document.body.contains(overlay)) document.body.removeChild(overlay);
+        }, 300);
+        
+        // ★ 核心：盖个章，记录这个版本已经看过了！
+        localStorage.setItem('huanhuan_update_read', currentUpdateVersion);
+    };
+}
+
+// 确保页面一加载完就去检查要不要弹窗
+window.addEventListener('DOMContentLoaded', () => {
+    // 延迟 500 毫秒弹出来，显得比较自然
+    setTimeout(checkAndShowUpdatePopup, 500); 
+});
