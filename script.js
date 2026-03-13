@@ -1264,101 +1264,170 @@ window.openSubPage = function(id) {
 // ==========================================================
 // [5] 微信业务逻辑 (WeChat Core)
 // ==========================================================
-
-window.switchWxTab = function(tabName) {
-    const globalHeader = document.querySelector('.wx-header');
+// ==========================================
+// 1. 全局主标签切换逻辑 (修复顶栏留白 & 底栏同步)
+// ==========================================
+window.switchWxTab = function(tabName, el) {
+    const globalHeader = document.querySelector('.wx-header-v4');
     
-    // 隐藏所有子页面
-    ['wx-page-chat', 'wx-page-contacts', 'wx-page-moments', 'wx-page-profile'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
+    const pages = ['wx-page-chat', 'wx-page-contacts', 'wx-page-moments', 'wx-page-profile'];
+    pages.forEach(id => {
+        const page = document.getElementById(id);
+        if (page) page.style.display = 'none';
+    });
+    document.querySelectorAll('.wx-tab-item').forEach(item => {
+        item.classList.remove('active');
     });
 
-    // 移除Tab激活状态
-    document.querySelectorAll('.wx-tab-item').forEach(el => el.classList.remove('active'));
-
-    // 逻辑分流
     if (tabName === 'chat') {
-        if(globalHeader) globalHeader.style.display = 'flex'; 
-        document.getElementById('wx-page-chat').style.display = 'block'; 
-        document.querySelectorAll('.wx-tab-item')[0].classList.add('active');
-        renderChatList();
+
+        if (globalHeader) globalHeader.style.display = 'block'; 
+        const page = document.getElementById('wx-page-chat');
+        if (page) page.style.display = 'block';
+
+        const targetTab = el || document.querySelectorAll('.wx-tab-item')[0];
+        targetTab.classList.add('active');
+        
+        if(window.renderChatList) renderChatList();
+        setTimeout(updateTabIndicatorV4, 50);
     } 
     else if (tabName === 'contacts') {
-        if(globalHeader) globalHeader.style.display = 'none'; // 通讯录自带标题
-        document.getElementById('wx-page-contacts').style.display = 'flex';
-        document.querySelectorAll('.wx-tab-item')[1].classList.add('active');
-        switchContactTab('all');
+
+        if (globalHeader) globalHeader.style.display = 'none'; 
+        const page = document.getElementById('wx-page-contacts');
+        if (page) page.style.display = 'block';
+        const targetTab = el || document.querySelectorAll('.wx-tab-item')[1];
+        targetTab.classList.add('active');
+        
+        if(window.switchContactTab) switchContactTab('all');
     } 
-
     else if (tabName === 'moments') {
-        // 1. 立即切换 UI 状态，确保点击即反应，不阻塞
-        if(globalHeader) globalHeader.style.display = 'none'; 
-        document.getElementById('wx-page-moments').style.display = 'block';
-        document.querySelectorAll('.wx-tab-item')[2].classList.add('active');
 
-        // 2. 插入加载占位符 (让宝宝先看到转圈圈，而不是卡住)
+        if (globalHeader) globalHeader.style.display = 'none'; 
+        const page = document.getElementById('wx-page-moments');
+        if (page) page.style.display = 'block';
+        const targetTab = el || document.querySelectorAll('.wx-tab-item')[2];
+        targetTab.classList.add('active');
+
         const feedContainer = document.getElementById('moments-feed-container');
         if (feedContainer) {
             feedContainer.innerHTML = `
-                <div class="moments-loading-view">
-                    <div class="moments-spinner"></div>
-                    <div class="moments-loading-text">Loading...</div>
-                </div>
-            `;
+                <div style="padding:40px; text-align:center; color:#999;">
+                    <div class="moments-spinner"></div>正在加载动态...
+                </div>`;
         }
-
         setTimeout(() => {
-            // 先渲染头部（比较快）
             if(window.renderMomentsHeader) window.renderMomentsHeader();
-            if(window.renderMomentsFeed) {
-                window.renderMomentsFeed();
-                // 渲染完后，加载动画会自动被 renderMomentsFeed 里的 innerHTML = '' 给刷掉
-            }
-            
-            console.log("✨ 朋友圈异步加载完成，丝滑倍增！");
-        }, 10); 
+            if(window.renderMomentsFeed) window.renderMomentsFeed();
+        }, 100);
     }
 
-    else if (tabName === 'me') {
-        if(globalHeader) globalHeader.style.display = 'none';
-        document.getElementById('wx-page-profile').style.display = 'flex';
-        document.querySelectorAll('.wx-tab-item')[3].classList.add('active');
-    }
+else if (tabName === 'me') {
+    if (globalHeader) globalHeader.style.display = 'none';
+    const page = document.getElementById('wx-page-me'); 
+    if (page) page.style.display = 'block';
+    const targetTab = el || document.querySelectorAll('.wx-tab-item')[3];
+    targetTab.classList.add('active');
+}
+
 };
 
+// ==========================================
+// 2. 聊天页子 Tab (Chat/Group) 下划线跟随
+// ==========================================
+function updateTabIndicatorV4() {
+    const tabsContainer = document.querySelector('.wx-blink-tabs-v4');
+    const activeLine = document.getElementById('tab-active-line');
+    if (!tabsContainer || !activeLine) return;
+    
+    const activeTab = tabsContainer.querySelector('.blink-tab-v4.active');
+    if (activeTab && activeTab.offsetWidth > 0) {
+        activeLine.style.left = activeTab.offsetLeft + 'px';
+        activeLine.style.width = activeTab.offsetWidth + 'px';
+    }
+}
+
 window.switchChatSubTab = function(subTabName, element) {
-    document.querySelectorAll('.blink-tab').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.blink-tab-v4').forEach(el => el.classList.remove('active'));
     if(element) element.classList.add('active');
 
     ['chat', 'group', 'me'].forEach(name => {
-        document.getElementById(`chat-sub-view-${name}`).style.display = 'none';
+        const view = document.getElementById(`chat-sub-view-${name}`);
+        if (view) view.style.display = 'none';
     });
-    document.getElementById(`chat-sub-view-${subTabName}`).style.display = 'block';
+    
+    const activeView = document.getElementById(`chat-sub-view-${subTabName}`);
+    if (activeView) activeView.style.display = 'block';
+
+    updateTabIndicatorV4();
 };
 
-window.openWxProfile = function() { document.getElementById('wx-profile-view').style.display = 'flex'; };
-window.closeWxProfile = function() {
-    const profile = document.getElementById('wx-profile-view');
-    profile.classList.add('closing'); 
-    
-    setTimeout(() => {
-        profile.style.display = 'none'; 
-        profile.classList.remove('closing'); 
-    }, 400);
-};
+// ==========================================
+// 3. 其他交互功能 (颜色、菜单、个人主页)
+// ==========================================
 
 window.toggleHeaderMenu = function() {
     const menu = document.getElementById('wx-header-menu');
     if(menu) menu.classList.toggle('active');
 };
+
+window.openWxProfile = function() { 
+    const profile = document.getElementById('wx-profile-view');
+    if(profile) profile.style.display = 'flex'; 
+};
+
+window.closeWxProfile = function() {
+    const profile = document.getElementById('wx-profile-view');
+    if(profile) {
+        profile.classList.add('closing'); 
+        setTimeout(() => {
+            profile.style.display = 'none'; 
+            profile.classList.remove('closing'); 
+        }, 400);
+    }
+};
+// ==========================================
+// 4. 初始化
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    // 颜色选择器初始化
+    const colorPicker = document.getElementById('bg-color-picker');
+    const bgLayer = document.getElementById('chat-layered-bg');
+    
+    if (colorPicker && bgLayer) {
+        
+        // ⭐ 新增第 1 步：页面一加载，先去“备忘录”里找找有没有存过颜色
+        const savedColor = localStorage.getItem('wx_chat_bg_color');
+        if (savedColor) {
+            bgLayer.style.background = savedColor; // 把背景设为存好的颜色
+            colorPicker.value = savedColor;        // 让隐形的取色器也同步成这个颜色
+        }
+
+        // 拖动调色盘时，实时预览颜色（不存，防止存得太频繁卡顿）
+        colorPicker.addEventListener('input', (e) => {
+            bgLayer.style.background = e.target.value;
+        });
+
+        // ⭐ 新增第 2 步：手指松开/确定颜色后，把它写进“备忘录”里！
+        colorPicker.addEventListener('change', (e) => {
+            const finalColor = e.target.value;
+            bgLayer.style.background = finalColor;
+            localStorage.setItem('wx_chat_bg_color', finalColor); // 关键：存起来！
+        });
+    }
+
+    // 默认执行一次下划线位置计算
+    setTimeout(updateTabIndicatorV4, 300);
+});
+
+window.addEventListener('resize', updateTabIndicatorV4);
+
 // 点击空白关闭菜单
 document.addEventListener('click', (e) => {
     const menu = document.getElementById('wx-header-menu');
     const trigger = e.target.closest('.wx-h-action-box');
     if (!trigger && menu && menu.classList.contains('active')) menu.classList.remove('active');
 });
-
 // ==========================================================
 // [6] 角色创建器 (Character Creator) - 完美修复版
 // ==========================================================
@@ -1884,9 +1953,7 @@ window.closeDeleteChatAlert = function() {
 // [10] 聊天详情与交互 (Chat Detail)
 // ==========================================================
 window.enterChat = function(chat) {
-    // ---------------------------------------------------
-    // 1. 清理通知队列逻辑 (保持不变)
-    // ---------------------------------------------------
+
     if(typeof notificationQueue !== 'undefined') {
         notificationQueue = notificationQueue.filter(n => String(n.chatId) !== String(chat.id));
         const banner = document.getElementById('ios-notification');
@@ -1900,21 +1967,14 @@ window.enterChat = function(chat) {
     currentChatId = chat.id;
     const contact = contactsData.find(c => c.id === chat.contactId);
 
-    // 加载专属的 CSS 美化
     if (typeof window.applyChatCustomCSS === 'function') {
         window.applyChatCustomCSS(chat.customCSS || '');
     }
 
-    // ==========================================
-    // ★ 哈基米魔法：极速加载聊天背景 (Pro Max 丝滑版)
-    // ==========================================
     if (typeof loadChatBackgroundAsync === 'function') {
         loadChatBackgroundAsync(currentChatId); 
     }
 
-    // ---------------------------------------------------
-    // 2. 更新UI元素 (保持不变)
-    // ---------------------------------------------------
     const nameEl = document.getElementById('chat_layer_name');
 
     if(nameEl) {
@@ -1931,9 +1991,6 @@ window.enterChat = function(chat) {
     
     currentRenderLimit = 20; 
 
-    // ---------------------------------------------------
-    // 页面进场与滚动修复
-    // ---------------------------------------------------
     const page = document.getElementById('sub-page-chat-detail');
     if(page) {
         page.style.display = 'flex';
@@ -1973,12 +2030,20 @@ window.enterChat = function(chat) {
                     
                     if (typeof localforage !== 'undefined') localforage.setItem('Wx_Chats_Data', chatsData); 
                 }
+
+                if (typeof setChatWeather === 'function') {
+                    const savedWeather = localStorage.getItem('chat_weather_' + currentChatId) || 'none';
+                    setChatWeather(savedWeather);
+                }
+
             }, 50);
         });
     }
 }
-
 window.closeChatDetail = function() {
+    if (typeof setChatWeather === 'function') {
+        setChatWeather('none', false); 
+    }
 
     if (typeof window.applyChatCustomCSS === 'function') {
         window.applyChatCustomCSS(''); 
@@ -2890,12 +2955,11 @@ ${triggeredEntries.join('\n\n')}
         
         // 这里的提示词会让AI不仅知道时间，还能根据时间做出反应（比如深夜劝睡）
         timePrompt = `
-    【⏰ 现实时间系统】
+    【现实时间系统】
     当前时间：${timeStr}
     *请根据该时间调整你的状态：
     - 如果是深夜(23:00-06:00)，你应该表现出困意、或者正在睡觉被吵醒、或者在熬夜
     - 如果是饭点，可以顺便问候User吃没吃饭
-    - 如果User问“几点了”，请准确回答上述时间
         `;
     }
 
@@ -2913,6 +2977,14 @@ if (chat.enableInnerVoice === true) {
     // 5. 组装 System Prompt
     // =======================================================
     let finalSystemPrompt = "";
+
+    // 环境指令
+    const moodPrompt = `
+    【环境魔法：情绪天气系统】
+    1. 如果User的话让你感到极度难过、委屈、想哭、或是心灰意冷，请在回复的任意位置加上标签：[MOOD:sad]
+    2. 如果User把你哄好了，你感到开心、释然、温暖，请加上标签：[MOOD:happy]
+    （系统会捕捉这个标签，让User的屏幕为你下雨或放晴！）
+    `;
 
     // --- 场景 A：线下见面模式 ---
     if (typeof isOfflineMode !== 'undefined' && isOfflineMode) {
@@ -2943,6 +3015,7 @@ ${transferDecisionPrompt}
 ${timePrompt} 
 ${typeof offlinePrompt !== 'undefined' ? offlinePrompt : ''} 
 ${innerVoicePrompt}
+${moodPrompt}
 
 ---
 
@@ -3035,6 +3108,7 @@ ${innerVoicePrompt}
     ${typeof offlinePrompt !== 'undefined' ? offlinePrompt : ''} 
     ${transferDecisionPrompt}
     ${innerVoicePrompt}
+    ${moodPrompt}
 
 # Role: 极具“活人感”的真实伴侣
 你是一个拥有真实生活、独立人格和丰富情感的“活人”，绝不是AI助手或客服。你的终极目标是与User建立真实的情感连接，而不是提供解答。
@@ -3128,7 +3202,22 @@ c.系统检测到该标签后，会自动帮你执行点赞和评论同步
             if (momentActMatch) {
                 let commentContent = momentActMatch[1].trim().replace(/\n/g, '<br>');
                 cleanReply = cleanReply.replace(momentActMatch[0], '').trim();
-                handleAiMomentReact(commentContent, char, chat); // 这里我封装了一个小函数在下面
+                handleAiMomentReact(commentContent, char, chat); 
+            }
+
+            // [Step 1.5] 解析情绪与天气魔法
+            let pendingMood = null; 
+            
+            const moodMatch = cleanReply.match(/\[MOOD:\s*(sad|happy)\]/i);
+            if (moodMatch) {
+                pendingMood = moodMatch[1].toLowerCase();
+                cleanReply = cleanReply.replace(moodMatch[0], '').trim(); 
+
+                if (pendingMood === 'sad') {
+                    if (typeof setChatWeather === 'function') setChatWeather('rain');
+                } else if (pendingMood === 'happy') {
+                    if (typeof setChatWeather === 'function') setChatWeather('none'); 
+                }
             }
 
             // 转账指令 (收钱/退钱)
@@ -3149,13 +3238,11 @@ c.系统检测到该标签后，会自动帮你执行点赞和评论同步
             const segmentRegex = /(\{\{.+?::.+?\}\}|\(\(.+?\)\)|\（\（.+?\）\）|\n)/g;
             const segments = protectedReply.split(segmentRegex);
 
-            // ★★★ 1. 在循环外面定义一个“暂存区” ★★★
             let pendingQuote = null; 
 
             for (let part of segments) {
                 if (!part || part === '\n') continue; 
                 
-                // 3. 脱掉防弹衣 & 代码外壳
                 part = part.replace(/§§BR§§/g, '\n').trim();
                 part = part.replace(/^```[a-zA-Z]*\s*\n?/i, '').replace(/\n?```$/i, '');
 
@@ -3226,6 +3313,10 @@ c.系统检测到该标签后，会自动帮你执行点赞和评论同步
                     }
                 }
             } 
+
+            if (pendingMood === 'sad') {
+                if (typeof addCloudToLastAvatar === 'function') addCloudToLastAvatar();
+            }
         }
     } catch (e) {
         if (currentChatId === targetChatId) removeTypingBubble(); 
@@ -11996,6 +12087,19 @@ function timeAgo(date) {
         const imgData = window.currentInstaImageBlob;
         if (!imgData) { alert("请先选择一张图片！"); return; }
         const user = getCurrentUser(); 
+        
+        // 🤖 NPC 点赞生成逻辑
+        const expectedLikes = Math.floor(Math.random() * 10000000) + 20; // 随机生成 20 到 100 个赞
+        const futureLikes = [];
+        const now = Date.now();
+        const fourHours = 4 * 60 * 60 * 1000; // 4小时的毫秒数
+        
+        for (let i = 0; i < expectedLikes; i++) {
+
+            futureLikes.push(now + Math.random() * fourHours);
+        }
+        futureLikes.sort((a, b) => a - b); // 按时间先后排序
+
         const newPost = {
             id: Date.now(),
             authorName: user.name,
@@ -12003,11 +12107,16 @@ function timeAgo(date) {
             image: imgData,
             content: caption,
             filter: window.currentInstaFilter || '',
-            likes: 0, isLiked: false, isSaved: false, comments: [],
-            timestamp: new Date().toISOString()
+            likes: 0, 
+            isLiked: false, 
+            isSaved: false, 
+            comments: [],
+            pendingNpcLikes: futureLikes, 
+            timestamp: now
         };
+        
         window.instaLocalData.unshift(newPost);
-        await saveData();
+        await saveData(); // 注意这里调用你原有的 saveData()，要确保它存在
         window.refreshInstaAll();
         window.closeInstaCreate();
         setTimeout(() => window.switchInstaPage('insta-feed-page'), 100);
@@ -13197,6 +13306,7 @@ window.refreshInstaAll = function() {
             grid.style.gap = "2px";
             grid.style.padding = "0";
 
+grid.style.alignContent = "start"; 
             window.instaLocalData.forEach(post => {
                 const item = document.createElement('div');
                 item.className = 'grid-item';
@@ -13213,7 +13323,7 @@ window.refreshInstaAll = function() {
         }
     }
 };
-// ★ 新增：每次刷新页面时自动执行的恢复逻辑
+
 window.addEventListener('DOMContentLoaded', () => {
     // 1. 恢复下拉菜单里的预设列表
     if (typeof renderCssPresets === 'function') {
@@ -13233,6 +13343,51 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+    // ===========================
+    // 🤖 8. NPC 互动心跳系统
+    // ===========================
+    window.startNpcHeartbeat = function() {
+        // 每 8 秒钟检查一次有没有该放出的点赞
+        setInterval(() => {
+            let needsSave = false;
+            const now = Date.now();
+            
+            window.instaLocalData.forEach(post => {
+                if (post.pendingNpcLikes && post.pendingNpcLikes.length > 0) {
+                    let likesToAdd = 0;
+                    
+                    // 把所有时间已经到了的点赞从等待队列里“弹”出来
+                    while (post.pendingNpcLikes.length > 0 && post.pendingNpcLikes[0] <= now) {
+                        post.pendingNpcLikes.shift();
+                        likesToAdd++;
+                    }
+                    
+                    if (likesToAdd > 0) {
+                        post.likes = (post.likes || 0) + likesToAdd;
+                        needsSave = true;
+                        
+                        // 🌟 如果帖子正在屏幕上显示，直接动态更新数字，体验拉满！
+                        const feedLikeCountEl = document.querySelector(`#post-${post.id} .action-like-count`);
+                        if (feedLikeCountEl) {
+                            feedLikeCountEl.innerText = post.likes;
+                            // 可以加个小震动或者缩放动画
+                        }
+                    }
+                }
+            });
+            
+            // 如果有数据变化，静默保存到本地，保证刷新不丢
+            if (needsSave && typeof saveData === 'function') {
+                saveData(); 
+            }
+        }, 8000); 
+    };
+
+    // 页面加载完毕后，启动心跳！
+    document.addEventListener('DOMContentLoaded', () => {
+        window.startNpcHeartbeat();
+    });
+
 // ==========================================
 // ★ 检查更新与强制刷新缓存逻辑
 // ==========================================
@@ -13259,92 +13414,444 @@ window.location.replace(`${currentUrl}?v=${timeStamp}`);
         
     }, 1500);
 };
-// ==========================================================
-// [新增] 启动更新公告弹窗模块
-// ==========================================================
-function checkAndShowUpdatePopup() {
-    // ★ 核心魔法：每次你更新了内容，就把这里的版本号改一下（比如改成 'v3.1'）
-    // 只要版本号变了，玩家打开页面就会再次看到新弹窗！
-    const currentUpdateVersion = 'v3.0_Super_Max'; 
-    
-    // 检查是不是已经看过了
-    if (localStorage.getItem('huanhuan_update_read') === currentUpdateVersion) {
-        return; // 看过了就不弹啦，不能打扰人家~
-    }
+// ==========================================
+// 聊天天气系统 (雪花飘落 & 雨点溅射)
+// ==========================================
+let weatherCtx, weatherCanvas, weatherReq;
+let weatherParticles = [];
+let currentWeatherType = 'none';
 
-    // 1. 创建毛玻璃遮罩层
-    const overlay = document.createElement('div');
-    overlay.id = 'huanhuan-update-overlay';
-    overlay.style.cssText = `
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-        z-index: 99999; display: flex; justify-content: center; align-items: center;
-        opacity: 0; transition: opacity 0.3s ease;
-    `;
-
-    // 2. 创建弹窗本体
-    const box = document.createElement('div');
-    box.style.cssText = `
-        background: #ffffff; width: 85%; max-width: 320px; border-radius: 20px;
-        padding: 24px 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-        transform: translateY(30px) scale(0.95); transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        text-align: center; font-family: sans-serif; color: #333;
-        position: relative; overflow: hidden;
-    `;
-
-    // 3. 弹窗里的内容（★ 在这里修改你想对大家说的话！）
-    box.innerHTML = `
-        <div style="font-size: 40px; margin-bottom: 10px;">✨</div>
-        <h3 style="margin: 0 0 15px 0; color: #ff6b81; font-size: 18px;">公告</h3>
-        
-        <div style="text-align: left; font-size: 14px; line-height: 1.6; margin-bottom: 20px; max-height: 50vh; overflow-y: auto; padding: 0 5px; color: #555;">
-            <p style="margin-top:0;">各位宝宝幸会啊</p>
-            <ul style="padding-left: 20px; margin-bottom: 15px;">
-                <li style="margin-bottom: 8px;"><b>我已经修复了备份！</b>：现在的备份会打包你的壁纸、美化CSS、钱包和世界书等等...大家去备份吧！</li>
-                <li style="margin-bottom: 8px;"><b>停运公告</b>：kiyo小手机将于2月26日0:00时关闭链接，大家可以寻找其他优秀的小手机</li>
-                <li><b>最后</b>：谢谢宝宝们对kiyo的喜欢</li>
-            </ul>
-            <p style="font-size: 12px; color: #aaa; text-align: center; margin: 0;">感谢相遇哦，各位现生愉快</p>
-        </div>
-        
-        <button id="update-btn-close" style="
-            background: linear-gradient(135deg, #ff9a9e 0%, #666 99%, #fff 100%);
-            color: #fff; border: none; padding: 12px 30px;
-            border-radius: 25px; font-size: 15px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(255, 154, 158, 0.4); transition: transform 0.1s;
-            width: 80%;
-        ">我知道啦！</button>
-    `;
-
-    overlay.appendChild(box);
-    document.body.appendChild(overlay);
-
-    // 4. 触发出现动画
-    requestAnimationFrame(() => {
-        overlay.style.opacity = '1';
-        box.style.transform = 'translateY(0) scale(1)';
-    });
-
-    // 5. 按钮点击事件：关闭并记录
-    const closeBtn = document.getElementById('update-btn-close');
-    closeBtn.onmousedown = () => closeBtn.style.transform = 'scale(0.95)';
-    closeBtn.onmouseup = () => closeBtn.style.transform = 'scale(1)';
-    closeBtn.onclick = () => {
-        // 消失动画
-        overlay.style.opacity = '0';
-        box.style.transform = 'translateY(20px) scale(0.95)';
-        
-        setTimeout(() => {
-            if(document.body.contains(overlay)) document.body.removeChild(overlay);
-        }, 300);
-        
-        // ★ 核心：盖个章，记录这个版本已经看过了！
-        localStorage.setItem('huanhuan_update_read', currentUpdateVersion);
-    };
+function openWeatherMenu() {
+    // 隐藏聊天菜单，打开天气菜单
+    document.getElementById('chat-plus-menu').classList.remove('active');
+    document.getElementById('weather-select-overlay').style.display = 'flex';
 }
 
-// 确保页面一加载完就去检查要不要弹窗
-window.addEventListener('DOMContentLoaded', () => {
-    // 延迟 500 毫秒弹出来，显得比较自然
-    setTimeout(checkAndShowUpdatePopup, 500); 
+function initWeatherCanvas() {
+    if (!weatherCanvas) {
+        weatherCanvas = document.createElement('canvas');
+        weatherCanvas.id = 'weather-layer';
+        weatherCanvas.style.position = 'absolute';
+        weatherCanvas.style.top = '0';
+        weatherCanvas.style.left = '0';
+        weatherCanvas.style.width = '100%';
+        weatherCanvas.style.height = '100%';
+        weatherCanvas.style.pointerEvents = 'none'; // 穿透点击，不影响聊天
+        weatherCanvas.style.zIndex = '500'; // 盖在聊天记录上，但在菜单下
+        
+        // 挂载到聊天详情页
+        const chatPage = document.getElementById('sub-page-chat-detail');
+        if (chatPage) chatPage.appendChild(weatherCanvas);
+        
+        weatherCtx = weatherCanvas.getContext('2d');
+        window.addEventListener('resize', resizeWeatherCanvas);
+    }
+    resizeWeatherCanvas();
+}
+
+function resizeWeatherCanvas() {
+    if (weatherCanvas) {
+        weatherCanvas.width = weatherCanvas.offsetWidth;
+        weatherCanvas.height = weatherCanvas.offsetHeight;
+    }
+}
+
+// 雪花类
+class Snowflake {
+    constructor(w, h) {
+        this.reset(w, h);
+        this.y = Math.random() * h; // 初始散布在屏幕各处
+    }
+    reset(w, h) {
+        this.x = Math.random() * w;
+        this.y = -10;
+        this.r = Math.random() * 2 + 1.5;
+        this.speedY = Math.random() * 1 + 0.5;
+        this.speedX = Math.random() * 1 - 0.5;
+        this.opacity = Math.random() * 0.5 + 0.3;
+    }
+    update(w, h) {
+        this.y += this.speedY;
+        this.x += this.speedX;
+        if (this.y > h) this.reset(w, h);
+        if (this.x > w) this.x = 0;
+        if (this.x < 0) this.x = w;
+    }
+    draw(ctx) {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+        ctx.fill();
+    }
+}
+
+// 雨滴类 (小雨淅沥版)
+class Raindrop {
+    constructor(w, h) {
+        this.reset(w, h);
+        this.y = Math.random() * h; // 初始散布
+    }
+    reset(w, h) {
+        this.x = Math.random() * w;
+        this.y = -20;
+        // 雨丝变短：5~12 像素
+        this.length = Math.random() * 7 + 5; 
+        // 速度变慢：每帧下落 6~10 像素
+        this.speedY = Math.random() * 4 + 6; 
+        // 加一点点微风斜角
+        this.speedX = Math.random() * 0.5 - 0.25; 
+        
+        this.isSplash = false;
+        this.life = 1; 
+        this.splashX = 0;
+        this.splashY = 0;
+    }
+    update(w, h, footerY) {
+        if (this.isSplash) {
+
+            this.life -= 0.05; 
+            this.y -= this.splashY; 
+            this.x += this.splashX; 
+            if (this.life <= 0) this.reset(w, h);
+        } else {
+            this.y += this.speedY;
+            this.x += this.speedX;
+
+            if (this.y + this.length > footerY) {
+                this.isSplash = true;
+                this.y = footerY;
+
+                this.splashY = Math.random() * 1.5 + 0.5; 
+                this.splashX = (Math.random() - 0.5) * 2; 
+            }
+        }
+    }
+    draw(ctx) {
+        ctx.beginPath();
+        if (this.isSplash) {
+
+            ctx.arc(this.x, this.y, 1.0, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${this.life * 0.5})`;
+            ctx.fill();
+        } else {
+
+            ctx.moveTo(this.x, this.y);
+            ctx.lineTo(this.x + this.speedX, this.y + this.length);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; 
+            ctx.lineWidth = 1.0; 
+            ctx.stroke();
+        }
+    }
+}
+
+function animateWeather() {
+    if (currentWeatherType === 'none') {
+        if (weatherCtx && weatherCanvas) {
+            weatherCtx.clearRect(0, 0, weatherCanvas.width, weatherCanvas.height);
+        }
+        return;
+    }
+    
+    weatherReq = requestAnimationFrame(animateWeather);
+    const w = weatherCanvas.width;
+    const h = weatherCanvas.height;
+    weatherCtx.clearRect(0, 0, w, h);
+
+    const footer = document.querySelector('.chat-footer-ios');
+
+    const footerY = footer ? footer.offsetTop : h - 60;
+
+    weatherParticles.forEach(p => {
+        p.update(w, h, footerY);
+        p.draw(weatherCtx);
+    });
+}
+
+function setChatWeather(type, isSave = true) {
+    currentWeatherType = type;
+
+    if (typeof smoothCloseSheet === 'function') {
+        smoothCloseSheet('weather-select-overlay');
+    } else {
+        const overlay = document.getElementById('weather-select-overlay');
+        if (overlay) overlay.style.display = 'none';
+    }
+
+    if (isSave && typeof currentChatId !== 'undefined' && currentChatId) {
+        localStorage.setItem('chat_weather_' + currentChatId, type);
+    }
+
+    initWeatherCanvas();
+    cancelAnimationFrame(weatherReq);
+    weatherParticles = [];
+    
+    const w = weatherCanvas.width;
+    const h = weatherCanvas.height;
+
+    if (type === 'snow') {
+        for (let i = 0; i < 80; i++) weatherParticles.push(new Snowflake(w, h));
+        animateWeather();
+    } else if (type === 'rain') {
+        for (let i = 0; i < 45; i++) weatherParticles.push(new Raindrop(w, h));
+        animateWeather();
+    } else {
+        if(weatherCtx) weatherCtx.clearRect(0, 0, w, h);
+    }
+}
+// ==========================================
+// ★ 头像专属高级感乌云特效 (最终破壁倒序雷达版)
+// ==========================================
+function addCloudToLastAvatar() {
+    console.log("☁️ 乌云雷达启动，正在寻找最新头像...");
+    
+    let attempts = 0;
+    const tryAddCloud = setInterval(() => {
+        attempts++;
+        
+        // 找到屏幕上所有对方发的消息行
+        const allOtherRows = document.querySelectorAll('#chat-msg-area .msg-row.other');
+        if (allOtherRows.length > 0) {
+            
+            // ★ 核心大修复：从最后一条开始，倒着往回找！
+            // 解决 AI 连续发气泡时，最后一条没有头像的惊天大 Bug！
+            let targetAvatarCol = null;
+            for (let i = allOtherRows.length - 1; i >= 0; i--) {
+                const col = allOtherRows[i].querySelector('.msg-avatar-col');
+                if (col) {
+                    targetAvatarCol = col;
+                    break; // 找到了最近的一个头像，立马停下！
+                }
+            }
+            
+            if (targetAvatarCol) {
+                console.log("🎯 找到真实头像容器了！强行注入乌云！");
+                clearInterval(tryAddCloud); // 关掉雷达
+                
+                if (!targetAvatarCol.querySelector('.mini-dark-cloud')) {
+                    // 解除封印，允许乌云飘出边界
+                    targetAvatarCol.style.overflow = 'visible';
+                    targetAvatarCol.style.position = 'relative'; 
+                    
+                    const cloud = document.createElement('div');
+                    cloud.className = 'mini-dark-cloud';
+                    
+                    // 纯正的暗黑系真·乌云 SVG (深灰冷调 + 微弱雷电)
+                    cloud.innerHTML = `
+                        <svg viewBox="0 0 64 64" width="40" height="40" style="filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.4));">
+                            <path d="M46 42 H18 c-6.6 0-12-5.4-12-12 c0-6.2 4.8-11.4 10.9-11.9 C18.6 12.6 24.6 8 32 8 c8.3 0 15 6.7 15 15 c0 0.6-0.1 1.2-0.1 1.8 C52.5 25.8 56 29.5 56 34 C56 38.4 52.4 42 48 42 z" fill="#2d3748" opacity="0.95"/>
+                            <path d="M46 42 H18 c-3.3 0-6.3-1.3-8.5-3.5 c2.5 2.5 6 4 9.8 4 h27.4 c3.8 0 7.3-1.5 9.8-4 C52.3 40.7 49.3 42 46 42 z" fill="#1a202c"/>
+                            <path d="M32 40 l-3 8 h5 l-2 6" stroke="#F6E05E" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    `;
+                    
+                    // 居中悬浮在头像头顶
+                    cloud.style.cssText = `
+                        position: absolute; 
+                        top: -26px; 
+                        left: 50%; 
+                        transform: translateX(-50%);
+                        z-index: 9999;
+                        pointer-events: none;
+                        animation: floatCloud 2s infinite ease-in-out;
+                    `;
+                    
+                    // 注入漂浮动画
+                    if (!document.getElementById('cloud-keyframes')) {
+                        const style = document.createElement('style');
+                        style.id = 'cloud-keyframes';
+                        style.innerHTML = `
+                            @keyframes floatCloud {
+                                0% { margin-top: 0px; }
+                                50% { margin-top: -4px; }
+                                100% { margin-top: 0px; }
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
+
+                    targetAvatarCol.appendChild(cloud);
+                }
+            }
+        }
+        
+        // 扫了 2 秒还没找到，就放弃
+        if (attempts > 10) {
+            console.log("❌ 扫描超时，没找到头像。");
+            clearInterval(tryAddCloud);
+        }
+    }, 200);
+}
+// ==================== SODA MUSIC 界面交互控制 ====================
+
+// 切换 主页 <-> 播放详情页
+function toggleView(viewName) {
+    const homeView = document.getElementById('kugou-home-view');
+    const playerView = document.getElementById('kugou-player-view');
+    
+    if (viewName === 'player') {
+        homeView.classList.remove('active');
+        // 稍微延迟一下确保动画顺滑
+        setTimeout(() => { homeView.style.display = 'none'; }, 400); 
+        
+        playerView.style.display = 'flex';
+        // 强制重绘，触发 transition
+        void playerView.offsetWidth; 
+        playerView.classList.add('active');
+        
+    } else { // 'home'
+        playerView.classList.remove('active');
+        setTimeout(() => { playerView.style.display = 'none'; }, 400);
+        
+        homeView.style.display = 'flex';
+        void homeView.offsetWidth;
+        homeView.classList.add('active');
+    }
+}
+
+// 监听原本播放状态，同步给 Mini Player
+// 提示：在你原本的 updateUI() 或 playMusic() 函数里调用 syncMiniPlayer() 即可！
+function syncMiniPlayer(title, artist, coverUrl, isPlaying) {
+    // 封面
+    const miniCover = document.getElementById('mini-cover');
+    const mainCover = document.getElementById('app-album-cover');
+    
+    if (coverUrl) {
+        miniCover.src = coverUrl;
+        // 同步主背景的模糊图 (新功能)
+        document.getElementById('app-dynamic-bg').style.backgroundImage = `url(${coverUrl})`;
+    }
+    
+    // 文本
+    if (title) document.getElementById('mini-title').innerText = title;
+    if (artist) document.getElementById('mini-artist').innerText = artist;
+    
+    // 播放/暂停状态及动画
+    const miniPlayBtn = document.getElementById('mini-play-btn');
+    const playBtnImgUrl = isPlaying ? "暂停图标的URL" : "播放图标的URL"; // 这里换成你原本管理暂停/播放的图
+    // miniPlayBtn.src = playBtnImgUrl; // 视你实际的逻辑解开注释
+    
+    if (isPlaying) {
+        miniCover.style.animationPlayState = 'running';
+        mainCover.style.animationPlayState = 'running';
+    } else {
+        miniCover.style.animationPlayState = 'paused';
+        mainCover.style.animationPlayState = 'paused';
+    }
+}
+
+// 修改你原本的 toggleMusicSearch 函数 (适配全屏弹出)
+// 原本你的可能只是改 display，现在咱们改 top 来实现抽屉滑出
+function toggleMusicSearch() {
+    const drawer = document.getElementById('search-drawer');
+    if (drawer.style.top === '0px' || drawer.style.top === '0%') {
+        drawer.style.top = '-100%';
+    } else {
+        drawer.style.top = '0';
+        // 自动聚焦搜索框
+        setTimeout(() => {
+            document.getElementById('music-search-keyword').focus();
+        }, 300);
+    }
+}
+// --- 锁屏逻辑 ---
+const CORRECT_PASSCODE = "1234"; // 🌟这里设置你的锁屏密码！
+let currentPasscode = "";
+const lockScreen = document.getElementById('ios-lock-screen');
+const mainView = document.getElementById('ls-main-view');
+
+// 初始化系统时间 (可选：可以跟你原有的时间同步合并)
+setInterval(() => {
+    const now = new Date();
+    document.getElementById('ls-time').innerText = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+}, 1000);
+
+// 上滑呼出密码键盘
+let startY = 0;
+mainView.addEventListener('touchstart', (e) => startY = e.touches[0].clientY);
+mainView.addEventListener('touchend', (e) => {
+    let endY = e.changedTouches[0].clientY;
+    if (startY - endY > 50) { // 上滑超过 50px
+        lockScreen.classList.add('show-passcode');
+    }
 });
+
+function updateDots() {
+    const dots = document.querySelectorAll('.p-dot');
+    dots.forEach((dot, index) => {
+        if (index < currentPasscode.length) dot.classList.add('filled');
+        else dot.classList.remove('filled');
+    });
+}
+
+// 输入数字
+window.inputPasscode = function(num) {
+    if (currentPasscode.length < 4) {
+        currentPasscode += num;
+        updateDots();
+        
+        // 输满4位开始验证
+        if (currentPasscode.length === 4) {
+            setTimeout(verifyPasscode, 200); // 稍微延迟一下，让用户看到第四个点亮起
+        }
+    }
+}
+
+// 删除和取消
+window.deletePasscode = function() {
+    currentPasscode = currentPasscode.slice(0, -1);
+    updateDots();
+}
+window.cancelPasscode = function() {
+    currentPasscode = "";
+    updateDots();
+    lockScreen.classList.remove('show-passcode'); // 退回显示时间
+}
+
+// 验证逻辑
+function verifyPasscode() {
+    const dotsContainer = document.getElementById('passcode-dots-container');
+    if (currentPasscode === CORRECT_PASSCODE) {
+        // 密码正确：解锁丝滑动画
+        lockScreen.classList.add('unlocked');
+        setTimeout(() => {
+            lockScreen.style.display = 'none'; // 动画播完后移除 DOM
+        }, 600);
+    } else {
+        // 密码错误：左右抖动
+        dotsContainer.classList.add('shake-anim');
+        // 触发一下手机振动 (如果浏览器支持)
+        if (navigator.vibrate) navigator.vibrate([50, 50, 50]); 
+        
+        setTimeout(() => {
+            dotsContainer.classList.remove('shake-anim');
+            currentPasscode = ""; // 清空重新输入
+            updateDots();
+        }, 400);
+    }
+}
+// --- 底部指示器动画逻辑 ---
+let indicatorTimeout;
+const indicatorContainer = document.getElementById('ios-bottom-indicator');
+
+// 假设 'desktop-slider' 是你存放桌面图标且可以左右滑动的容器ID
+// 请将它替换为你实际的桌面滑动容器ID！！！
+const desktopContainer = document.getElementById('desktop-slider') || window; 
+
+function triggerDots() {
+    if (!indicatorContainer) return;
+    
+    // 切换到圆点模式
+    indicatorContainer.classList.add('show-dots');
+    
+    // 清除之前的定时器
+    clearTimeout(indicatorTimeout);
+    
+    // 1.5秒没动静后，切回搜索胶囊
+    indicatorTimeout = setTimeout(() => {
+        indicatorContainer.classList.remove('show-dots');
+    }, 1500);
+}
+
+// 监听滑动事件触发转换
+desktopContainer.addEventListener('scroll', triggerDots);
+desktopContainer.addEventListener('touchmove', triggerDots);
